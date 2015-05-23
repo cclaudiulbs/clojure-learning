@@ -1,0 +1,10 @@
+clojure questions:
+1. difference between let & def
+	(apart of the one which:
+		+ allows let "create" a new scope, where the same bind-name can be used)
+		+ deconstruct the bind-name, using head-tail args
+		+ aha, so many bind-names can be placed for binding name -> expression, separated by newline)
+
+2. keys in a map, are functions??
+	(def myMap {:foo "this is foo" :bar "this bar"})
+	(println (:foo myMap))
