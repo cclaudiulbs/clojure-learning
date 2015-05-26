@@ -184,3 +184,51 @@
 
 ;; In general, programming to abstractions gives us power by letting us use libraries of functions on a data structure regardless of that data structure's implementation.
 
+;;; Clojure Programming ;;;
+(read-string "this")
+
+[1 2 3]
+
+(pr " this is multiline 
+ string")
+
+(#(+ %1 %2 %3 2) 2 3 4)
+
+(def foo "some foo")
+;(foo "this")
+
+(def foo [12 3 "cc" (re-seq #"a|b|c" "abc")])
+(first foo)
+(last foo) #_ ("a" "b" "c")
+(foo 1) ; 3
+(nth foo 1) ; 3
+(.get foo 0) ; 12
+
+; always read from the most inner expression to the most outer -> simpler to get the job done :)
+
+;; destructuring
+(def foo [1 2 3 "four" (fn [](quote 5) )])
+(let[[one two three] foo] (+ one two three) )
+(let[[one & tail] foo] (+ one ((last tail)) )); (last tail) -> fn; ((last tail)) -> (fn): 6
+
+(def aMap {:a "ei" :b "bi"
+           :names ["cc" "dm"]
+           :age [33 27]})
+(let[ {eis :a bis :b ages :age} aMap] 
+  (+ (first ages) (second ages)))    ;; last expression from let is returned
+
+; map using "a" & "b" the value corresponding to index 0 and 1 in a map, and KEEP a reference with ":as" to original vector
+(let[{a 0 b 1 :as orig-foo} foo] 
+  (conj orig-foo a b))
+
+(def customer {:name "cclaudiu" :age 33 :location "Titan nr 6"})
+(let[ {:keys [name age location]} customer ]
+  (printf "Customer is: %s; age: %d; address: %s" name age location))
+
+(def user-info ["cclaudiu" 2015 :email "claudiu.cosar@sap.com" :company "sap"])
+; print: cclaudiu works at sap and has the email...
+(let[[id _ & tail] user-info
+     {:keys [email company]} (apply hash-map tail)]
+  (str id "works at " company "and has the email " email))
+
+
