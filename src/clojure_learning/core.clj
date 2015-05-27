@@ -231,4 +231,46 @@
      {:keys [email company]} (apply hash-map tail)]
   (str id "works at " company "and has the email " email))
 
+(fn[x] (* x x))
+((fn [x] (* x x)) 2); 4
+(def square (fn[x] (* x x)))
+(pr-str (square 2))
 
+(def minus-1 (fn[x y](do (- x y))))
+(def minus-2 (fn[x y] (- x y)))
+(minus-1 3 2); 1
+(minus-2 5 2); 3
+
+((fn [x y z] (+ x y z)) 1 2 3); same as the following "let" block
+
+(let[[x y z] '(1 2 3)] (+ x y z)); same with:
+
+(let[ x 1 
+      y 2
+      z 3]
+  (+ x y z))
+
+;; defn is a macro that encapsulates: def + fn
+;; it uses the let functionality to BIND the arguments for the scope of the function body
+;; arity functions are functions overloaded; here's an example:
+(def make-sum (fn sum-nrs
+                ([x] (sum-nrs x 1))  ; 1-arity overloading -> calling the second arity with a default 1
+                ([x y] (+ x y))))
+(make-sum 1 3); 4
+;; naming the fn allows for recursive calls
+;; implementing the my-map using variadic functions
+(def my-map (fn map-rec
+                ([func [head & tail]]
+                  (if(nil? head)
+                    []
+                    (cons (func head) (map-rec func tail)))
+                )))
+
+(def inc-by-one (my-map (fn[x] (+ x 1))  '(1 2 3)))
+(pr-str inc-by-one)
+(def append-prefix (my-map (fn[each] (str "prefix: " each)) '("cc" "ll")))
+(pr-str append-prefix)
+
+; (cons 1 (conj '() 2))
+; (def inc-by-one (map (fn[x] (+ x 1)) '(1 2 3)))
+; (pr-str inc-by-one)
