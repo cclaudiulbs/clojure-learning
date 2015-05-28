@@ -274,3 +274,28 @@
 ; (cons 1 (conj '() 2))
 ; (def inc-by-one (map (fn[x] (+ x 1)) '(1 2 3)))
 ; (pr-str inc-by-one)
+
+;;;;;;;;;;;; Functional Programming:: Chapter II ;;;;;;;;;;;;;
+;; in clojure nearly everything is immutable, so almost everything behaves as "values"
+;; functions being treated as values -> enables the high-order-functions techniques.
+(def some-hash {[1 2] "value: 3"})
+(conj (first (keys some-hash)) 4); [1 2 4]
+(let [keys (keys some-hash)]
+  keys)
+(println)
+
+(def call-twice (fn [f x] 
+                  (f x)
+                  (f x)))
+(call-twice println 33); 33 \n 33
+
+(defn call-twice [f x] (f x) (f x))
+(call-twice println 5); 5 \n 5
+  
+(def get-current-date (fn[] 
+                        (Thread/sleep 2000)
+                        (java.util.Date.)))
+(def curr-time-1 (get-current-date))
+(println (str curr-time-1))
+(def curr-time-2 (get-current-date))
+(println (str curr-time-2))

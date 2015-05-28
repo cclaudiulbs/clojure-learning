@@ -8,3 +8,19 @@ clojure questions:
 2. keys in a map, are functions??
 	(def myMap {:foo "this is foo" :bar "this bar"})
 	(println (:foo myMap))
+
+3. any "def" declared local variable that references a anonymous-function "fn[]" (think outside the main)
+when is the call to fn[] executed? at compile time + runtime? or only at compile time?
+it is said that "def" referenced func is executed only once, when binding the local var object to the 
+anon-function(at least this is the clojure-doc saying). Is this function also executed at runtime?
+Example:
+(def get-current-date (fn[] 
+                        (Thread/sleep 2000)
+                        (java.util.Date.)))
+(def curr-time-1 (get-current-date))
+(println (str curr-time-1))
+(def curr-time-2 (get-current-date))
+(println (str curr-time-2))
+;; --> from this example -> there is a compilation invocation and also a runtime invocation
+;; --> if clojure evaluates the expressions at compile time, by executing the actual code ->
+;; --> there might be important penalties for code that requires an expensive resource...
