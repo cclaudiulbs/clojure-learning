@@ -14,8 +14,8 @@
   [callback & tail-args]
   (map callback tail-args))
 
-(def lessThanThirty 
-  (fn[someNum] 
+(def lessThanThirty
+  (fn[someNum]
     (when (< someNum 30)
       (str "Less than thirty...")
      (if (> someNum 30)
@@ -119,7 +119,7 @@
 (def foo 24)
 (println foo)
 (let [foo "something else"] foo);; foo refers to "something..." ONLY in let created scope!!!
- 
+
 (def myMap {:foo "this is foo" :bar "this bar"})
 (println (:foo myMap))
 
@@ -176,7 +176,7 @@
 
 ;; ups, lets convert the list of vectors back to a hash-map, using the [into] func
 (into {}
-      (map (fn[[hash-key hash-value]] [hash-key(inc hash-value)]) 
+      (map (fn[[hash-key hash-value]] [hash-key(inc hash-value)])
            {:clojure 1 :others 2}))
 
 ;; output: {:clojure 2, :others 3}
@@ -189,7 +189,7 @@
 
 [1 2 3]
 
-(pr " this is multiline 
+(pr " this is multiline
  string")
 
 (#(+ %1 %2 %3 2) 2 3 4)
@@ -214,11 +214,11 @@
 (def aMap {:a "ei" :b "bi"
            :names ["cc" "dm"]
            :age [33 27]})
-(let[ {eis :a bis :b ages :age} aMap] 
+(let[ {eis :a bis :b ages :age} aMap]
   (+ (first ages) (second ages)))    ;; last expression from let is returned
 
 ; map using "a" & "b" the value corresponding to index 0 and 1 in a map, and KEEP a reference with ":as" to original vector
-(let[{a 0 b 1 :as orig-foo} foo] 
+(let[{a 0 b 1 :as orig-foo} foo]
   (conj orig-foo a b))
 
 (def customer {:name "cclaudiu" :age 33 :location "Titan nr 6"})
@@ -245,7 +245,7 @@
 
 (let[[x y z] '(1 2 3)] (+ x y z)); same with:
 
-(let[ x 1 
+(let[ x 1
       y 2
       z 3]
   (+ x y z))
@@ -284,18 +284,131 @@
   keys)
 (println)
 
-(def call-twice (fn [f x] 
+(def call-twice (fn [f x]
                   (f x)
                   (f x)))
 (call-twice println 33); 33 \n 33
 
 (defn call-twice [f x] (f x) (f x))
 (call-twice println 5); 5 \n 5
-  
-(def get-current-date (fn[] 
-                        (Thread/sleep 2000)
+
+(def get-current-date (fn[]
+                        (Thread/sleep 200)
                         (java.util.Date.)))
 (def curr-time-1 (get-current-date))
 (println (str curr-time-1))
 (def curr-time-2 (get-current-date))
 (println (str curr-time-2))
+
+(reduce (fn[m, v]
+          (assoc m v(* v v))) {} [2 3 4])  ; long version using anons functions
+(reduce #(assoc % %2 (* %2 %2)) {} [2 3 4]); short version using function literals
+
+;; apply works only by providing the sequence of all the arguments
+;; partial application, is achieved in Clojure by "partial" func
+(def only-strings (partial filter string?)); here "filter" func accepts the predicate and the collection
+(only-strings ["cc" 232 "cosar"]); we're passing only the predicate, and bind a local variable
+; to point to the partial application func, that "partial" creates(a func) we'll use to pass the rest of args collection
+
+;; function composition via "comp" HOF
+(def str-negate-sum (comp str - +))
+(println (str-negate-sum 1 2 3 4))
+; apply + on the args, then apply -, then strigify the result of sum+negation
+
+;; in clojure every symbol/keyword is bound to a specific schema
+;; --> collisions of symbols with functions may appear(per ns)
+;other=> (ns user)
+;nil
+;user=> (resolve 'foo)
+;#'user/foo
+;user=> (ns other)
+;nil
+;other=> (resolve 'foo)
+;nil
+
+(defn max-num
+  [func coll]
+  (reduce #(if(func %1 %2) %1 %2) coll))
+;; second representation using anon func for "reduce" HOF
+;; here the %1 %2 are the arguments that "reduce" is calling internally by itself
+
+(defn max-num-1
+  [func coll]
+  (reduce (fn [x y] (if(func x y) x y) )
+          coll))
+
+;; which one is a flavor, however i prefer the more verbose one since it's more readable
+;; same applies for x & y, arguments called by reduce itself internally
+;; the func is passed and used internally by reduce, and we're passing the outer defined arg-func
+(max-num > [12 13 3 4 5])
+(max-num-1 > [12 13 3 4 5])
+
+;; What is Persistent Data Structures:: Clojure refers to a more older terminology of persistent,
+;; and means: immutable data-structures in memory, which have defined some properties.
+;; plain java data-structures are NOT immutable and hence they can be manipulated as:
+(def plain-ds (into-array [:first :second :third]))
+(seq plain-ds); works on java arrays
+
+;; mutate the java array by using the "aset" func:
+(aset plain-ds 1 :other)
+(seq plain-ds); plain-ds HAS changed!!!
+
+;; here's the clojure version of immutable/persistent data-structures
+(def clj-ds [:first :second :third])
+(eval clj-ds)
+(def clj-ds-1 (replace {:second :other} clj-ds))
+(eval clj-ds)  ; :first :second : third
+(eval clj-ds-1); :first :other :third
+
+;; clojure compares by value using the equality operator; however when comparing
+;; using "identical" func, diff results appear:
+	;one=> (def a-map {:one "one"})
+	;#'one/a-map
+	;one=> (def another-map {:one "one"})
+	;#'one/another-map
+	;one=> (identical? a-map another-map)
+	;false
+	;one=> (= a-map another-map)
+	;true
+
+ ;; Clojure always classifies each composite data-structure in a logical set of 3 diff categories:
+ ;; sequnce, map and set. Two data-structures cannot every be equal if they belong to a diff logical category.
+;; beware that if two data-structures(vector & list) have the same content(elements) = func returns true,
+;; they are evaluated as being in the same logical ds-category by content. But this fails for comparing
+;; ds from diff categories.
+;one=> (= [1 2 3] '(1 2 3))
+;true
+;one=> (= [1 2 3] #{1 2 3})
+;false
+
+;; Vectors::
+(get [] 0); nil
+(get [] 2 :none)
+; (nth [] 2); IndexOutOfBoundsException
+(nth [] 0 "not founddd")
+; ([] 2); throws a IndexOutOfBoundsException
+
+(def a-vector (vec (range 1 20)))
+a-vector
+(rseq a-vector); 19 18...1 --> traversed from right to left -> very efficient: reverse traversal
+(seq a-vector); not so efficient --> normal sequential traversal
+
+;; index must be <= count a-vector
+(assoc a-vector (count a-vector) "another token")
+
+;; replace HOF uses assoc internally
+(replace {"cc" "ff"} ["cc" "mm" "dd"]); "ff" "mm" "dd" -> returns a NEW vector
+(replace {:one "thirty-one" :two "thirty"} (keys {:one "one" :two "two"}))
+;; get the keys from hash into a list -> replace each element of list with a string provided in replacement-map
+
+;; assoc-in + get-in + update-in are working with nested data-structures, such as matrixes
+(def a-matrix [[1 2 3]
+               [4 5 6]
+               [7 8 9]])
+
+(get-in a-matrix [1 2]); 6
+(assoc-in a-matrix [1 2] "replacement for 6"); replaces/associates the position with new value in the newly returned vector
+(update-in a-matrix [1 2] * 100)
+; takes a function and the rebind value -> uses the passed in value to work with the function passed
+
+(source ever)
