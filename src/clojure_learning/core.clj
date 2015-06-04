@@ -411,4 +411,24 @@ a-vector
 (update-in a-matrix [1 2] * 100)
 ; takes a function and the rebind value -> uses the passed in value to work with the function passed
 
-(source ever)
+(require 'clojure.repl)
+
+;; using [loop] + [recur] to build a map function in rudimental forms
+(defn map-rec
+  "map-rec is a function that simulates the power of built-in map"
+  [func & [collection]]                          ; 1) destructure the function args into the first arg-func + container
+  (loop [acc-coll []                             ; 2) start with an empty accumulator
+         current-coll collection]                ; 3) current-coll takes the initial passed collection
+    (if (empty? current-coll)
+        acc-coll
+        (recur (conj acc-coll (func (first current-coll))) (rest current-coll))))
+)
+;; imagine loop as a function that establishes the next point of recursion.
+;; in order to be "recur" while traversing the collection, the "accumulator", which
+;; do NOT mutates, will be passed as the loop rebound argument, while the collection
+;; is being popped by each recursive invocation
+;; 4) populate the accumulator with the first element mapped by func + use this accumulator with the
+;;    first element to invoke the next time the recursion, and pass the rest of collection except first element
+;; demo::
+(def mapped-items (map-rec #(str "func applied: " %1) ["cclaudiu" "mary"]))
+(println mapped-items)
