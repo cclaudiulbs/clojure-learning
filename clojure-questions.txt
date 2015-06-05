@@ -27,3 +27,15 @@ Example:
 ;; --> from this example -> there is a compilation invocation and also a runtime invocation
 ;; --> if clojure evaluates the expressions at compile time, by executing the actual code ->
 ;; --> there might be important penalties for code that requires an expensive resource...
+questions:
+1. why the throwing of exceptions is NOT unified? across the APIs: pop throws exception while rest not
+2. why the so diff behavior of cons & conj for vectors for example?
+3. why cons returns a sequence back? along with: next + rest
+4. next on a one-item list returns nil, whereas rest and pop both return an empty list.
+5. contains? throws an exception when invoked on a persistentList, while on vector looksup over indices/keys
+6. (cons 1 nil) -> (1); [cons] treats nil in this context as an empty seq
+7. (pop '(1 2 3 4)); (2 3 4)??? wtf": pop poppes an element from the start of the list
+8. there's no way of popping from the top of the list! right? all the ops on lists operated from the
+  start of the list
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -154,3 +154,175 @@
 
 (def partial-add (partial +))
 (partial-add 1 2)
+;; Anything you type in here will be executed
+;; immediately with the results shown on the
+;; right.
+
+(defn foo [x]  (* x x))
+(def squared (foo 4))
+
+(def a-vec-1 (vec (take 20(range 40 65))))
+(get a-vec-1 0)
+(nth a-vec-1 0)
+(a-vec-1 0)
+
+(def nested-vec [[1 2 3]
+                 [4 5 6]
+                 [7 8 9]])
+(get-in nested-vec [1 2])
+
+
+(require 'clojure.repl)
+(assoc-in nested-vec [1 2] 81)
+(doc update-in)
+(update-in nested-vec [1 2] * 44)
+; take the old-value -> itentified by the position of keys -> feed its corresponding
+; value as argument to the function
+
+(defn my-map
+  "recursively traverses the collection applying the provided function returning a new collection of transformed items"
+  [a-func & container]
+  (loop [tail-items (vec container)
+         acc-items []]
+      (if (empty? tail-items)
+        acc-items
+
+        (recur (pop tail-items) (conj acc-items (a-func (peek tail-items)))))
+  )
+
+)
+
+(doc my-map)
+
+(def other-nums (my-map #(str "prefix: " %1) "cc" "dd"))
+(println other-nums)
+
+(next [1 2 3])
+(pop [1 2 3])
+
+
+;; Lists and all about them :)
+;; a persistentList is a LINKED LIST internally, where each node knows its distance from the end.
+;; any element CAN ONLY be found in a clojure-list starting from the begg of the list and walking fw till end.
+;; any element can ONLY be removed or inserted at the start of the list(the leftmost position)
+;; rarely provide any value added over vectors -> hence are not so used.
+
+;; both: [cons] + [conj] add something to the begg of the list.
+
+(cons 1 [2 3 4]); (1 2 3 4)
+(conj [2 3 4] 1); [2 3 4 1]
+;; on vectors as seen [cons] + [conj] both add one element but: [cons] acts like [unshift] from JS
+;; in that it ADDS the element on the start and returns a SEQUENCE instead of the vector itself
+;; [conj] works as expected: for vectors it adds on top of the stack, for lists at the begg of the list
+;; explain: [cons] on vector adding on the begg of the data-structure??? maybe because clojure evals first the
+;; arguments and the operand-in this case the function cons -> and it knows the function will pre-generate
+;; a sequence on the eval of args step; that sequence is used instead to "now normally" prepend the element
+;; on the begg of the list.
+
+
+(conj '(2 3 4) 1); (1 2 3 4)
+(cons 1 '(2 3 4)); (1 2 3 4)
+;; therefore [conj] & [cons] work the SAME on PersistentLists, however they diff in the order of args passed
+
+(doc cons)
+
+;; USE [cons] only FOR SEQUENCES, lazy sequences, ranges! do not use [cons] for vectors(at it returns a sequence back)
+;; and do not use [cons] for persistentLists because the result is not guaranteed that it will behave consistently
+
+(pop []); throws IllegalStateException: cannot pop empty vector
+(pop '()); throws IllegalStateException: cannot pop empty list
+(next []); nil
+(next '()); nil
+(rest []); ()
+(rest '()); ()
+
+
+(contains? [1 2 3] 2)
+(contains? '(1 2 3) 2); IllegalArgumentException: contains? not supported on persistentLists
+
+;; dont use lists to find items by index! because clojure starts from the begg in finding the item -> O(n)
+;; practical reason why:
+((list 1 2 3) 0); ; classCastException
+
+(cons 1 nil)
+
+(cons 1 '(2 3 4)); (1 2 3 4)
+(pop '(1 2 3 4)); (2 3 4)??? wtf": pop poppes an element from the start of the list
+(peek '(1 2 3 4)); 1
+;; [pop] + [peek] of PersistentStack funcs operate on lists from the begginging!!!
+
+
+;; because any persistentList implements the PersistentStack which provides the: [peek] + [pop] funcs
+(peek '(1 2 3)); 1
+(pop '(1 2 3)); (2 3)
+;; as seen the peek is the same as: [first]; while [next] & [rest] is the same as [pop]
+
+(next '(1 2 3)); (2 3)
+;; same as [rest]
+(rest '(1 2 3)); (2 3)
+;; the differences come when the collection is empty, or has 1 element
+(pop '(1)); ()
+(rest '(1)); ()
+(next '(1)); nil
+
+(pop '()); illegalStateException:: cannot pop empty list
+(next '()); nil
+(rest '()); ()
+
+(pop []); illegalStateException:: cannot pop an empty vector
+(next []); nil
+(rest []); ()
+
+;; its OK that the vectors + lists share the same behavior, for these 3 funcs, however the vectors works from top of the stack
+;; while the lists work this funcs from the start of the list(leftmost)
+
+(cons 1 [2 3 4]); (1 2 3 4) --> returns a seq back, and as seq work by adding items to the start of the list
+
+(into [] (rest [1 2 3])); [2 3]
+
+(pop [1]); []
+;; IMPORTANT: for vectors! use always ONLY: [conj] + [pop];
+;; DON'T USE [cons] + [next] + [rest] as they all return a sequence back -> and the results are based on the SEQ
+;; NOT based on the initial vector passed; there's a "cast" into based on the func type: cons + next + rest ->
+;; the type of collection is identified(seq, hashes, vectors) -> and then converted to certain type
+;; then the operation is performed
+
+(first {:one 1 :two 2}); [:one 1]
+(vector? (first {:one "one" :two "two"})); true
+(seq {:one 1 :two 2}); ([:one 1] [:two 2])
+
+(doseq [[each-key each-val] {:one 1 :two 2}]
+  (println (str "each key: " each-key ", each val: " each-val)) )
+
+(source doseq)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; QUEUEs: FIFO as oposed to vectors which behave MORE like STACKs(LIFO)
+;; peek -> peeks the first element from queue without removing
+;; conj -> adds on element at the top of the queue
+;; pop -> return a new queue with the leftmost(first) element removed from queue
+(def my-queue (conj clojure.lang.PersistentQueue/EMPTY "one" "two" "three"))
+(peek my-queue); "one"
+(def new-queue (conj my-queue "four"))
+(count my-queue); 3
+(count new-queue); 4
+(sequential? my-queue); true
+
+(def init-queue (pop new-queue))
+(count init-queue); 3
+(= my-queue init-queue); false
+(identical? my-queue init-queue); false
+eval my-queue
+(doc mapcat)
+
+;; queues are not a common behavior thus clojure did NOT incorporate naturally in its language, but provides a simple way
+;; to start build one from the [clojure.lang.PersistentQueue/EMPTY];
+
+(= [1 2 3] [1 2 3]); true
+(= '(1 2 3) '(1 2 3)); true
+
+
+;; DO NOT BE TEMPTED TO use [rest] for QUEUES!!! instead of [pop]; always use POP.
+;; why? because [rest] indeed removes the first element from queue -> BUT IT is a list/seq like operation
+;; and hence the data-structure(queue) is translated to a 'seq' before -> and in return of [rest] -> we get
+;; a seq back NOT a queue.
