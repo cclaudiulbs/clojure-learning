@@ -326,3 +326,170 @@ eval my-queue
 ;; why? because [rest] indeed removes the first element from queue -> BUT IT is a list/seq like operation
 ;; and hence the data-structure(queue) is translated to a 'seq' before -> and in return of [rest] -> we get
 ;; a seq back NOT a queue.
+
+;;;;;;;;;;; Clojure SETS ;;;;;;;;;;;;;
+;; immutable unsorted collections
+;;
+;; lookup by using set-coll as a function
+(#{:a :b :c :d} :a); :a
+
+;; lookup by using :key of the set-coll as a function
+(:a #{:a :b :c}); :a
+
+;; lookup by using the abstract get passing the :key
+(get #{:a :c :d} :a); :a
+
+;; lookup for not-found, and specify a default :key
+(get #{:a :c :d} :z :not-found); :not-found
+
+(get #{:a :c :d} :z); :nil
+
+([1 2 3] 0); 1
+
+;; as said earlier, trying to find an element within a vector using the [contains?] function
+;; will not produce the expect result, contains takes a :key/index instead of the value;
+;; however clojure provides the [some predicate coll] function that returns the first
+;; element that evaluates to true;
+(doc some)
+(some #{3} [1 2 3]); 3
+;; a common clojure idiom for replicating the [contains?] behavior for vectors
+;; the set-predicate in this case, finds if any of truthy values in the set are contained in the collection
+
+;; clojure-sorted-sets have one thing to mention about:
+;; as in java they should all be of the same type!!! if mixing the :key with numbers, say -> ClassCastException is
+;; being threw!
+(def my-sorted-set (sorted-set :c :a :b)); #{:a :b :c}
+(conj my-sorted-set "not keyword"); ClassCastException is thrown!
+
+;; because the internal comparator is comparing by 1 type, and they are not the same type
+;; however we can provide the comparator to use
+(def my-sorted-set-comp (sorted-set-by #((comp > str) %1 %2) "ab" "cc" "dd" :d))
+(println my-sorted-set-comp); #{:d dd cc ab} --> as you see there's no ClassCastException
+                            ; for diff types when a comparator is provided in place
+
+(doc sorted-set-by)
+;; internally set behaves as the hash, but values are bound to the corresponding :keys; each :key = each value
+;; however a cross check is made for each :key while insertion.
+
+;; import a function into the current namespace via:
+(ns other
+  (:require clojure.set))
+
+;; or require the function on the fly:
+(require 'clojure.set)
+
+;; clojure purely inherits the mathematical principles of sets: Intersection, Union, Difference
+(clojure.set/intersection #{1 2 3 4}
+                          #{3 4 5 6}); #{4 3}
+(clojure.set/union #{1 2 3}
+                   #{3 4 5 6}); #{1 4 6 3 2 5}
+(clojure.set/difference #{1 2 3 4}
+                        #{3 4 5 6}); #{1 2}
+;; one would expect that [clojure.set/difference] would give a result: #{1 2 5 6}
+;; however [difference] func returns something like the collection A - collection B;
+
+;;;;;;;;;;;;;;;;; Hashes ;;;;;;;;;;;;;;;;;;
+;; many of the clojure collection act as FUNCTIONS of their KEYS.
+;; --> hash-map collection can be invoked as a function passing as arg the KEY to lookup
+;; --> Keys can be used as well as functions that lookup themselvs in the hash-map container passed as argument.
+;; strange but nice :)
+(def my-hash-map {:a 2
+                  :b 4
+                  :c 5})
+;; hash-map collection as afunction
+(my-hash-map :a); 2
+
+;; hash-map key as a function
+(:c my-hash-map); 5
+
+(get my-hash-map :b); 4
+(get my-hash-map :z :not-found); returns nil or default: :not-found
+
+;; hash-map uses as we would expect the [seq] function as "iterator", which returns a sequence of MapEntrys tuples(in a vector)
+(seq my-hash-map); ([:a 2] [:b 4]...)
+
+;; ' means do not evalute!!! use as a string literal
+(use 'clojure.repl)
+(use 'clojure.java.javadoc)
+;; using the doseq sequence abstraction, we can iterate through, by destructuring each MapEntry into a bound key-value synonyms
+;;
+(doseq [[mk mv] my-hash-map]
+  (println (str "my map with key: " mk ", value: " mv))); as expected...
+;; internally the [doseq] function abstraction starts iterating through the hash-map-entries
+;; and we destructure EACH map-entry into a valuable synonyms
+(doc doseq)
+
+(into {} (seq my-hash-map)); {:a 2, :b 4, :c 5}
+
+;; even if our pairs are NOT vectors we can transform them to be:
+(def a-vec-of-lists '[(:a 1) (:b 2)])
+(into {} (map vec a-vec-of-lists)); {:a 1, :b 2}
+;; hey [map] func, take the [vec] function which accepts 1 arg, and while each iteration
+;; apply me the [vec] function over the iterated-list-pair
+
+(apply hash-map [:a 1 :b 2]); {:b 2, :a 1}
+(zipmap [:a :b] [1 2]); {:b 2, :a 1}
+;; zipmap takes exactly 2 arguments and pairs them to return a map back
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Exercise_1: build a function that given an element -> would return the positional index of it in the container
+;; should work a a sequence abstraction, disregarding the container type: if hash-map || hash-set -> :key
+;; else if sequence -> index. <<---- DONE!
+(defn pos
+  "for the given item-arg -> pos returns the index for sequences || unsorted sets/hash-maps containers
+     pos :a [:b :c :a] -> 2
+     pos :z #{:a :b: :z} -> :z
+     pos :foo {:bar 2 :foo 3} -> :foo"
+  [item container]
+    (cond
+       (set? container)
+          (item container)
+        (map? container)
+          (when (not (nil? (some #(identical? item %1) (keys container))))
+            item)
+        :else
+          (let [seq-container (seq container)]      ; one-time transformation
+              (loop [init-ret-val 0
+                     popped-container seq-container]
+                (cond (empty? popped-container)
+                        nil
+                      (= item (first popped-container))
+                        init-ret-val
+                :else
+                      (recur (inc init-ret-val) (rest popped-container)))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TESTING the [pos] custom built function:
+(pos :a {:b 2, :z 1, :a 3}); :a
+(pos :a #{:b 2 :a 3}); :a
+(pos 2 [1 2 3 4]); 1
+(pos "cc" '("aa" "bb" "cc" "dd")); 2
+
+(pos :m {:b 2, :z 1, :a 3}); nil
+(pos :c {}); nil
+(pos :c #{}); nil
+(pos 333 [1 2 3]); nil
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(cond (set? #{:b 2 :a 3}) "set"); set
+(get #{:b :a 3} :a); :a
+
+(:a #{:a}); :a
+(some #(identical? :h %1) (keys {:a 2 :z 22 :b 3})); nil
+(when (zero? (some #(compare :a %1) (keys {:a 2 :b 3})))
+  :z)
+
+(cond
+   (zero? (some #(compare :b %1) (keys {:a 2 :b 3})))
+      :b
+   :else
+     (cond (nil? nil)
+           nil)
+      :else :z); nil
+
+(some #(= :a %1) [1 2 3])
+(= :a "b")
+
+(vector? [1])
+(keys {:a 2 :v 3})
+(map? {})
+(zero? (some #(compare :z %1) (keys {:a 2 :b 3})))
