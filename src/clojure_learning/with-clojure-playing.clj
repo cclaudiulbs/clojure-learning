@@ -493,3 +493,120 @@ eval my-queue
 (keys {:a 2 :v 3})
 (map? {})
 (zero? (some #(compare :z %1) (keys {:a 2 :b 3})))
+
+;;;;;;;;;;;;;;; Shared Structures:: Concepts + Implementation ;;;;;;;;;;;;;;;;
+(def base-list (list "cclaudiu" "cosar"))
+(def child-list-1 (cons "petra" base-list))
+(def child-list-2 (cons "clojure" base-list))
+(= (next child-list-1) (next child-list-2)); true --> equal by comparing the list-elements by their values
+(identical? (next child-list-1) (next child-list-2)); true --> the same shared structure(base-list) is also identical
+
+;; we can think of the base-list as a historical version of both childs, but it's also the shared part of both childs.
+
+
+;; to illustrate how the shared-data-structures are working internally we'll put another exercise on our TODO list
+;; we'll build a shared-tree-data-structure.
+;; requirements:
+;;   + each node of the Tree will have 3 fields(a value, a left-branch, a right-branch)
+;;   + expose the functionality through a "tree-conj" function having the interface:
+;;     defn tree-conj tree-node tree-value -> tree-node
+;;        - if the given value of the new node is smaller than current value -> go to :left-branch, :else :right-branch
+;;   + expose a flatten function, that will flatten the tree-data-structure:
+;;     defn tree-flatten tree-node -> [&tree-node]
+
+;;                       node
+;;       node-val   left-link      right-link
+
+;; each node will be constructed as a map: {:node-val :left-branch :right-branch}
+
+;; start from small: this is the most-leaf node -> if the tree-node is nil? then this node has NO left/right linking
+(defn tree-conj
+  [tree-node tree-value]
+  (cond
+     (nil? tree-node)
+       {:node-val tree-value
+        :left-branch nil
+        :right-branch nil}
+   ))
+
+;; test:
+(def tree-node-1 (tree-conj nil 5)); {:node-val 5, :left-branch nil, :right-branch nil}
+
+;; if the value of the current-tree-node is higher than the new-value -> go to :left-branch
+;; this corresponds to the following cond-branch:
+;; (< tree-value (:node-val tree-node) )
+(defn tree-conj
+  [tree-node tree-value]
+  (cond
+     (nil? tree-node)
+       {:node-val tree-value
+        :left-branch nil
+        :right-branch nil}
+
+     (< tree-value (:node-val tree-node) )  ; new-tree-value < current node's tree-value -> go to leftbranch, by calling recursively
+       {:node-val (:node-val tree-node)     ; copy current value
+        :left-branch (tree-conj (:left-branch tree-node) tree-value)
+        :right-branch nil
+        }
+     ))
+
+;; test:
+(def tree-node-1 (tree-conj tree-node-1 3))
+; {:node-val 5, :left-branch {:node-val 3, :left-branch nil, :right-branch nil}, :right-branch nil} --> WHOOOOOHOOOOO :)
+
+;; adding more nodes to inital tree-node-1
+(def tree-node-1 (tree-conj tree-node-1 2))
+; {:node-val 5, :left-branch {:node-val 3, :left-branch {:node-val 2, :left-branch nil, :right-branch nil}, :right-branch nil}, :right-branch nil}
+
+;; now that we have a working solution for adding tree-nodes and sharing their structure we can handle the :right-branch as awell
+
+(defn tree-conj
+  [tree-node tree-value]
+  (cond
+     (nil? tree-node)
+       {:node-val tree-value
+        :left-branch nil
+        :right-branch nil}
+
+     (< tree-value (:node-val tree-node) )      ; new-tree-value < current node's tree-value -> go to leftbranch, by calling recursively
+       {:node-val (:node-val tree-node)         ; copy current value
+        :left-branch (tree-conj (:left-branch tree-node) tree-value)   ; go recursively to the tree-node referenced by :left-branch!!!
+        :right-branch (:right-branch tree-node) ; copy current right-branch
+        }
+
+     :else
+       {:node-val (:node-val tree-node)                                 ; copy existing :node-val
+        :left-branch (:left-branch tree-node)                           ; copy existing :left-branch
+        :right-branch (tree-conj (:right-branch tree-node) tree-value)} ; go recursively to the tree-node referenced by :right-branch!!!
+     ))
+
+;; testing the function:
+(def tree-node-1 (tree-conj nil 5)); {:node-val 5, :left-branch nil, :right-branch nil}
+(def tree-node-1 (tree-conj tree-node-1 3))
+(def tree-node-1 (tree-conj tree-node-1 2))
+(def tree-node-2 (tree-conj tree-node-1 29))
+; {:node-val 5, :left-branch {:node-val 3, :left-branch {:node-val 2, :left-branch nil, :right-branch nil}, :right-branch nil}, :right-branch {:node-val 29, :left-branch nil, :right-branch nil}}
+; here the node-val with 2 is the most inner node -> at the bottom of the tree, whereas node-val 29 identifies another tree node that is linked
+; from the initial-node-val 5
+
+;;                     tree-node-1
+;;                     node-val 5
+;;               :L 3              :R tree-node-2
+;;         :L 2       :R nil         node-val 29
+;;   :L nil   :R nil             :L nil          :R nil
+
+
+;; and this summarizes the tree structural sharing example
+
+;;;;;;;;;;;;;;;;;;;;;; Being lazy ;;;;;;;;;;;;;;;;;;
+;; taking a collection as argument -> destructure the collection marking first & rest items of the collection
+(defn step-coll [[head-arg & tail-args]]
+  (if head-arg
+    [head-arg, (step-coll tail-args)]
+    []
+))
+(step-coll [1 2 3 4 5]); [1 [2 [3 [4 [5 []]]]]]
+
+(step-coll (range 200000))
+
+(doc range)
