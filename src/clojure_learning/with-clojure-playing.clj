@@ -610,3 +610,78 @@ eval my-queue
 (step-coll (range 200000))
 
 (doc range)
+
+;; to implement the step-coll as a lazy-seq, we need to place the [lazy-seq] macro AT THE TOP of the function
+;; providing as its body the sequence needed to work on:
+(defn lazy-step-coll
+  [coll]
+  (lazy-seq                        ; this is the macro: lazy recipes reccommend: place this macro at the top!
+     (if (seq coll)                ; the inner-sequence to work on; returns nil for empty sequence; our break-out recursion cond
+       [ (first coll) (lazy-step-coll (rest coll)) ] )))    ; instead of returning a list back -> work on the vector data type
+                                   ; [item1 (item2...)] -> using the sequence to "store" the lazy sequence inside this structure
+
+(seq '()); nil
+(seq []); nil
+
+(lazy-step-coll [1 2 3 4 5]); (1 (2 (3 (4 (5)))))
+
+;;;;;;;;;;;;;;; Lazy Recipes recommend the following 2 points(for the moment): ;;;;;;;;;;;;;;;;;
+;; always use the [lazy-seq] macro at the TOP of the function body, when working on a sequence.
+;; always use [rest] instead of [next] to process lazy sequences:
+;;   + because [next] will eagerly check if the container is empty ? nil, while [rest] will return an empty list back
+;; Watch out that DEPENDING on the function types -> the arguments ARE CONVERTED to sequences(lists) during evaluation
+(rest []); ()
+(next []); nil
+
+;; some examples of thread-first + thread-last macros
+(require '[clojure.string :as str])
+
+(-> "cclaudiu"); "cclaudiu"
+
+(str/split "cclaudiu" #""); ["c" "c"...]
+
+
+;; combining thread-first with thread-last macros for buidling powerful expresive process-chains
+(-> "claudiu"
+    (str/split #"")
+    rest
+    (->> (filter (fn[each] (re-find #"\w+" each))); pass the result from [rest] as the LAST item int the FIRST FORM
+         (map #(str "char: " %1))                 ; ->> passes the result of the first form as the LAST arg in the next form, for map(the ds in this case)
+    ))
+; ("char: c" "char: l"...)
+
+
+(doc str/upper-case)
+(doc filter)
+(re-find #"\w" ".")
+
+(defn lazy-step-coll-1
+  [coll]
+  (lazy-seq
+     (if (seq coll)
+       [(first coll) (lazy-step-coll-1 (rest coll))])
+      ))
+(lazy-step-coll-1 '(1 2 3 4 5))
+
+;; how about implementing a simple range -> using lazy-seq, a rudimental impl of the [range]
+(range 10)
+(defn lazy-range
+  [upper-bound]
+  (lazy-seq
+     (loop [start upper-bound      ;; start with upper-bound -> decreasing since its recursive
+            acc-coll []]           ;; cons translates the [] into a sequential/list first
+       (cond
+          (< start 0)
+            acc-coll               ;; exit recursion condition
+        :else
+          (recur (dec start) (cons start acc-coll))
+        )
+      )
+   ))
+;; we're using the decremental approach, since "cons" translates the vector to list + list cons pushes each element from first-leftmost position
+;; 10 9 8 -> would become: (10) 9 8 -> (9 10) 8 -> (8 9 10)
+(lazy-range 10); (0 1 2 .. 10)
+(class (lazy-range 10)); clojure.lang.LazySeq
+
+(doc while)
+(doc for)
