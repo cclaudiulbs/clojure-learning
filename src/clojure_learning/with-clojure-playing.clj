@@ -685,3 +685,33 @@ eval my-queue
 
 (doc while)
 (doc for)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; some practice & training :) how to returns the same number again and again using diff approaches
+; (solutions to exercises from 4clojure.com)
+(->> (range)
+    (take 4)
+     last); 3
+
+((comp last (partial take 4) range) 100); 3
+(peek (reverse (list 1 2 3)))
+
+(loop [start 10
+      coll-acc []]
+  (cond
+   		(< 40 start)
+   		coll-acc
+   :else
+   		(recur (* (inc 1) start) (conj coll-acc start)))); [10 20 40]
+
+(rest (into [] (range 10 49 10))); [20 30 40]
+(use 'clojure.repl)
+(doc range)
+(cons 1 [])
+(conj nil 1 2); (2 1)
+(conj [] 1 2); [1 2]
+
+;; functions...
+(let [[_ & tail-args] (range 9)]
+  (-> tail-args
+      last)); 8
