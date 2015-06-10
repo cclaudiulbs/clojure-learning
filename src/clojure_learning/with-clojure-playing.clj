@@ -715,3 +715,38 @@ eval my-queue
 (let [[_ & tail-args] (range 9)]
   (-> tail-args
       last)); 8
+
+;; how to build a lazy iteration using recursion:: simulating the [range] func again
+(defn lazy-range
+  [start-bound upper-bound]
+  (lazy-seq
+     (when (< start-bound upper-bound)
+       (cons start-bound (lazy-range (inc start-bound) upper-bound)))))
+
+(lazy-range 0 10); (0 1 2 .. 9)
+(class (lazy-range 0 10)); clojure.lang.LazySeq
+;; how to read this in clojure: mark the returned sequence using the top-level lazy-seq macro, providing
+;; it's body; [when] returns [nil] when the cond fails when the function is called.
+;; taking 0 10 -> (...cons 9 (nil))
+;; cons 9 is the last condition that mets the [when] clause, while [nil] is the returned expression of the
+;; failing-when condition for start-bound being equal to upper-bound;
+;; this opens the gate that in clojure: cons 1 nil -> will treat nil as an empty container: and return (1)
+(cons 1 nil); 1
+;; therefore: recursive invocation... (cons 1 (...cons 9 (nil))) -> (cons 1 (...(cons 8 (9))))
+;; cons -> will push on the start of the sequence each number; the recursivity is BUILDING the
+;; actual sequence
+
+#_(let [r (range 1e9)]
+  (first r)
+  (last r))
+
+#_(let [r (range 1e9)]
+  (first r)
+  (last r))
+
+;; if those sequences are executed one after the other -> then OutOfMemoryError is triggered, since the compiler
+;; do NOT rearrange the code in Clojure, because the ORDER MIGHT MATTER!
+;; we can keep a sequence in memory if we bind the head of that sequence to a local variable. In this case
+;; the reference to the sequence is lost right after the [last] invocation completes -> the in-memory obejcts are cleared
+;; by the compiler with force brute. The second binding, again creates that in memory ds, but when the [last] func returns
+;; the compiler is overflooded. and crashes, because it will NOT perform any rearranging on the code.
