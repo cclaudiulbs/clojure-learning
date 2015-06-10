@@ -741,12 +741,118 @@ eval my-queue
   (last r))
 
 #_(let [r (range 1e9)]
-  (first r)
-  (last r))
+  (last r)
+  (first r))
 
 ;; if those sequences are executed one after the other -> then OutOfMemoryError is triggered, since the compiler
 ;; do NOT rearrange the code in Clojure, because the ORDER MIGHT MATTER!
-;; we can keep a sequence in memory if we bind the head of that sequence to a local variable. In this case
-;; the reference to the sequence is lost right after the [last] invocation completes -> the in-memory obejcts are cleared
-;; by the compiler with force brute. The second binding, again creates that in memory ds, but when the [last] func returns
-;; the compiler is overflooded. and crashes, because it will NOT perform any rearranging on the code.
+;; we can keep a sequence in memory if we BIND THE HEAD OF THAT SEQUENCE TO A LOCAL VARIABLE.
+;; The current example shows that the reference to the sequence is lost right after the [last] invocation completes
+;; the compiler is smart enough to notice that [last] was invoked -> the in-memory obejcts are cleared aggresively
+;; by the compiler. While the second binding, again creates that in memory ds, but when the [first] func returns
+;; the compiler thinks the sequence is still needed, and hence DO NOT CLEARS it, since the head of the sequence is kept.
+
+(doc delay)
+(doc force)
+(defn defer-expensive
+  [cheap expensive]
+  (if-let [result (force cheap)]; if cheap is a Delay -> returns cached value, else returns cheap-value
+    result
+    (force expensive)))
+
+;; demo:
+(def exp (defer-expensive
+  (delay "some delayed object")
+  (delay
+     (do
+       (Thread/sleep 3000)
+       "an expensive lazy object NOT returned because first-arg yields in a truthy!")))); "some delayed object"
+
+(delay false); Delay Object returned
+(force (delay false)); false
+(defer-expensive
+  (delay false)
+  (delay
+     (do
+       (Thread/sleep 3000)
+       "this is executed eagerly")));
+
+;; or another example might be:
+(defn build-container-w-range
+  [upper-bound]
+  (delay
+     (list (range 1 upper-bound))))
+(def not-container-yet (build-container-w-range 10))
+(def now-a-container (force not-container-yet))
+
+;; setup for the quick-sort in clojure :) ;;
+(doc partition)
+(def a-vec [4 3 1 5 6 2 8])
+(ratio? (/ (count a-vec) 2)); true
+(int (/ (count a-vec) 2)); (/ 7 2) -> 3
+(partition (int (/ (count a-vec) 2)) a-vec)
+
+(doc if-let)
+
+(defn quick-sort
+  [container]
+  (let [total (count container)]
+    (if (even? total)
+        (let [partitioned-colls (partition (/ total 2) container)
+              pivot ((comp first flatten rest) partitioned-colls)
+              first-from-1 ((comp first first) partitioned-colls) ]
+
+              (loop [part-1   (first partitioned-colls)
+                     part-2   (-> partitioned-colls
+                                 rest
+                                 flatten)
+                     each-from-first   first-from-1
+                     each-from-sec     (first (rest part-2))]
+                  (cond
+                     (> each-from-first pivot)
+                       (do
+                          (println (str "higher: " each-from-first))
+                          (recur
+                            (rest part-1)
+                            (conj (vec part-2) each-from-first)
+                            (first (rest part-1))
+                            (first part-2))
+                         )
+
+                     (< each-from-sec pivot)
+                       (do
+                         (println (str "smaller: " each-from-sec))
+                         (recur
+                            (cons (vec part-1) (first part-2))
+                            (rest part-2)
+                            (first part-1)
+                            (first (rest part-2)); dont take it twice -> set to the next of part-2
+                          )
+                         )
+                      (nil? each-from-first)
+                       part-2
+                      (nil? each-from-sec)
+                       part-1
+                   :else
+                     [part-1 part-2]
+                    )
+                )
+          )
+    )))
+
+(def a-vec [4 3 1 5 6 2 8])
+(quick-sort (pop a-vec))
+(conj (vec (list 3 4 5)) 1)
+(conj (list 1 2 3) 4)
+(doc list*)
+
+(defn qsort
+  [container]
+  (lazy-seq
+     (let [ [x & [partitioned]] container
+            pivot (first partitioned)
+            smaller? #(< % pivot)]
+       )
+   ))
+(doc remove)
+(doc list*)
