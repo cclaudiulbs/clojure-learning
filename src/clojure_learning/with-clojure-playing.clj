@@ -795,7 +795,7 @@ eval my-queue
 (doc if-let)
 
 ;; book example(joy of clojure...) --> does throw a runtime exception: cannot convert ISeq from Long!
-(defn quick-sort
+(defn quick-sort-book-ex-not-working
   [container]
   (lazy-seq
      (loop [[head & tail] container]
@@ -811,72 +811,30 @@ eval my-queue
           )
     )))
 (quick-sort a-vec)
-(first a-vec)
-
-
-;;               #_(loop [part-1   (first partitioned-colls)
-;;                      part-2   (-> partitioned-colls
-;;                                  rest
-;;                                  flatten)
-;;                      each-from-first   first-from-1
-;;                      each-from-sec     (first (rest part-2))]
-;;                   (cond
-;;                      (> each-from-first pivot)
-;;                        (do
-;;                           (println (str "higher: " each-from-first))
-;;                           (recur
-;;                             (rest part-1)
-;;                             (conj (vec part-2) each-from-first)
-;;                             (first (rest part-1))
-;;                             (first part-2))
-;;                          )
-
-;;                      (< each-from-sec pivot)
-;;                        (do
-;;                          (println (str "smaller: " each-from-sec))
-;;                          (recur
-;;                             (cons (vec part-1) (first part-2))
-;;                             (rest part-2)
-;;                             (first part-1)
-;;                             (first (rest part-2)); dont take it twice -> set to the next of part-2
-;;                           )
-;;                          )
-;;                       (nil? each-from-first)
-;;                        part-2
-;;                       (nil? each-from-sec)
-;;                        part-1
-;;                    :else
-;;                      [part-1 part-2]
-;;                     )
-;;                 )
-;;           )
-;;     ))
-
-(def a-vec [4 3 1 5 6 2 8])
-(quick-sort (pop a-vec))
-(conj (vec (list 3 4 5)) 1)
-(conj (list 1 2 3) 4)
-(doc list*)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Here's my version of quick-sort
 (defn qsort
   [container]
   (lazy-seq
-     (let [ [x & partitioned :as init-container] container
-            pivot (first partitioned)
-            smaller? #(< % pivot)
-            pivot-less (remove #(= pivot %) init-container)]
+     (let [[pivot & tail-items :as curr-container] container
+            smaller? #(<= %1 pivot)
+            pivot-less (remove #(= pivot %1) curr-container)
+            smaller-parts (filter smaller? pivot-less)
+            higher-parts (remove smaller? pivot-less)]
+         (if (nil? pivot)
+            []
+            (flatten (conj (cons pivot (qsort smaller-parts)) (qsort higher-parts)))))))
 
+;; demo:
+(qsort [4 8 5 10 7 3 9]); (10 9 8 7 5 4 3)
+(qsort [1 3 2 5 4 8 7 10 11 20 13]); WORKS nice!!!
+(iterate #(+ 1 %1) (int (rand 40)))
 
-         (filter smaller? pivot-less)
-         pivot-less
-         (remove smaller? pivot-less)
-
-
-       )
-   ))
-(qsort [4 8 6 9 5 3 10])
-(doc remove); -> the oponent of filter true -> returns items for which the pred returned falsy
+(doc rand)
+(filter #(< %1 4) [8 9]); ()
+(remove #(< %1 4) [1 2]); ()
+(use 'clojure.repl)
 (doc list*)
-(rest '())
-
-(list* 1 3 [32 3])
+(doc remove); -> the oponent of filter true -> returns items for which the pred returned falsy
+(list* 1 2 3 [34 4]); 1 2 3 34 4
+(list* [1 2 3] [4]); ([1 2 3] 4)
