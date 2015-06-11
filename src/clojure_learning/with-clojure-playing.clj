@@ -794,51 +794,63 @@ eval my-queue
 
 (doc if-let)
 
+;; book example(joy of clojure...) --> does throw a runtime exception: cannot convert ISeq from Long!
 (defn quick-sort
   [container]
-  (let [total (count container)]
-    (if (even? total)
-        (let [partitioned-colls (partition (/ total 2) container)
-              pivot ((comp first flatten rest) partitioned-colls)
-              first-from-1 ((comp first first) partitioned-colls) ]
-
-              (loop [part-1   (first partitioned-colls)
-                     part-2   (-> partitioned-colls
-                                 rest
-                                 flatten)
-                     each-from-first   first-from-1
-                     each-from-sec     (first (rest part-2))]
-                  (cond
-                     (> each-from-first pivot)
-                       (do
-                          (println (str "higher: " each-from-first))
-                          (recur
-                            (rest part-1)
-                            (conj (vec part-2) each-from-first)
-                            (first (rest part-1))
-                            (first part-2))
-                         )
-
-                     (< each-from-sec pivot)
-                       (do
-                         (println (str "smaller: " each-from-sec))
-                         (recur
-                            (cons (vec part-1) (first part-2))
-                            (rest part-2)
-                            (first part-1)
-                            (first (rest part-2)); dont take it twice -> set to the next of part-2
-                          )
-                         )
-                      (nil? each-from-first)
-                       part-2
-                      (nil? each-from-sec)
-                       part-1
-                   :else
-                     [part-1 part-2]
-                    )
-                )
+  (lazy-seq
+     (loop [[head & tail] container]
+         (if-let [ [head-pivot & tail-items] (seq head)]
+            (let [smaller? #(< %1 head-pivot)]
+                (recur (list*
+                          (filter smaller? tail-items)
+                          head-pivot
+                          (remove smaller? tail-items)
+                          tail))) ;; -> concat also the tail-parts
+             (when-let [[head-sec & tail-sec] tail]
+                 (cons head-sec (quick-sort tail-sec)))
           )
     )))
+(quick-sort a-vec)
+(first a-vec)
+
+
+;;               #_(loop [part-1   (first partitioned-colls)
+;;                      part-2   (-> partitioned-colls
+;;                                  rest
+;;                                  flatten)
+;;                      each-from-first   first-from-1
+;;                      each-from-sec     (first (rest part-2))]
+;;                   (cond
+;;                      (> each-from-first pivot)
+;;                        (do
+;;                           (println (str "higher: " each-from-first))
+;;                           (recur
+;;                             (rest part-1)
+;;                             (conj (vec part-2) each-from-first)
+;;                             (first (rest part-1))
+;;                             (first part-2))
+;;                          )
+
+;;                      (< each-from-sec pivot)
+;;                        (do
+;;                          (println (str "smaller: " each-from-sec))
+;;                          (recur
+;;                             (cons (vec part-1) (first part-2))
+;;                             (rest part-2)
+;;                             (first part-1)
+;;                             (first (rest part-2)); dont take it twice -> set to the next of part-2
+;;                           )
+;;                          )
+;;                       (nil? each-from-first)
+;;                        part-2
+;;                       (nil? each-from-sec)
+;;                        part-1
+;;                    :else
+;;                      [part-1 part-2]
+;;                     )
+;;                 )
+;;           )
+;;     ))
 
 (def a-vec [4 3 1 5 6 2 8])
 (quick-sort (pop a-vec))
@@ -849,10 +861,22 @@ eval my-queue
 (defn qsort
   [container]
   (lazy-seq
-     (let [ [x & [partitioned]] container
+     (let [ [x & partitioned :as init-container] container
             pivot (first partitioned)
-            smaller? #(< % pivot)]
+            smaller? #(< % pivot)
+            pivot-less (remove #(= pivot %) init-container)]
+
+
+         (filter smaller? pivot-less)
+         pivot-less
+         (remove smaller? pivot-less)
+
+
        )
    ))
-(doc remove)
+(qsort [4 8 6 9 5 3 10])
+(doc remove); -> the oponent of filter true -> returns items for which the pred returned falsy
 (doc list*)
+(rest '())
+
+(list* 1 3 [32 3])
