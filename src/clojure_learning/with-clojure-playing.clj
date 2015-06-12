@@ -817,12 +817,11 @@ eval my-queue
   [container]
   (lazy-seq
      (let [[pivot & tail-items :as curr-container] container
-            smaller? #(<= %1 pivot)
+            smaller? #(< %1 pivot)
             pivot-less (remove #(= pivot %1) curr-container)
             smaller-parts (filter smaller? pivot-less)
             higher-parts (remove smaller? pivot-less)]
-         (if (nil? pivot)
-            []
+         (when pivot
             (flatten (conj (cons pivot (qsort smaller-parts)) (qsort higher-parts)))))))
 
 ;; demo:
@@ -838,3 +837,49 @@ eval my-queue
 (doc remove); -> the oponent of filter true -> returns items for which the pred returned falsy
 (list* 1 2 3 [34 4]); 1 2 3 34 4
 (list* [1 2 3] [4]); ([1 2 3] 4)
+
+(defn quick-sorter
+  [container]
+  (let [pivot (first container)
+        smaller? #(< %1 pivot)
+        higher? #(> %1 pivot)]
+    (when pivot
+      (lazy-cat
+       (quick-sorter (filter smaller? container))
+       (list pivot)
+       (quick-sorter (filter higher? container))))))
+
+(quick-sorter [31 2 1 212 3 4 9 8 6 7]); (1 2 3 4 7 8 9 31 212)
+
+(use 'clojure.repl)
+(doc lazy-cat);  (lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))
+
+
+;;;;;;;;;;;;;;;;; emulating lazy + eager loading using clojure's: delay + force Objects ;;;;;;;;;;;;;;
+(doc when)
+(doc when-let)
+(when-let [foo false]
+    (println foo)
+    "returning this")
+(when false (println "true") "returning this")
+
+(defn emulate-lazy-expr
+  [eager-interpr lazy-interpret]
+    (if (force eager-interpr)
+      (println "this is so eager that will be printed...")
+      (force lazy-interpret)))
+(emulate-lazy-expr (delay false) (delay (do (println "going to sleep for a little") (Thread/sleep 3000))))
+(emulate-lazy-expr (delay "eager-evaluation") (delay (do (Thread/sleep 10000))))
+
+(lazy-cat [3 5 7] [2 3]); (3 5 7 2 3)
+(doc lazy-cat); (lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))
+;;;;;;;;;;;;;;;;;;;;;;
+
+;; Chapter 7:: Functional Programming;;
+;; Composite data-structures in clojure are functions; their content can be passed as arguments to
+;; the composite-types:
+([:a :b] 1); :b
+
+(map [:a :b :c :d] #{0 1}); (:a :b)
+;; use a vector as a function in the map-operation over the given set ds
+
