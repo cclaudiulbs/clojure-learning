@@ -171,7 +171,17 @@
 ( (fn [coll]
     (coll (- (count coll) 2))) [1 2 3])
 
-((fn [[penultimate & tail :as init-coll]]
+;; another one :) that does not depend on hardcoded decimals
+( (fn [[penultimate tail-item & tail :as init-coll]]
     (if (empty? tail)
       penultimate
-      (recur (rest init-coll) ))) [1 2 3])
+      (recur (rest init-coll) )))
+ [1 2 3]); 2
+
+;; small notes:
+;; deconstructuring the state of the recurring collection, as it should appear for last elements
+;; upfront they are head and next one, but when the recursive invocation reaches the condition
+;; obviously they will be bound to the penult + last items
+;; rest here does NOT return a nil never, and always returns an empty collection,
+;; however the nil? condition works as well since the binding is DONE in this case
+;; where the function-args are deconstructed! and NOT in the call to [recur]!
