@@ -185,3 +185,8 @@
 ;; rest here does NOT return a nil never, and always returns an empty collection,
 ;; however the nil? condition works as well since the binding is DONE in this case
 ;; where the function-args are deconstructed! and NOT in the call to [recur]!
+
+
+;; small doseq demo
+(doseq [x [1 2 3]]
+  (println "each: " x)); each 1...each 3
