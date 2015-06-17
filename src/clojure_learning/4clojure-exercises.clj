@@ -68,3 +68,45 @@
       some-num
       (+ (fib (- some-num 1)) (fib (- some-num 2)))))
 (range 1 (inc %))) 8)
+
+(doc letfn)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which returns true if the given sequence is a palindrome.
+;; preparing:
+(clojure.core/reverse "RACE c ar")
+(= "racecar" (apply str (map str/lower-case (remove #(re-seq #"\s" %) (map str (clojure.core/reverse "RACE c ar")))))); true
+(= "113311" (apply str (map str/lower-case (remove #(re-seq #"\s" %) (map str (clojure.core/reverse [1 1 3 3 1 1])))))); true
+(= ":foo:bar:foo" (apply str (map str/lower-case (remove #(re-seq #"\s" %) (map str (clojure.core/reverse [:foo :bar :foo])))))); true
+
+(remove #(re-seq #"\s" %) (map str (clojure.core/reverse [:foo :bar :foo])))
+
+;; my palindrome function(ignoring upper/lower-case & *whitespaces) follows :)
+(defn palindrome? [subject]
+  (let [post-subj (-> subject
+                      ((partial apply str))
+                      (clojure.string/replace #"\s+" "")
+                      (clojure.string/lower-case))
+        processed (->> subject
+                       clojure.core/reverse
+                       (map str)
+                       (remove #(re-seq #"\s" %))
+                       (map clojure.string/lower-case)
+                       ((partial apply str))
+                       )]
+
+    (= post-subj processed)
+    ))
+
+;; testing::
+(palindrome? "racecar")
+(palindrome? "RACE c ar")
+(palindrome? '(1 2 3 4))
+(palindrome? '(1 1 3 3 1 1))
+(palindrome? [:foo :bar :foo])
+(palindrome? '(:a :b :c))
+
+;; others responded with:
+(true? (#(= (seq %) (clojure.core/reverse (seq %))) "racecar")) ;true
+(true? (#(= (seq %) (clojure.core/reverse (seq %))) "RACE c ar"))
+; But here: false, as opposed to my palindrome function which ignores: upper/lowercase & *whitespaces
