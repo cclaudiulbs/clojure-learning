@@ -110,3 +110,37 @@
 (true? (#(= (seq %) (clojure.core/reverse (seq %))) "racecar")) ;true
 (true? (#(= (seq %) (clojure.core/reverse (seq %))) "RACE c ar"))
 ; But here: false, as opposed to my palindrome function which ignores: upper/lowercase & *whitespaces
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Create a function which flattens any sequence or nested container;
+;; my version:
+(defn flatten-coll
+  [[head & tail]]
+  (when-not (nil? head)
+     (lazy-cat
+        (if (sequential? head)
+          (flatten-coll head)
+          [head])
+        (flatten-coll tail))))
+
+(flatten-coll [1 [2 [3] 4] 5]); (1 2 3 4 5)
+(sequential? 3); false
+;; in detail: destructure the arguments into a collection: head & tail
+;; then lazy-cat on top without loosing the results from previous recursion
+;; do a check if/not sequential, if yes -> recurse into head, else get the head
+;; THEN move FORWARD recursive into tail (rest args of container)
+
+;; Note: look at mapcat...
+;; Alternative from other clojurits would be:
+(fn my-flatten
+    [xs]
+	(mapcat #(if (coll? %)
+              (my-flatten %)
+              (list %)) xs))
+
+;; simply elegant :)
+
+(doc mapcat); ([f & colls])
+;; -> Returns the result of applying concat to the result of applying map
+;; to f and one-level-nested-colls.  Thus function f should return a collection.
+(mapcat #(if (coll? %) % (list %)) [[1 2 3] [4 5 6]]); (1 2 3 4 5 6)
