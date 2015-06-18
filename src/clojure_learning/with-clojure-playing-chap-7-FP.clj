@@ -190,3 +190,70 @@
 ;; small doseq demo
 (doseq [x [1 2 3]]
   (println "each: " x)); each 1...each 3
+
+;; pure function:
+;;   + a function which given a domain of values -> always returns the same values foreach invocation
+;;   + means it is not touching the outside world, apart from the given domain of args
+;;   + means it does not has any side effects on outside world(no mutation of outside world)
+;;   + means it will NOT rely on the outside world for any dependencies
+
+(doc select-keys); 	Returns a map containing only those entries in map whose key is in keys
+(select-keys {:a 1 :b 2 :c 3} [:a :b]); {:b 2 :a 1}
+(vals {:a 1 :b 2}); (1 2)
+
+;; lets build a pure-function which is said to be referential transparent. Stop but what means RT?
+;; a function is said to be referential transparent if it is a pure function first. It can be
+;; seen as a constant during time, and "the reference to function is transparent during time"
+;; and being a constant, it can be replaced with its result value and the program executes just as
+;; if nothing has changed.
+;; demo: this function returns a map with a function applied on the corresponding values bounded to key-args
+(defn keys-apply
+  [func ks m]
+  (let [only (select-keys m ks)]
+    (zipmap (keys only) (map func (vals only)))))
+
+(keys-apply
+   clojure.string/upper-case
+   [:foo :bar]
+   {:foo "some-foo" :bar "some-bar" :zip "some-zip"})
+; {:foo "SOME-FOO", :bar "SOME-BAR"}
+
+;; then a new function can be build that operates on top of keys-apply, this is also a pure function
+;; since it never changes the outside world, and always yields the same result given the same args
+(defn manip-map
+  [func ks m]
+  (merge m (keys-apply func ks m)))
+
+(manip-map clojure.string/upper-case [:foo] {:foo "cclaudiu" :bar "cosar"})
+; {:foo "CCLAUDIU", :bar "cosar"} -> do some processing on :foo key -> and merge into the same passed map
+; -> replace -> merge mechanism
+
+(doc merge); returns a new map, that consists of the tail-maps-args conj-ed onto the first: "m" in this case
+
+(doc zipmap); ([keys vals])
+(clojure.string/upper-case "this")
+
+;;;;;;;;;;;;;;;;;;
+; Clojure provides idiomatic named-arguments of functions, via destructuring in conjunction with "&" varargs:
+(defn learn-clj
+  [& {:keys [book practice] :or {book "Clojure Programming" practice "lighttable"}}]
+   (format "Learning clojure from book: %1s, practicing via : %2s" book practice))
+(learn-clj :book "The Joy of Clojure")
+(learn-clj :practice "4clojure")
+
+;; the & makes the func take varargs. there should be PAIRS normally, that's the meaning of NAMED-ARGS anyway
+;; each-pair(if a single one) is passed as func arg -> the destructuring starts working -> by decomposing
+;; them into a hash-map first and then looking up by keys, else taking defaults provided via :or macro
+
+;; Clojure has a powerfull support on DbC: via {:pre [(eval-to-true-1) (eval-to-true-2)]
+;;                                              :post [(....)]}
+
+;; Clojure Closures :)
+;; In a sentence a closure is a function that has access to the values of the outer-context - where it has been created
+(defn times-two []
+  (let [two 2]
+    (fn [x] (* two x))))
+((times-two) 5) ; 10
+;; first time the function times-two is invoked it creates a closure, that's the returned function, which closure
+;; has access over the values from the context where it was created, although there's no reference to the times-two function
+;; the returned closure captures them.
