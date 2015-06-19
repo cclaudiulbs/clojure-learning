@@ -144,3 +144,86 @@
 ;; -> Returns the result of applying concat to the result of applying map
 ;; to f and one-level-nested-colls.  Thus function f should return a collection.
 (mapcat #(if (coll? %) % (list %)) [[1 2 3] [4 5 6]]); (1 2 3 4 5 6)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which takes a string and returns a new string containing only the capital letters.
+#(apply str (re-seq #"[A-Z]+" %))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which removes consecutive duplicates from a sequence.
+;; "Leeeeeerrroyyy" -> "Leroy"
+(defn discard-dups
+  [subject]
+    (loop [[head & tail] (vec subject)
+            uniques []]
+      (if (nil? head)
+        uniques
+        (if-not (= head (peek uniques))
+          (recur tail (conj uniques head))
+          (recur tail uniques)))))
+
+(require 'clojure.string)
+(clojure.string/split "Leeeeeerrroyyy" #"")
+(vec "Leeeeeerrroyyy")
+(seq [[1 3] [1 3]])
+(discard-dups "Leeeeerooooyyyy")
+
+(= (last [\A \B]) \B)
+(peek [1 2 3])
+
+;; another one of my versions, might be using the HOF [reduce]:
+(reduce (fn [f s] (if (= s (peek f)) f (conj f s))) [] (vec "Leeeeerrrrooooy"))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which packs consecutive duplicates into sub-lists.
+;; [:a :a :b :b :c]) -> '((:a :a) (:b :b) (:c))
+(partition-by identity [:a :a :b :b :c])
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which duplicates each element of a sequence.
+;; [1 2 3]) -> [1 1 2 2 3 3]
+(reduce (fn [f n] (conj (conj f n) n)) [] [1 2 3])
+
+;; others solution
+(mapcat #(vector % %) [1 2 3])
+; (1 1 2 2 3 3)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which replicates each element of a sequence a variable number of times
+;; [1 2 3] 2) -> '(1 1 2 2 3 3)
+(#(mapcat (fn [each] (repeat %2 each)) %) [1 2 3] 2)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which creates a list of all integers in a given range
+;; 1 4 -> '(1 2 3)
+(
+   (fn range-within [lower higher] (take (- higher lower) (iterate #(inc %) lower)))
+-2 2); (-2 -1 0 1)
+;; take handles negative numbers as well now
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which takes a variable number of parameters and returns
+;; the maximum value
+(reduce min [1 8 3 4])
+(defn find-max
+  [head & tail]
+  (loop [biggest head
+         remained tail]
+    (cond
+       (empty? remained)
+          biggest
+       :else
+         (if (< biggest (first remained))
+            (recur (first remained) (rest remained))
+            (recur biggest (rest remained))))))
+
+;; soon a master of recursivity :)
+(find-max 1 8 3 4); 8
+
+;; alin's solution is to use [sort] + [last] instead of the recursivity solution
+((fn [& args]
+  (last (sort args))) 1 8 3 4) ; -> 8
