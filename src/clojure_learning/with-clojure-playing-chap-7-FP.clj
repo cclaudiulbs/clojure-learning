@@ -257,3 +257,41 @@
 ;; first time the function times-two is invoked it creates a closure, that's the returned function, which closure
 ;; has access over the values from the context where it was created, although there's no reference to the times-two function
 ;; the returned closure captures them.
+
+;; Thinking Recursively ;;
+(defn pow
+  [base exp]
+  (if (zero? exp)
+      1
+      (* base (pow base (dec exp)))))
+
+;; testing: the mundane recursion
+(pow 2 10); 1024
+(pow 2 30); StackOverFlowError -> that's why it is doomed to be named mundane(the function is entirely correct however platform does NOT suport TCO)
+
+(defn pow-rec
+  [base exp]
+  (loop [curr 1
+         curr-exp exp]
+    (if (zero? curr-exp)
+        curr
+        (recur (* base curr) (dec curr-exp) ))))
+(pow-rec 2N 10000); a very big number...
+(pow-rec 2 3); 8
+
+;; the same function but now, using a helper letfn function
+(defn pow-rec-2
+  [base exp]
+  (letfn [(pow-helper
+             [base exp acc]
+              (if (zero? exp)
+                acc
+                (recur base (dec exp) (* base acc))))]
+    (pow-helper base exp 1)))   ; this last condition is to set the current acc to 1 first
+(pow-rec-2 2 3); 8
+(doc letfn)
+
+;; for functions generating sequences, we should strive for using natural recursivity over the TCO,
+;; because it is more understandable, but then always return a lazy-seq back. and the rule of thumb no 1
+;; is to always wrap the outer body of the function, that processes the nested sequence into a [lazy-seq] block
+
