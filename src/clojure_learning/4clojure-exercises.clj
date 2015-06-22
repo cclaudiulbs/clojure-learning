@@ -1,3 +1,6 @@
+;; Exercises from 4clojure.com
+;; @author cclaudiu
+;; My solutions come first, followed (possibly) by other users solutions(which are explicitly stated)
 (use 'clojure.repl)
 
 ;; Write a function which returns the Nth element from a sequence.
@@ -227,3 +230,108 @@
 ;; alin's solution is to use [sort] + [last] instead of the recursivity solution
 ((fn [& args]
   (last (sort args))) 1 8 3 4) ; -> 8
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which takes two sequences and returns the first item from each,
+;; then the second item from each, then the third, etc.
+;; (= (__ [1 2] [3 4 5 6]) '(1 3 2 4)) -> true; restrictions: [interleave]
+
+(mapcat #(vector % %2) [1 2] [3 4 5 6])
+;; (1 3 2 4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which separates the items of a sequence by an arbitrary value.
+;; (= (__ 0 [1 2 3]) [1 0 2 0 3]) -> true ;; restrictions: [interpose]
+
+(doc interpose)
+(->> [1 2 3]
+    (interpose 0)); (1 0 2 0 3)
+
+(defn interpose-in
+  [sep coll]
+  (loop [[head & tail] coll
+          curr-coll []]
+    (cond
+       (empty? tail)
+         (conj curr-coll head)
+      :else
+           (recur tail (conj curr-coll head sep)))))
+
+(interpose-in 0 [1 2 3]); [1 0 2 0 3]
+
+;; alin's solution is:
+(fn [sep coll]
+  (drop-last (mapcat #(vector % sep) coll)))
+
+;; mapcat: take a collection coll, apply the function on each element -> returning a vector of tuples(val sep)
+;; then concatenate, or flatten that vector of tuples together, and last -> drop the last element since it's
+;; obviously the separator
+
+;; another solution of mine would be:
+((fn [sep coll]
+   (drop-last (flatten (map #(vector % sep) coll)))
+   ) 0 [1 2 3])
+;; (1 0 2 0 3)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which drops every Nth item from a sequence.
+;; (= (__ [:a :b :c :d :e :f] 2) [:a :c :e])
+(defn drop-every
+  [coll pos]
+      (let [head (take (dec pos) coll)
+            tail (drop pos coll)]
+        (when-not (empty? head)
+          (lazy-cat head (drop-every tail pos)))))
+
+(drop-every [1 2 3 4 5] 2) ; (1 3 5)
+
+;; inspired by [partition-all] func -> here's another version using HOFs solving the drop-every problem
+(doc partition-all)
+;; Returns a lazy sequence of lists like partition, but may include
+;; partitions with fewer than n items at the end.
+;;   (partition-all 2 [1 2 3 4 5]) -> ((1 2) (3 4) (5))
+(defn drop-every-nth
+  [coll pos]
+  (mapcat #(take (dec pos) %) (partition-all pos coll)))
+
+(drop-every-nth [1 2 3 4 5] 2) ; (1 3 5)
+
+(lazy-cat [1 2 3] [4 5 6]); (1 2 3 4 5 6)
+(take-while #(> % 0) [1 2 4 -1 3 -9]); (1 2 4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which calculates factorials
+;; (= (__ 5) 120) -> true
+;; 1st solution using "mundane" recursion
+(defn fact [x]
+  (if (zero? x)
+    1
+    (* x (fact (dec x)))))
+
+;; demo:
+(fact 5); 120
+
+;; 2nd solution using TCO -> and avoiding the stack limitations
+(defn big-fact [x]
+  (loop [decremented x
+         fact-num 1N]
+    (if (zero? decremented)
+       fact-num
+       (recur (dec decremented) (* fact-num decremented)))))
+
+;; demo:
+(big-fact 99999)
+
+;; others solution might be: using [reduce] & [range] to get a sequence from 1 -> upper-bound
+(#(range 1 (inc %)) 5) ; -> (1 2 3 4 5)
+( (fn [x] (reduce * (#(range 1 (inc x))))) 5) ; 120
+
+;; build the seq from 1..arg-num; [range] starts def from 0 -> so explicitly pass 1, while
+;; [range] until-exclusive arg-num -> increase it by 1;
+;; then pass this seq to the reduce by defering the multiplication func
+
+
+;; ................. and we reached the MEDIUM dificulty level :)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which reverses the interleave process into x number of subsequences
+;; (= (__ [1 2 3 4 5 6] 2) '((1 3 5) (2 4 6)))
