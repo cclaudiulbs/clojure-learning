@@ -337,21 +337,44 @@
 ;; (= (__ (range 10) 5) '((0 5) (1 6) (2 7) (3 8) (4 9)))
 ;; (= (__ [1 2 3 4 5 6] 2) '((1 3 5) (2 4 6))) -> true
 
-;; this func passes the the 1st unit test -> but fails for the second... not good :(
-((fn [coll pos] (partition-all pos coll)) [0 1 2 3 4 5 6 7 8 9] 5) ;((0 1 2 3 4) (5 6 7 8 9))
 (defn rev-interleave
   [coll pos]
-  (letfn [(part-by [pos coll] (partition-all pos coll))]
-    (let [[head tail] (part-by pos coll)]
-      (map #(vector % %2) head tail))))
+    (letfn [(take-items [func xs]
+            (loop [acc []
+                   [head & tail] xs]
+              (if (empty? head)
+                acc
+                (recur (conj acc (func head)) tail))))]
+          (loop [new-coll []
+                 curr-coll (partition-all pos coll)]
+            (if ((comp empty? flatten) curr-coll)
+              new-coll
+              (recur (conj new-coll (take-items first curr-coll)) (take-items rest curr-coll))))))
 
-;; Note -> fix this func -> as if the partitions are more than 2 -> the rest are lost!!! -> and it will work.
-;; --> use recur instead of [let]
+
+;; testing:
 (rev-interleave (range 10) 5) ; ([0 5] [1 6] [2 7] [3 8] [4 9])
-;; map in action:
+(rev-interleave [1 2 3 4 5 6] 2) ; [[1 3 5] [2 4 6]]
+
+;; work:
+(doc interleave); returns a lazy seq of the first item in each coll, then the second...
+(empty? (flatten [[]])); true
+(empty? [[]]); false
 (map #(vector %1 %2) [1 2 3] [4 5 6]); ([1 4] [2 5] [3 6])
 
-(rev-interleave [1 2 3 4 5 6] 2)
-(partition-all 2 [1 2 3 4 5 6])
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; here's another neat func -> allowing to remove only the poss positions from the coll
+(defn remove-items
+  [poss coll]
+  (loop [rem coll
+         [head & tail] poss]
+    (if (nil? head)
+      rem
+      (recur (remove #(= head %) rem) tail))))
 
-(doc interleave); returns a lazy seq of the first item in each coll, then the second...
+;; testing:
+(remove-items [1 3] [1 2 3 4 5]) ; (2 4 5)
+
+;; notes:
+(remove #(= 0 %) (range 10)); (1 2 3 ... 9)
+
