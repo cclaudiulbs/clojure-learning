@@ -362,6 +362,16 @@
 (empty? [[]]); false
 (map #(vector %1 %2) [1 2 3] [4 5 6]); ([1 4] [2 5] [3 6])
 
+;; other users solutions:
+(fn reverse-interleave [xs n]
+	(let [ys (partition-all n xs)]
+		(partition-all (count ys) (apply interleave ys))))
+
+;; or:
+(fn [coll num-subseqs]
+    (let [ps (partition num-subseqs coll)]
+      (for [i (range num-subseqs)]
+        (map #(nth % i) ps))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; here's another neat func -> allowing to remove only the poss positions from the coll
 (defn remove-items
@@ -377,4 +387,47 @@
 
 ;; notes:
 (remove #(= 0 %) (range 10)); (1 2 3 ... 9)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which can rotate a sequence in either direction
+;; (= (__ 2 [1 2 3 4 5]) '(3 4 5 1 2))
+;; (= (__ -2 [1 2 3 4 5]) '(4 5 1 2 3))
+;; (= (__ 6 [1 2 3 4 5]) '(2 3 4 5 1))
+;; (= (__ -4 '(:a :b :c)) '(:c :a :b))
+
+(cycle (range 1 6))
+(reduce (fn [acc each]
+          (if (< (count acc) 6)
+              (conj acc each)
+            ))
+        [] (take 6 (cycle (range 1 6)))); [1 2 3 4 5 1]
+
+(defn cyclic-buffer
+  [rotator coll]
+  (let [smaller-coll-than-rot? (< (count coll) rotator)
+        make-pos #(if (neg? %) (- %) %)
+        gen-cyclic-coll #(lazy-cat (take-last (make-pos rotator) coll) coll)]
+      (if smaller-coll-than-rot?
+        (->> (take rotator (cycle coll))
+             (drop (- rotator (count coll))))
+        (if (neg? rotator)
+            (if (> (make-pos rotator) (count coll))
+              (take (count coll) (take-last (make-pos rotator) (gen-cyclic-coll)))
+              (take (count coll) (gen-cyclic-coll)))
+            (->> (take (+ rotator (count coll)) (cycle coll))
+                 (drop rotator))))))
+
+;; testing:
+(cyclic-buffer 2 [1 2 3 4 5]) ; OK
+(cyclic-buffer 6 [1 2 3 4 5]) ; OK
+(cyclic-buffer -2 [1 2 3 4 5]) ; OK
+(cyclic-buffer -4 '(:a :b :c)) ; OK (:c :a :b)
+
+(drop-last 4 [1 2 3 4 5 6])
+(take (count [1 2 3 4 5]) (lazy-cat (take-last 2 [1 2 3 4 5]) [1 2 3 4 5]))
+(lazy-cat (take-last 2 [1 2 3 4 5]) [1 2 3 4 5])
+
+(take (count [:a :b :c]) (take-last 4 (lazy-cat (take-last 4 [:a :b :c]) [:a :b :c]))) ; (:c :a :b) -> OK
+(take (count [1 2 3 4 5]) (lazy-cat (take-last 2 [1 2 3 4 5]) [1 2 3 4 5]))
 
