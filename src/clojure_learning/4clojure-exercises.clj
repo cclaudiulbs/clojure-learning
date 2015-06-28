@@ -431,3 +431,116 @@
 (take (count [:a :b :c]) (take-last 4 (lazy-cat (take-last 4 [:a :b :c]) [:a :b :c]))) ; (:c :a :b) -> OK
 (take (count [1 2 3 4 5]) (lazy-cat (take-last 2 [1 2 3 4 5]) [1 2 3 4 5]))
 
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; Difficulty:	Medium
+;; Topics:	higher-order-functions
+;; Write a higher-order function which flips the order of the arguments of an input function.
+;; (= [1 2 3] ((__ take) [1 2 3 4 5] 3))
+
+;; impl: returns a closure which captures the "func"tion and the closure returned takes other 2 args
+;; that will flip as position
+(defn flip-args [func]
+    (fn [head-arg tail-arg]
+        (func tail-arg head-arg)))
+
+;; in action:
+(((fn flip [func] (fn[head-arg tail-arg] (func tail-arg head-arg))) take) [1 2 3 4 5] 3) ;(1 2 3)
+
+;; other user solutions:
+(fn [f]
+    (fn [& args] (apply f (reverse args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The contains? function checks if a KEY is present in a given collection.
+;; This often leads beginner clojurians to use it incorrectly with numerically indexed collections like vectors and lists.
+;; for which case, the KEY used to lookup via [contains?] returns thruthy if there's a value on that KEY numeric position.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(contains? #{:a :b 4} 4) ; true
+(contains? [1 1 1 1 1] 4) ; true --> we say: WTF -> but at position 4 there's 1 -> hence contains? returns true
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The some function takes a predicate function and a collection:
+;;      fn some [predicate coll] -> 1st logical true where (= true (predicate x))
+;; It returns the first logical true value of (predicate x) where x is an item in the collection.
+(#(some (fn [x] (< x 2)) [1 2 3 4])) ; true
+
+;; we can use a collection which is also a function to simulate the predicate
+(#(some #{4 7} [2 5 6 7])) ; 7
+;; take #{4 7} hash-set and use it as a function to lookup by each item from coll -> returning
+;; instead of predicate-true -> the value from the hash-set-func.
+;; #{4 7} 2 -> nil; #{4 7} 5 -> nil; #{4 7} 6 -> nil; #{4 7} 7 -> 7
+
+;; a pretty nice english phrase might look like:
+(some #(when (even? %) %) [1 3 5 6 8]) ; 6
+;; when first even? number is found -> then return it via the second "%"
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which will split a sequence into two parts.
+;; (= (__ 3 [1 2 3 4 5 6])         [[1 2 3] [4 5 6]])
+;; (= (__ 2 [[1 2] [3 4] [5 6]])   [[[1 2] [3 4]]  [[5 6]]])
+(defn split-at-pos
+  [pos coll]
+    (letfn [(take-frst [] (take pos coll))
+            (take-lst [] (drop pos coll))]
+      [(take-frst) (take-lst)]))
+
+(split-at-pos 3 [1 2 3 4 5 6]); [(1 2 3) (4 5 6)]
+(split-at-pos 2 [[1 2] [3 4] [5 6]]); [([1 2] [3 4]) ([5 6])]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Implement the quick-sort using rec & TCO:: bad algorithm!!!
+(defn quick-sort
+  [coll]
+  (letfn [(swap-items [[pivot & tail]]
+            (cond
+               (empty? tail)
+                 [pivot]
+               (> pivot (first tail))
+                 (lazy-cat [(first tail)] (quick-sort (conj (rest tail) pivot)))
+            :else
+               (lazy-cat [pivot] (quick-sort tail))))]
+      (loop [n (count coll)
+             xs coll]
+        (if (= 0 n) xs
+          (recur (dec n) (swap-items xs))))
+    ))
+
+;; second version using stricly recursion: Note that this is the WORST CASE SCENARIO sorting-algorithm!!!
+;; and was done by me...yeah...stupid right...
+(defn quick-sort
+  [coll]
+  (letfn [(swap-items [[pivot & tail]]
+            (cond
+               (empty? tail)
+                 [pivot]
+               (> pivot (first tail))
+                 (lazy-cat [(first tail)] (quick-sort (conj (rest tail) pivot)))
+            :else
+               (lazy-cat [pivot] (quick-sort tail))))
+          (quick-sort-recur [coll counter]
+              (if (= counter (count coll))
+                  coll
+                  (quick-sort-recur (swap-items coll) (inc counter))))]
+    (quick-sort-recur coll 0)))
+
+
+(quick-sort [3 1 4 2 10 8 9 5]); (1 2 3 4 5 8 9 10)
+
+(defn best-quick-sort
+  [coll]
+  (let [pivot (first coll)
+        smaller? #(< % pivot)
+        higher? #(> % pivot)]
+  (when pivot
+    (lazy-cat
+       (best-quick-sort (filter smaller? coll))
+       (list pivot)
+       (best-quick-sort (filter higher? coll))))))
+
+(best-quick-sort [31 2 1 212 3 4 9 8 6 7])
+(doc complement)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
