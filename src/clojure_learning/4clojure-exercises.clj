@@ -492,17 +492,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Implement the quick-sort using rec & TCO:: bad algorithm!!!
-(defn quick-sort
+(defn bubble-sort
   [coll]
   (letfn [(swap-items [[pivot & tail]]
             (cond
                (empty? tail)
                  [pivot]
                (> pivot (first tail))
-                 (lazy-cat [(first tail)] (quick-sort (conj (rest tail) pivot)))
+                 (lazy-cat [(first tail)] (bubble-sort (conj (rest tail) pivot)))
             :else
-               (lazy-cat [pivot] (quick-sort tail))))]
-      (loop [n (count coll)
+               (lazy-cat [pivot] (bubble-sort tail))))]
+      (loop [n ((comp dec dec count) coll)
              xs coll]
         (if (= 0 n) xs
           (recur (dec n) (swap-items xs))))
@@ -510,24 +510,24 @@
 
 ;; second version using stricly recursion: Note that this is the WORST CASE SCENARIO sorting-algorithm!!!
 ;; and was done by me...yeah...stupid right...
-(defn quick-sort
+(defn bubble-sort
   [coll]
   (letfn [(swap-items [[pivot & tail]]
             (cond
                (empty? tail)
                  [pivot]
                (> pivot (first tail))
-                 (lazy-cat [(first tail)] (quick-sort (conj (rest tail) pivot)))
+                 (lazy-cat [(first tail)] (bubble-sort (conj (rest tail) pivot)))
             :else
-               (lazy-cat [pivot] (quick-sort tail))))
-          (quick-sort-recur [coll counter]
-              (if (= counter (count coll))
+               (lazy-cat [pivot] (bubble-sort tail))))
+          (apply-sort-recur [coll counter]
+              (if (= counter (- (count coll) 2))
                   coll
-                  (quick-sort-recur (swap-items coll) (inc counter))))]
-    (quick-sort-recur coll 0)))
+                  (apply-sort-recur (swap-items coll) (inc counter))))]
+    (apply-sort-recur coll 0)))
 
 
-(quick-sort [3 1 4 2 10 8 9 5]); (1 2 3 4 5 8 9 10)
+(bubble-sort [3 1 4 2 10 8 9 5]); (1 2 3 4 5 8 9 10)
 
 (defn best-quick-sort
   [coll]
@@ -543,4 +543,27 @@
 (best-quick-sort [31 2 1 212 3 4 9 8 6 7])
 (doc complement)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which simulates the [comp] core-function-composition
+;;
+;; Difficulty: Medium
+;; This function should be a HOF internally, that takes a seq of functions -> returning a
+;; function which takes some args and uses the right-most function to call on those args
+;; passing each result to the left-next function
+;;
+;; examples:
+;; ( (comp-> str - +) [1 2 3]) -> (str (- (+ 1 2 3))) -> "-6"
+;; (str (- ((partial +) 1 2 3))) -> "-6"
+
+;; my version of [comp]::
+(defn comp->
+  [& comp-funcs]
+    (let [rev-funcs (reverse comp-funcs)]
+      (fn closure-recur [& args]
+        (loop [[head-func & tail-funcs] rev-funcs
+               result (apply head-func args)]
+            (if (nil? head-func)
+              result
+              (recur tail-funcs (head-func result)))))))
+
+((comp-> str - +) 1 2 3)
