@@ -581,4 +581,10 @@
 ((comp-> str - +) 1 2 3)
 
 ;; explanation:
-
+;; take a seq of functions, and create a new local binding of those functions by reversing the functions
+;; sequence -> so that ops start from left-> right. The "ret-closure" is the returned closure which
+;; takes the actual operands. A local binding using seq-destructuring is used to take the 1st function
+;; that is the initial right-most func and [apply] it on the sequence of args passed. With this init-result
+;; using [reduce] and the "tail-funcs" remained and the initial accumulator -> reduce the result by
+;; calling the rest funcs on that init-result.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
