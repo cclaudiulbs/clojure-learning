@@ -567,3 +567,18 @@
               (recur tail-funcs (head-func result)))))))
 
 ((comp-> str - +) 1 2 3)
+
+;; another option of implementing function composition [comp] is more concise:
+(defn comp->
+  [& comp-funcs]
+  (let [rev-funcs (reverse comp-funcs)]
+      (fn ret-closure [& closure-args]
+        (let [[rightmost-func & leftmost-funcs] rev-funcs
+              init-result (apply rightmost-func closure-args)]
+            (reduce (fn [acc each-fn] (each-fn acc)) init-result leftmost-funcs)))))
+
+;; demo:
+((comp-> str - +) 1 2 3)
+
+;; explanation:
+
