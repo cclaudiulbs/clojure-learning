@@ -562,11 +562,12 @@
       (fn closure-recur [& args]
         (loop [[head-func & tail-funcs] rev-funcs
                result (apply head-func args)]
-            (if (nil? head-func)
+            (if (nil? tail-funcs)
               result
-              (recur tail-funcs (head-func result)))))))
+              (recur tail-funcs ((first tail-funcs) result)))))))
 
 ((comp-> str - +) 1 2 3)
+((comp-> rest reverse) [1 2 3 4]) ; (3 2 1)
 
 ;; another option of implementing function composition [comp] is more concise:
 (defn comp->
@@ -588,3 +589,73 @@
 ;; using [reduce] and the "tail-funcs" remained and the initial accumulator -> reduce the result by
 ;; calling the rest funcs on that init-result.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TRICK to learn:
+;; Why on earth this application of [reverse] does NOT throw a compile exception?
+((#(fn [& args] (apply reverse args))) [1 2 3]) ; (3 2 1)
+;; while this throws:
+(apply reverse [1 2 3]) ;; let me tell you why:
+;; it's because the vector is converted as "& args" into another list having ONE element, hence inside looks like:
+(apply reverse '([1 2 3])) ; (3 2 1)
+
+
+;; The THREAD FIRST -> macro::
+;; The [->] macro threads an expression x through a variable number of forms.
+;; First, x is inserted as the second item in the first form, making a list of it if it is not a list already.
+;; Then the first form is inserted as the second item in the second form, making a list of that form if necessary.
+;; This process continues for all the forms. Using -> can sometimes make your code more readable.
+(-> [1 2 3]
+    (conj 4)) ; [1 2 3 4]
+
+((comp peek vec) (sort (rest (reverse [2 5 4 1 3 6])))) ; 5
+(-> [2 5 4 1 3 6] (reverse) (rest) (sort) ((comp peek vec))) ; 5
+
+
+;; [recur]
+;; Clojure only has 1 non-stack-consuming looping construct: recur.
+;; Either a function or a loop can be used as the recursion point.
+;; Either way, recur REBINDS the bindings of the recursion point to the values it is passed.
+;; Recur MUST be called from the TAIL-POSITION, and calling it elsewhere will result in an error.
+
+
+;; THREAD-LAST macro:
+;; The [->>] macro threads an expression x through a variable number of forms.
+;; First, x is inserted as the last item in the first form, making a list of it if it is not a list already.
+;; Then the first form is inserted as the last item in the second form, making a list of that form if necessary.
+;; This process continues for all the forms. Using ->> can sometimes make your code more readable.
+(->> [1 2 3]
+     (lazy-cat [0])) ; (0 1 2 3)
+
+(reduce + [1 23])
+
+;; taken this expression:
+(= (__ (map inc (take 3 (drop 2 [2 5 4 1 3 6]))))
+   (->> [2 5 4 1 3 6] (drop 2) (take 3) (map inc) (__))
+   11)
+;; fill the empty-space with a function:
+(= (apply + (map inc (take 3 (drop 2 [2 5 4 1 3 6]))))
+   (->> [2 5 4 1 3 6] (drop 2) (take 3) (map inc) (apply +) )
+   11) ; true
+
+(= ((partial apply +) (map inc (take 3 (drop 2 [2 5 4 1 3 6]))))
+   (->> [2 5 4 1 3 6] (drop 2) (take 3) (map inc) ((partial apply +)) ) ;; notice the 2 parans' needed to invoke the partial
+   11) ; true
+
+;; or:
+(= (reduce + (map inc (take 3 (drop 2 [2 5 4 1 3 6]))))
+   (->> [2 5 4 1 3 6] (drop 2) (take 3) (map inc) (reduce +))
+   11) ; true
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which, given a key and map, returns true iff the map contains
+;; an entry with that key and its value is nil.
+;; (true?  (__ :a {:a nil :b 2}))
+;; (false? (__ :b {:a nil :b 2}))
+(#(if (contains? %2 %) (nil? (get %2 %)) false) :c {:a nil :b 2})
+
+;; or translated inot a more readable version:
+(fn [k m]
+  (if (contains? m k)
+    (nil? (k m))
+    false))
