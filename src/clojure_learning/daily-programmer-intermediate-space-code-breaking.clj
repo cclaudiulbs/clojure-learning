@@ -20,45 +20,90 @@
 ;; solution validation: in order to validate and decide WHICH planet to decode ->
 ;; pass the identifier-func which will decide the func to apply based on ASCI chars: 0 -> 127
 
-(require '[clojure.string :as str])
-(reduce char (str/split" 101 99 97 101 112 32 110 105 32 101 109 111 99 32 101 87 "))
-
-(doc str/split) ; string pattern
-
-(str/split " 101 99 97 101 112 32 110 105 32 101 109 111 99 32 101 87 " #"\s")
-;; ["" "101" "99" "97" "101" "112" "32" "110" "105" " … "" ]
-(str/trim " 101 99 97 101 112 32 110 105 32 101 109 111 99 32 101 87 ")
-;; trims the leading+trailing whitespaces
-
 ;; Solution:
 ;; DEFINE a set of RULES for each planet!
 
 ;; func-implementation
+(require '[clojure.string :as str])
 (defn decode-alien-input
   [encoded-msg]
-  (letfn [(convert-to-list [encoded-msg]
+  (letfn [(format-encoded [encoded-msg]
              (-> encoded-msg
                  (str/trim)
                  (str/split #"\s")))
-          (map-to-nums [encoded-chars])
-          (map-to-chars [encoded-chars]
-           (map (comp char read-string) encoded-chars))
-          (asci-decode-chars []
-              (comp map-to-chars convert-to-list))
-          (htrae-planet [decoded-char-seq]
-             (apply str (reverse decoded-char-seq)))]
-    (htrae-planet ((asci-decode-chars) encoded-msg))))
 
+          (decode-to-asci [encoded-msg]
+             (map read-string (format-encoded encoded-msg)))
+
+          ;; general shared func
+          (decode-alien-msg [encoded-msg planet-specific-decode]
+              (->> (decode-to-asci encoded-msg)
+                   planet-specific-decode
+                   (filter #(< % 128)) ;; prevent exception for higher-nums
+                   (map char)
+                   (apply str)))
+
+          ;; building the map: {func-name, alien-msg}
+          (extract-func-name [func]
+              (->>
+                 (-> (.toString func)
+                     (str/split #"@")
+                     (first)
+                     (str/split #"\$")
+                     (last))
+                 (re-seq #"[a-zA-Z]")
+                 (apply str)))
+
+          (apply-planet-funcs [encoded-msg & planet-funcs]
+              (reduce (fn [m planet-fn]
+                          (assoc m (extract-func-name planet-fn) (decode-alien-msg encoded-msg planet-fn)))
+                      {} planet-funcs))
+
+          (english-word? [decoded-msg]
+              (if (empty? decoded-msg)
+                  false
+                  (let [non-words (re-seq #"[^a-zA-Z\s\.\,]" decoded-msg)]
+                    (empty? non-words))))
+
+          ;; [seq] builds a pair of each map-entry: ([key val], [key val])
+          (english-msg? [planet-msg-vec]
+               (english-word? (last planet-msg-vec)))
+
+          ;; specific funcs for each planet
+          (htrae-planet [asci-codes] (reverse asci-codes))
+          (hoth-planet [asci-codes] (map (partial + 10) asci-codes))
+          (ryza-planet [asci-codes] (map dec asci-codes))
+          (omicron-planet [asci-codes] (map #(bit-flip 5 %) asci-codes))]
+
+    (filter english-msg? (seq (apply-planet-funcs encoded-msg  htrae-planet hoth-planet ryza-planet omicron-planet)))
+))
+
+;; demo::
 (decode-alien-input " 101 99 97 101 112 32 110 105 32 101 109 111 99 32 101 87 ")
-; "We come in peace"
 
 
-(map (comp char read-string)
-     (-> " 101 99 97 101 112 32 110 105 32 101 109 111 99 32 101 87 "
-         (str/trim)
-         (str/split #"\s")))
-;; (\e \c \a \e \p \space \n \i \space \e \m \o \c \space \e \W)
+;; exercise the solution::
+(defn english? [decoded-msg]
+              (let [non-words (re-seq #"[^a-zA-Z\s\.\,]" decoded-msg)]
+                (empty? non-words)))
+
+(filter english? ["hothplanet" "omkoz*xs*owym*oa"])
+
+(doc bit-flip); flips a bit at index n: bit-flip x n
 
 ;; another option to parseInts or numbers is to use the java-interoperability
 (. java.lang.Integer parseInt "100") ; 100
 (read-string "100") ; 100
+
+(re-seq #"[^a-zA-Z\s\.\,]" "adsds# asasa@@") ; ("#" "@" "@")
+(empty? nil) ; true
+
+(doc assoc)
+
+(-> (.toString assoc)
+    (str/split #"@")
+    (first)
+    (str/split #"\$")
+    (last)) ; "assoc"
+
+(empty? (re-seq #"[^a-zA-Z\s\.\,]" "")) ; true
