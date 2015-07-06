@@ -659,3 +659,35 @@
   (if (contains? m k)
     (nil? (k m))
     false))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; the following [for] macro form:
+(for [x (range 40) :when (= (rem x 4) 1)] x)
+;; it can be translated to:
+(take (/ 40 4) (iterate #(+ 4 %) 1))
+;; or:
+(range 1 40 4) ; (1 5 9 13 ... 37)
+
+
+;; FALSY:
+;; In Clojure, only nil and false represent the values of logical falsity in conditional tests - anything else is logical truth.
+
+
+;; map and default values:
+;; When retrieving values from a map, you can specify default values in case the key is not found:
+;; However, what if you want the map itself to contain the default values? Write a function which takes a default value and a sequence of keys and constructs a map.
+;; (= (__ 0 [:a :b :c]) {:a 0 :b 0 :c 0})
+(
+ #(reduce (fn [m k] (assoc m k %)) {} %2)  ;; the function
+  0 [:a :b :c]) ; {:c 0 :b 0 :a 0}
+
+(
+ #(apply hash-map (interleave %2 (repeat (count %2) %))) ;; the function
+  0 [:a :b :c]) ; {:c 0 :b 0 :a 0}
+
+((fn default-map-vals
+  [default-val coll]
+  (apply hash-map (mapcat (fn [k v] [k v]) coll (repeat (count coll) default-val))))
+  0 [:a :b :c])
+
+(repeat 3 0) ; (0 0 0)

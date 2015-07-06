@@ -200,4 +200,84 @@
       slurp
       read-string))
 
+(use 'clojure.repl)
 (doc slurp) ; opens a reader on the file-in-stream and read all the contents into a string
+
+;; With macros, you can extend Clojure to suit your problem space, building up the language itself.
+
+;; Briefly the clojure evaluation mechanism:
+;;     Strings, numbers, characters, true, false, nil and keywords evaluate to themselves
+;;     Clojure resolves symbols by:
+;;         Looking up whether the symbol names a special form. If it doesn't...
+;;         Trying to find a local binding. If it doesn't...
+;;         Trying to find a mapping introduced by def. If it doesn't...
+;;         Throwing an exception
+;;     Lists result in calls:
+;;         When performing a function call, each operand is fully evaluated and then passed to the function as an argument.
+;;         Special form calls, like if and quote, follow "special" evaluation rules which implement core Clojure behavior
+;;         Macros take unevaluated data structures as arguments and return a data structure which is then evaluated using the rules above
+;; So, a macro is a tool for transforming an arbitrary data structure into one which can be evaluated by Clojure.
+;; This allows you to introduce new syntax so that you can write code which is more concise and meaningful.
+
+;; Taken the THREAD-FIRST macro:
+;; [->] it allows for:
+;;        + function pipelined
+;;        + requires NO parantheses
+
+(when true
+  (println "executed 1")
+  (println "executed 2"))
+;; all expressions are executed since [when] is a macro that relies on [if] special form which
+;; wraps the body of the conditions in a [do] special form.
+
+;; our main task might be to write macros to implement a domain problem in a more concise manner. like
+;; implementing a DSL which exposes a clear business communication.
+
+;; remmeber that Clojure uses [list] s to represent function calls.
+;; in the same context, macros can be seen as a mechanism for transforming an abstract data structure that
+;; clojure CANNOT evaluate into one that it can.
+
+;; we can use any function or macro or special form within the built macro, that is ->
+;; we have the full power of Clojure at our disposal to extend Clojure.
+;; macros are called just like any other function.
+
+;; One key difference between functions and macros is that function arguments are fully evaluated
+;; BEFORE they're PASSED to the FUNCTION, whereas MACROS receive arguments as UNEVALUATED data structures.
+;; this is because since the passed in textual-representation is NOT yet a valid clojure data-structure
+;; hence cannot be evaluated(this is the purpose of the macro in the end), but the output data-structure
+;; will be evaluated since the macro responsibility is to output a valid clojure data-structure.
+
+;; a short demo, to prove that output macro results ARE evaluated is:
+(defmacro infix-notation
+  [un-evaluated-struct]
+  (list (second un-evaluated-struct) (first un-evaluated-struct) (last un-evaluated-struct)))
+
+;; works nicely: notice that the in-args for macro are NOT evaluated
+(infix-notation (1 + 2)) ; 3
+(infix-notation (1 2 +)) ; cast exception!!! Long -> cannot be cast to Function!
+;; this means the output of the macro IS evaluated!!!
+;; notice that we output a list which is eagerly evaluated as the returned value for the macro
+
+(macroexpand '(infix-notation (1 + 2))); (+ 1 2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Building Lists for Evaluation
+;; Macro-writing is all about building a list to be evaluated by Clojure and it requires a kind of
+;; inversion to your normal way of thinking. In particular, you'll need to be extra careful about
+;; the difference between a SYMBOL and its VALUE.
+
+(doc butlast) ; all but last
+(conj (butlast '(1 2 3)) (last '(1 2 3))) ; (3 1 2)
+
+;; Every symbol you want to be in the final output list of macro, should be prefixed with the
+;; reader-macro [quote]
+
+;; let's build the custom "unless" macro which is result of negation of [if] special form:
+(defmacro unless
+  [test-condition & forms]
+  (list 'if test-condition nil (cons 'do forms) ))
+(macroexpand '(unless false (str "higher") (str "than 10")))
+;; (if false nil (do (str "higher") (str "than 10") ))
+(unless false (str "higher") (str "than 10"))
+
+
