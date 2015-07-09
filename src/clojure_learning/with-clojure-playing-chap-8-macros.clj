@@ -2,27 +2,16 @@
 
 (doc nnext)
 
-(do-until (even? 2) (println "even 2")
-          (odd? 3) (println "odd 3")
-          (zero? 1) (println "not printed")
-          (nil? 1) (println "not printed! nil"))
+;; introducing the custom [do-until] macro
+;; how to use the do-until macro:
+(do-until true (println "some") true (println "none") false (println "nil"))
 
-(defmacro do-until
-  [& clauses]
-  (list 'clojure.core/when (first clauses)
-        (if (next clauses)
-          (second clauses)
-          (throw (IllegalArgumentException. "do-until requires an even number of forms")))
-        (cons 'do-until (nnext clauses))))
-
-(defmacro do-until
-  [& clauses]
-  (if (even? (count clauses))
-    (let [[head-clause action-clause & tail-clauses] clauses]
-         (list 'clojure.core/when head-clause action-clause)
-        (if (not (empty? tail-clauses))
-          (cons 'do-until tail-clauses)))
-    (throw (IllegalArgumentException. "do-until requires an even number of forms"))))
-
+(defmacro do-until [& clauses]
+    (when clauses
+      (list 'when (first clauses)
+               (if (next clauses)  ;; check for existence? else fail-fast
+                   (second clauses)
+                   (throw (IllegalArgumentException. "do-until should have a pair of forms")))
+            (cons 'do-until (nnext clauses)))))
 
 
