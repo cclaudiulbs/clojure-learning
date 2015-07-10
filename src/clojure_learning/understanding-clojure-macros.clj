@@ -281,3 +281,40 @@
 (unless false (str "higher") (str "than 10"))
 
 
+(defmacro prefixed-notation
+  [forms]
+  (list (second forms) (first forms) (last forms)))
+(macroexpand '(prefixed-notation (1 + 2)))
+(prefixed-notation (1 + 2)) ; 3
+
+;; almost always we'll use quoting in the process of building macros. this is for take un-evaluated
+;; data-structures and process them as symbols
+(+ 1 2) ; 3
+(quote (+ 1 2)) ; (+ 1 2)
+;; here + is NOT seen as a function, but rather as a symbol.
+
+;; if a symbol not defined is evaluated -> an exception is fired, while if the symbol is
+;; quoted, it will yield into itself.
+;; the single quote ' is a shorthand for [quote]
+(use 'clojure.repl)
+(source quote)
+
+;; the main target of quoting is to let the quoted forms be present in the final form which
+;; the macro returns.
+;; here's a simplified and mind-blowing of [unless]
+(defmacro unless
+  [test-form & tail-forms]
+  (conj (reverse tail-forms) test-form 'if))
+
+(unless false (str "higher") (str "than 10")) ; "higher"
+;; decomposing: what happens here?
+;; destructuring the args knowing the first condition to [unless] will be a predicate
+;; what follows we reverse the list first, so that the last condition will be bounded to
+;; quoted 'if and NOT the first one, and using [conj] push the test-form as the head-item
+;; in the list reversed, and do the same for quoted 'if, which will be the left-most form.
+
+;; Again, you have to quote if because you want the unevaluated symbol to be placed in the resulting list.
+
+;;;;;;;;;;;;;;;;;
+;; Syntax Quoting
+;;;;;;;;;;;;;;;;;
