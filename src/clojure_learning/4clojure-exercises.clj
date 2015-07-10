@@ -691,3 +691,30 @@
   0 [:a :b :c])
 
 (repeat 3 0) ; (0 0 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Intro to destructuring
+;; Let bindings and function parameter lists support destructuring.
+;; (= [2 4] (let [[a b c d e f g] (range)] __))
+(let [{:keys (a b c d)} (apply hash-map [:a 1 :b 2 :c 3 :d 4])] [b d])
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Reimplement [iterate]
+;; Given a side-effect free function f and an initial value x write a function which returns an
+;; infinite lazy sequence of x, (f x), (f (f x)), (f (f (f x))), etc.
+;; (= (take 5 (__ #(* 2 %) 1)) [1 2 4 8 16])
+;; (= (take 100 (__ inc 0)) (take 100 (range)))
+(iterate #(+ 2 %) 0)
+(map #(* % %) (range))
+
+(reduce #(lazy-seq (conj % %2)) [] (range))
+(for [x (range) y (drop 1 (range))] [x y])
+(take 5 (foo #(* 2 %) 1))
+
+(defn iterate-recur
+  [func start]
+    (lazy-cat (list start)
+              (lazy-seq (iterate-recur func (func start)))))
+
+(take 5 (iterate-recur #(* 2 %) 1))
