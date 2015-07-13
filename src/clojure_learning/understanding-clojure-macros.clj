@@ -315,6 +315,171 @@
 
 ;; Again, you have to quote if because you want the unevaluated symbol to be placed in the resulting list.
 
+;; each first should evaluate to falsy in order for the second to execute, foreach pair
+;; this is how we want to use it:
+(while-not
+   false (println "some: not false")
+   false (println "none: not false")
+   true (println "not exec-ed"))
+;; output should be: "some: not false" "none: not false"
+
+(defmacro while-not
+  [& forms]
+    (when forms
+      (list 'when-not (first forms)
+              (if (next forms)
+                (second forms)
+                (throw (IllegalArgumentException. "not a pair!")))
+        (cons 'while-not (nnext forms)))))
+
+
+;; inspect the result of macro
+(macroexpand '(while-not false (str "some") false (str "none") true (str "not exec-ed")))
+;; first thing evaluate if "forms" exist else -> when returns nil, this is for the recursion call(nil needed)
+;; return the list having "when-not" macro as the first item in the returned list followed by the
+;; first expression in the forms. when condition is met? then check for its pair via [if] if it
+;; exists? then call it.
+;; (when-not (first forms) (second forms) (recur call to while-not taking the rest of forms))
+
+
 ;;;;;;;;;;;;;;;;;
 ;; Syntax Quoting
 ;;;;;;;;;;;;;;;;;
+;; Simple QUOTE helps for trivial examples, however it can introduce un-neccesary complexity
+(defmacro foo [{:keys [foo bar]}]
+  (list 'do (list 'str "some: " foo
+            (list 'str ", or: " bar)
+)))
+
+(foo {:foo "foo" :bar "bar"}) ; "some: foo, or: bar"
+
+;; the syntax quoting is like format "this is not evaluated, however this is #{name}"
+;; it comes in the form of: [`] and introduces [~] for binding expression that must be evaluated!
+(defmacro foo [{:keys [foo bar]}]
+  `(do (str "some: " ~foo
+       (str ", or: " ~bar)
+)))
+
+(foo {:foo "foo" :bar "bar"}) ; "some: foo, or: bar"
+
+;; the difference is that [`] will prefix the symbol absolute namespace, while the quote not.
+;; the other improvement is that it leads to more cleaner code, evaluating ONLY what needs to
+;; be, via the tilda op [~].
+;; the last difference is that using [syntax-quoting] the use of [list] function is NOT required
+;; since the whole form is not-evaluated, but only prefixed ~foos
+(macroexpand `(+ 1 ~(inc 1))) ; (clojure.core/+ 1 2)
+(macroexpand (list '+ 1 (inc 1))) ; (+ 1 2)
+
+;; Without syntax-quote, you need to quote the symbol [str].
+;; This is because you want the resulting list to include the symbol [str],
+;; not the function, which [str] evaluates to.
+
+;; You're using syntax-quote because it lets you write things out more concisely
+;; and you're unquoting[~foo] the bits that we want evaluated.
+
+;; the macro always returns ITS LAST expression! and if there are some side-effects
+;; functions they will NOT be executed!
+;; take fo example:
+(defmacro code-more [{:keys [foo bar]}]
+  `(println "some" (quote ~foo))
+  `(println "none" (quote ~bar)))
+
+(code-more {:foo "foo" :bar "bar"}) ; none bar
+
+;; that's why we introduced [do] which main purpose is to:
+;; wrap up multiple expressions into one expression in situations like this.
+
+(defmacro code-more [{:keys [foo bar]}]
+  `(do (println "some" (quote ~foo))
+       (println "none" (quote ~bar))))
+
+(code-more {:foo "foo" :bar "bar"}) ; some foo + none/bar printed
+
+;; To sum up: Macros receive unevaluated, arbitrary data structures as arguments
+;; and return data structures that Clojure evaluates.
+;; When defining your macro, you can use argument destructuring just like you can
+;; with functions and let bindings.
+
+;; Unquote Splicing: ~@
+;; unquote splicing helps when there are scenarios like the one following:
+(macroexpand `(+ (list 1 2 3))) ; (clojure.core/+ (clojure.core/list 1 2 3))
+
+;; that is when we get another list of what should be evaluated by the first form-list.
+(defmacro sum-all [& nums]
+  `(+ ~nums))
+(macroexpand '(sum-all 1 2 3)) ; (+ (1 2 3))
+(sum-all 1 2 3) ;; throws exception class cast long to function! for any NON-EMPTY-LIST
+
+;; now that's NOT what we wanted in the first.
+;; because clojure evaluates any non-empty list taking 1st item as the function
+;; and in this case the 1st item is a number! -> class cast exception!
+
+;; the unquote-splicing mechanism was built for these special situations:
+(defmacro sum-all [& nums]
+  `(+ ~@nums))
+(sum-all 1 2 3) ; 6
+(macroexpand '(sum-all 1 2 3)) ; (clojure.core/+ 1 2 3)
+
+;; hence the unquote-splicing on any annotated symbol will un-wrap that seqable data-structure
+;; and will include those un-wrapped items in the enclosing list. or another interpretation:
+;; I think of unquote splicing as unwrapping a seqable data structure,
+;; placing its contents directly within the enclosing syntax-quoted data structure.
+
+(macroexpand `(+ ~@(list 1 2 3))) ; (clojure.core/+ 1 2 3)
+
+;; things to watch out when it comes to macros:
+;; 1. variable capturing:
+;; if there's already a defined binding in the current schema resolution, and
+;; a macro attempts to "let" that bound variable to something else -> the
+;; syntax quote would prevent this behavior however the simple quote would not:
+;; simple quote with variable capturing:
+(def message "some defined message")
+
+(defmacro capture-demo
+  [& forms]
+  (concat (list 'let ['message "oh boy...from macro"])
+    forms))
+
+(capture-demo (println "going to print something: " message))
+;; going to print something: oh boy...from macro
+
+;; hence the variable capturing, macro defines a new binding for the 'message
+;; hence the outer-scope-defined-symbol is shaddowed.
+
+;;;;;;;;;;;;;;;;;;;;;
+;; the syntax-quoting helps in this case, by at least throwing an exception:
+(defmacro capture-demo
+  [& forms]
+  `(let [message "oh boy...from macro"] ;; the only reason is to shaddow message of let here
+     forms))
+
+(capture-demo (println "going to print something: " message))
+;; exception: can't let qualified name: message!
+
+;; to overcome this, the [gensym] comes to the rescue, creating an inner-unique name
+;; for the message to include.
+(gensym) ; G__10126
+(gensym 'message) ; message10130
+
+;; and here's the final version fixed:
+(defmacro capture-demo
+  [& forms]
+  (let [macro-message (gensym 'message)]
+    `(let [~macro-message "oh boy...from macro"]
+       ~@forms
+       (println (str "and we'll still going to print macro-message: " ~macro-message)))))
+
+(capture-demo (println "going to print something: " message))
+;; going to print something:  some defined message
+;; and we'll still going to print macro-message: oh boy...from macro
+
+
+
+(defmacro report
+  [to-try]
+  `(if ~to-try
+     (println (quote ~to-try) "was successful:" ~to-try)
+     (println (quote ~to-try) "was not successful:" ~to-try)))
+
+;; Thread/sleep takes a number of milliseconds to sleep for
+(report (do (Thread/sleep 1000) (+ 1 1)))

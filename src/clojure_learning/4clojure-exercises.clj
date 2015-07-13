@@ -718,3 +718,132 @@
               (lazy-seq (iterate-recur func (func start)))))
 
 (take 5 (iterate-recur #(* 2 %) 1))
+
+
+(repeatedly (partial rand-int 50))
+
+(defn iter-recur
+  [func start]
+  (lazy-seq
+     (let [computed (func start)]
+       (cons start (iter-recur func computed)))))
+
+(take 5 (iter-recur #(* 2 %) 1)) ; (1 2 4 8 16)
+;; the [lazy-seq] construction helps build an infinite sequence by prefixing the data-structure
+;; that encloses. the [cons] function is used to push at the head of the lazy-seq built list
+;; it goes recursively AND lazily till the indicated (take 5) upper bound, and
+;; then the recursive call will start building the list:
+;; (cons 1 (cons 2 (cons 4 (cons 8 lazy-seq-which-continues))))
+;; 8 (and cons 4, 2, 1)
+;; 4 8 (and cons 2, 1)
+;; 2 4 8 (and cons 1)
+;; 1 2 4 8...
+;; apply the given func on the start operand + put start on top of the lazy-seq and
+;; apply again the same func on the already computed result passing it to the recur-call
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sequential Destructuring:
+;; Sequential destructuring allows you to bind symbols to parts of sequential things
+;; like (vectors, lists, seqs, etc.):
+;;   (let [bindings* ] exprs*)
+
+;; (= [1 2 [3 4 5] [1 2 3 4 5]] (let [[a b & c :as d] __] [a b c d]))
+(apply vector (range 1 6))
+(into [] [1 2 [3 4 5]])
+
+
+;; Indexing Sequences:
+;; Transform a sequence into a sequence of pairs containing the original elements along with their index.
+;; (= (__ [:a :b :c])  [[:a 0] [:b 1] [:c 2]])
+;; (= (__ [0 1 3])     '((0 0) (1 1) (3 2)))
+
+;; two-liner:
+( #(let [xs (range (count %))]
+    ((comp (partial partition 2) interleave) % xs))
+[:a :b :c] )
+;; ((:a 0) (:b 1) (:c 2))
+
+;; using func composition and [interleave]
+(defn index-coll
+  [coll]
+  (let [xs (range (count coll))]
+    ((comp (partial partition 2) interleave) coll xs)))
+
+;; demo:
+(index-coll [:a :b :c]) ; ((:a 0) (:b 1) (:c 2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; or the map like version <- most succint :)
+(defn index-coll
+  [coll]
+  (let [idxs ((comp range count) coll)]
+    (map #(vector % %2) coll idxs)))
+
+;; demo:
+(index-coll [:a :b :c]) ; ([:a 0] [:b 1] [:c 2])
+
+;; or the low-level TCO recursive version:
+(defn index-coll
+  [coll]
+  (loop [[head & tail] coll
+         newxs []
+         idx (count newxs)]
+    (if (nil? head)
+      newxs
+      (recur tail (conj newxs [head idx]) (inc idx)))))
+
+;; demo:
+(index-coll [:a :b :c]) ; [[:a 0] [:b 1] [:c 2]]
+
+;; or without TCO optimization, but with "overloading" func
+;; -> going recur till end, & pushing on top of the head-list, while the stack decreases
+(defn index-coll
+  ([coll] (index-coll coll 0))
+  ([[head & tail] idx]
+     (if head
+       (conj (index-coll tail (inc idx)) [head idx])
+       (list))))
+
+;; demo:
+(index-coll [:a :b :c]) ; ([:a 0] [:b 1] [:c 2])
+
+
+(reverse nil) ; ()
+
+
+;;;;;;;;;;;;;;;;;;;
+;; Map Construction
+;; Write a function which takes a vector of keys and a vector of values and constructs a map from them.
+;; (= (__ [:a :b :c] [1 2 3]) {:a 1, :b 2, :c 3})
+(#(apply hash-map (interleave % %2)) [:a :b :c] [1 2 3]) ; {:c 3, :b 2, :a 1}
+
+;;;;;;;;;;;;;;;;;;;
+;; and the more intuitive version(same but written more nicely):
+(defn zipmapp
+  [xs ys]
+  (apply hash-map (interleave xs ys)))
+
+;; demo:
+(zipmapp [:a :b :c] [1 2 3]) ; {:c 3, :b 2, :a 1}
+
+;;;;;;;;;;;;;;;;;;
+;; or mapping into as another version:
+(defn zipmapp
+  [xs ys]
+  (into {} (map #(vector % %2) xs ys)))
+
+
+;;;;;;;;;;;;;;;;;;
+;; or put the thread-last-english macro in action on the returned flattened + mapped cols
+;; flatten because there's NO way to: apply hash-map ([] []), to work, since there should
+;; all be flatten and must yield in pairs(<- even number of entire collection)
+;; for pairs the: "into {}" works like a charm
+(defn zipmapp
+  [xs ys]
+  (->> (map #(vector % %2) xs ys)
+       flatten
+       (apply hash-map)))
+
+;; demo:
+(zipmapp [:a :b :c] [1 2 3]) ; {:c 3, :b 2, :a 1}
