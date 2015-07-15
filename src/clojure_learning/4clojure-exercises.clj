@@ -847,3 +847,41 @@
 
 ;; demo:
 (zipmapp [:a :b :c] [1 2 3]) ; {:c 3, :b 2, :a 1}
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; For any orderable data type it's possible to derive all of the
+;; basic comparison operations (<, ≤, =, ≠, ≥, and >) from a single operation
+;; (any operator but = or ≠ will work).
+;; Write a function that takes three arguments, a less than operator for the
+;; data and two items to compare.
+;; The function should return a keyword describing the relationship between the two items.
+;; The keywords for the relationship between x and y are as follows:
+;; x = y → :eq
+;; x > y → :gt
+;; x < y → :lt
+;; (= :gt (__ < 5 1))
+;; (= :eq (__ (fn [x y] (< (count x) (count y))) "pear" "plum"))
+(defn comparison
+  [lower-fn & ops]
+ (let [lower-compl-map {[true false] :lt
+                        [false true] :gt
+                        [false false] :eq}
+       lower? (apply lower-fn ops)
+       higher? (apply lower-fn (reverse ops))]
+     (lower-compl-map [lower? higher?])))
+
+;; demo:
+(= :gt (comparison < 5 1)) ; true
+(comparison < 1 4) ; :lt
+(comparison < 5 5) ; :eq
+
+((complement <) 3 3) ; true --> WTF???
+
+;; or the more idiomatic version
+(defn comparison
+  [lower-fn & ops]
+ (let [lower-compl-map {[true false] :lt
+                        [false true] :gt
+                        [false false] :eq}]
+     (lower-compl-map (map #(lower-fn (first %) (second %)) (list ops (reverse ops))))))
