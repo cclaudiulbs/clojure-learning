@@ -849,6 +849,36 @@
 (zipmapp [:a :b :c] [1 2 3]) ; {:c 3, :b 2, :a 1}
 
 
+;;;;;;;;;;;;;;;;;;;
+;; find the sum of all numbers from 0->1000 divisible with 3 and 5, and which are not duplicated
+(defn sum-divisibles
+  [x y bound]
+  (letfn [(module-nums [x] (filter #(= 0 (mod % x)) (range (inc bound))) )]
+    (apply + (apply hash-set (concat (module-nums x) (module-nums y))))))
+
+;; tip: (inc bound) is used to take the last inclusive
+
+;; demo:
+(sum-divisibles 3 5 12)
+
+(apply hash-set (concat [1 2] [1 3])) ; #{1 3 2}
+(range 2) ; (0 1)
+
+;; or another version:: using [iterate] and thread-last macro
+(defn sum-divisibles
+  [x y bound]
+  (letfn [(build-divisibles [n] (take (int (/ bound n)) (iterate #(+ % n) n)))]
+    (->> (build-divisibles x)
+         (concat (build-divisibles y))
+         (apply hash-set)
+         (apply +))))
+
+;; demo:
+(sum-divisibles 3 5 12)
+
+(take 3 (iterate #(+ 3 %) 3)) ; (3 6 9)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; For any orderable data type it's possible to derive all of the
 ;; basic comparison operations (<, ≤, =, ≠, ≥, and >) from a single operation
@@ -877,6 +907,16 @@
 (comparison < 5 5) ; :eq
 
 ((complement <) 3 3) ; true --> WTF???
+
+;; or the more idiomatic version
+(defn comparison
+  [lower-fn & ops]
+ (let [lower-compl-map {[true false] :lt
+                        [false true] :gt
+                        [false false] :eq}]
+     (lower-compl-map (map #(lower-fn (first %) (second %)) (list ops (reverse ops))))))
+
+
 
 ;; or the more idiomatic version
 (defn comparison

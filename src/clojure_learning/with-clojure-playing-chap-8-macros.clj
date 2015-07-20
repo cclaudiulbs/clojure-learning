@@ -39,3 +39,56 @@
 
 (java.util.Date.)
 (java.util.Date.)
+
+;; the most obvious use of macros over HOF, is that macros manipulate COMPILE time forms, transforming
+;; them into runtime data-structures -> this allows my problem to be written in a more natural
+;; domain specific way.
+;; as we know by now, the arguments of [defmacro] are NOT evaluated before being passed to [defmacro]
+;; form. imagine again the
+
+;; taking the do-until custom macro, there's some magic happening in the last line:
+;; (cons 'do-until (nnext clauses)))
+;; normally clojure [cons] function takes the item and a list: cons item in-list -> the structure
+;; is a valid clojure structure, however when expanded recursively it will behave as:
+;; go recursively till end building the recursive structure, when there are no clauses -> nill is returned
+;; and as (cons 1 nil) returns (1), it will call do-until with each pair of clauses building
+;; the list
+
+;; implement the unless macro using: syntax quoting(`), unquoting(~) + unquote-splicing(~@)
+(defmacro unless
+  [condition-form evaled-form]
+  `(when-not ~condition-form (~@evaled-form)))
+
+;; some neat func for macroexpansion and debugging the built macro
+(require '[clojure.walk :as walk])
+(walk/macroexpand-all '(unless (< 2 1) (str "indeed < 2 1 is false ...")))
+;; (if (< 2 1) nil (do (str "indeed < 2 1 is false ...")))
+
+(unless (< 2 1) (str "indeed (< 2 1) is false...going to eval this form"))
+
+;; clojure's [defn] macro, combines several tasks, that otherwise would force us to be redundant
+;; coding the same thing over and over again -> boilerplating code.
+;; this boilerplating code is a fertile environment for new bugs to be born.
+;; 1. creates the corresponding function using special form [fn]
+;; 2. attaches the documentation after the function signature.
+;; 3. binds the function name to a local schema variable.
+;; 4. attaches the collected metadata
+
+;; You could perform all these steps over and over again every time you wanted to create
+;; a new function, but thanks to macros you can instead use the more convenient defn
+;; form. Regardless of your application domain and its implementation, programming
+;; language boilerplate code inevitably occurs and is a fertile place to hide subtle errors.
+;; But identifying these repetitive tasks and writing macros to simplify and reduce or
+;; eliminate the tedious copy-paste-tweak cycle can work to reduce the incidental complexities
+;; inherent in a project.
+
+(defn sum-divisibles
+  [x y bound]
+  (letfn [(module-nums [x] (filter #(= 0 (mod % x)) (range bound)) )]
+    (apply + (apply hash-set (concat (module-nums x) (module-nums y))))))
+
+(sum-divisibles 3 5 1000)
+(use 'clojure.repl)
+(doc mod)
+
+(apply hash-set (concat [1 2] [1 3])) ; #{1 3 2}

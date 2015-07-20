@@ -474,12 +474,23 @@
 ;; and we'll still going to print macro-message: oh boy...from macro
 
 
-
+;; Macros all the way down
 (defmacro report
   [to-try]
-  `(if ~to-try
-     (println (quote ~to-try) "was successful:" ~to-try)
-     (println (quote ~to-try) "was not successful:" ~to-try)))
+  `(let [macro-result# ~to-try]
+    (if macro-result#
+       (println (quote ~to-try) "was successful:" macro-result#)
+       (println (quote ~to-try) "was not successful:" macro-result#))))
 
 ;; Thread/sleep takes a number of milliseconds to sleep for
 (report (do (Thread/sleep 1000) (+ 1 1)))
+
+;; i liked the way the author of braveclojure codes a sample validator :)
+(defn validate[] ())
+(def shipping-details {:email "" :address: ""})
+(def shipping-details-validations {}) ; rules for validator
+(validate shipping-details shipping-details-validations)
+
+;; validate the data-that-needs-to-be-validated by applying details-validations rules
+;; output should be something like a map, having the key bound to the failed validation
+;; while the value: a vector of messages for which the key failed.
