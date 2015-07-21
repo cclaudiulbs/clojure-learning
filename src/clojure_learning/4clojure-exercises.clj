@@ -925,3 +925,42 @@
                         [false true] :gt
                         [false false] :eq}]
      (lower-compl-map (map #(lower-fn (first %) (second %)) (list ops (reverse ops))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; create a function which given some numbers will get the greatest common divisor.
+;; recall that gcd is the common greatest number to which all others are divisible.
+;; my-logic:
+;; -> get the min
+;; -> build a list of its divisible nums including itself
+;; -> build a recursive func which takes this list + the rest of the list given as args
+;; -> check that each head from args is divisible with the LAST most higher from the divisible-nums
+;;    of the first one. if yes
+;; -> call recur to next tail-arg; if no -> call recur popping the
+;; last-most-higher num from the smallest-divisible nums with itself
+
+;; first variant:: using HOFs instead of low-level recursion :)
+(defn gcd
+  [& nums]
+  (let [smallest (reduce min nums)
+        divisible? #(zero? (mod % %2))
+        smallest-divisibles (filter (partial divisible? smallest) (range 1 (inc smallest)))]
+     (letfn [(find-gcds
+                 [possible-divisibles xs]
+                   (reduce (fn [sm-div each]
+                      (if (divisible? each (last sm-div))
+                        sm-div
+                        (butlast sm-div)))
+                    possible-divisibles xs))]
+       (last (find-gcds smallest-divisibles nums)))))
+
+(gcd 3 5 9) ;1
+(gcd 8 12) ;4
+
+(seq [1]) ;(1)
+(last [1 2]) ;2
+(last (list 1 2)) ;2
+
+(defn gcd
+  [& nums]
+  (let [divisible? (#(zero? (mod % %2)))
+        ]))
