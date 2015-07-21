@@ -969,16 +969,17 @@
         smallest-divisibles (filter (partial divisible? smallest) (range 1 (inc smallest)))]
      (letfn [(find-gcds
                  [possible-divisibles xs]
-                   (reduce (fn [sm-div each]
-                      (if (divisible? each (last sm-div))
-                        sm-div
-                        (butlast sm-div)))
+                   (reduce (fn rec-find [sm-div each]
+                              (if (divisible? each (last sm-div))
+                                    sm-div
+                                   (recur (butlast sm-div) each)))
                     possible-divisibles xs))]
        (last (find-gcds smallest-divisibles nums)))))
 
 ;; demo:
 (gcd 3 5 9) ;1
 (gcd 8 12) ;4
+(gcd 1023 858) ; 33
 
 ;; tries:
 (seq [1]) ;(1)
@@ -997,13 +998,13 @@
                         (find-gcd-rec min-nums (rest tail-nums))
                         (find-gcd-rec (butlast min-nums) tail-nums))
                     (last min-nums)))]
-
     ;; invoke recursive func
     (find-gcd-rec min-num-divisibles nums))))
 
 ;; demo:
 (gcd 3 5 9) ;1
 (gcd 8 12) ;4
+(gcd 1023 858) ; 33
 
 
 ;; tries:
@@ -1015,3 +1016,10 @@
 ;; another way of writing core [iterate] without the literal func, but using partial
 ;; that returns the curried back having the curried take one argument.
 (iterate (partial inc) 1) ; (1 2 3 4 ...)
+
+;; alin's solution to this:
+(fn gcd [a b]
+	(if (< a b)
+		(recur b a)
+		(first (filter #(= 0 (rem a %) (rem b %)) (iterate dec b)))))
+
