@@ -926,6 +926,29 @@
                         [false false] :eq}]
      (lower-compl-map (map #(lower-fn (first %) (second %)) (list ops (reverse ops))))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which takes a variable number of booleans.
+;; Your function should return true if some of the parameters are true,
+;; but not all of the parameters are true. Otherwise your function should return false
+;; (= false (__ false false))
+;; (= false (__ true))
+;; (= true (__ true false))
+(defn find-half-true
+  [& bools]
+  (let [truthies (filter true? bools)
+        falsies (filter false? bools)]
+    (and (not (empty? truthies)) (not (empty? falsies)))))
+
+;; demo:
+(= false (find-half-true false false))
+(= false (find-half-true true))
+(= true (find-half-true true false))
+
+(doc remove)
+(doc true?)
+(doc if-let)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; create a function which given some numbers will get the greatest common divisor.
 ;; recall that gcd is the common greatest number to which all others are divisible.
@@ -953,14 +976,42 @@
                     possible-divisibles xs))]
        (last (find-gcds smallest-divisibles nums)))))
 
+;; demo:
 (gcd 3 5 9) ;1
 (gcd 8 12) ;4
 
+;; tries:
 (seq [1]) ;(1)
 (last [1 2]) ;2
 (last (list 1 2)) ;2
 
 (defn gcd
   [& nums]
-  (let [divisible? (#(zero? (mod % %2)))
-        ]))
+  (let [divisible? #(zero? (mod % %2))
+        min-num ((comp first sort) nums)
+        min-num-divisibles (filter (partial divisible? min-num) (take min-num (iterate (partial inc) 1)))]
+      (letfn [(find-gcd-rec
+                 [min-nums init-nums]
+                  (if-let [tail-nums (seq init-nums)]
+                    (if (divisible? (first tail-nums) (last min-nums))
+                        (find-gcd-rec min-nums (rest tail-nums))
+                        (find-gcd-rec (butlast min-nums) tail-nums))
+                    (last min-nums)))]
+
+    ;; invoke recursive func
+    (find-gcd-rec min-num-divisibles nums))))
+
+;; demo:
+(gcd 3 5 9) ;1
+(gcd 8 12) ;4
+
+
+;; tries:
+(sort [4 2 5 1 3]) ; (1 2 3 4 5)
+
+;; one way of writing core [iterate fn foo]
+(iterate #(+ 1 %) 1) ; (1 2 3 4 ..) -> f (f (f x))...
+
+;; another way of writing core [iterate] without the literal func, but using partial
+;; that returns the curried back having the curried take one argument.
+(iterate (partial inc) 1) ; (1 2 3 4 ...)
