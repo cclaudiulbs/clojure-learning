@@ -1161,3 +1161,27 @@
 ;; but as we know we can use: m k -> to get the corresponding value, idiomatic clojurist way :)
 ;; yes the add-to-map func is just for readability -> clean code ;)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Easy
+;; Reimplement [map]
+;; Map is one of the core elements of a functional programming language.
+;; Given a function f and an input sequence s,
+;; RETURN A LAZY SEQUENCE of (f x) for each element x in s.
+(defn mmap
+  [func coll]
+  (lazy-seq
+    (when-let [head (first coll)]
+      (cons (func head) (mmap func (rest coll)) ))))
+
+;; neat :)
+(cons 2 (cons 3 (cons 4 (lazy-seq nil)))) ; (2 3 4)
+(lazy-seq nil) ; ()
+
+;; Note1: recursion with lists: go till end & start from the end -> use [cons]
+;; to build the list in order recursively.
+;; While with vectors -> start recursively from beginning and push on top of the stack.
+;; Note2: any lazy-sequences in clojure, must be prepended with lazy-seq
+
+;; demo:
+(mmap inc [1 2 3]) ; (2 3 4)
