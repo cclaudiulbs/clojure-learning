@@ -1023,3 +1023,141 @@
 		(recur b a)
 		(first (filter #(= 0 (rem a %) (rem b %)) (iterate dec b)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Difficulty:	Easy
+;; Topics:	higher-order-functions math
+;; Lexical scope and first-class functions are two of the most basic building blocks of a
+;; functional language like Clojure. When you combine the two together,
+;; you get something very powerful called lexical closures.
+;; With these, you can exercise a great deal of control over the lifetime of your local bindings,
+;; saving their values for use later, long after the code you're running now has finished.
+;; write a function which returns a lexical-closure back and which computes x pow n.
+(defn pow
+  [power]
+    (fn [num] (reduce * (repeat power num))))
+
+((pow 2) 16)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Write a function which multiplies two numbers and returns the result as a sequence of its digits.
+
+(require 'clojure.string)
+(defn mult-and-seq
+  [& nums]
+  (map #(. java.lang.Integer valueOf %)
+       (-> (apply * nums)
+            str
+           (clojure.string/split #""))))
+
+;; FOR SOME REASONS, THIS FUNCTION THROWS a number-format-exception on 4clojure...
+;; however on my station the results are compiled successfully:
+(mult-and-seq 20 3) ; (6 0)
+(mult-and-seq 1 1) ; (1)
+(mult-and-seq 99 9) ; 8 9 1
+
+
+;; work:
+(< 1/5 1) ; true
+(apply * '(1 2 3)) ; 6
+(. java.lang.Integer valueOf "2") ; 2
+
+
+;; so, here's a function that passes the tests...
+(defn mult-and-seq
+  [& nums]
+  (map #(- (int %) 48) ((comp vec str) (apply * nums))))
+
+;; here's the refactoring of this func:
+(defn mult-and-seq
+  [& nums]
+  (map #(- (int %) 48) (str (apply * nums))))
+
+;; we dropped the composition of [vec] + [str] functions, since the sequence abstraction
+;; [map] function knows how to iterate over a string-sequence, internally it does the same
+;; it calls: [seq] on the string...
+
+;; alin's solution would be using recursive funcs:
+(defn mult-and-seq
+  ([x y]
+     (mult-and-seq (apply * (list x y))))
+  ([product]
+     (if (zero? (int (/ product 10)))   ;; / 6 10 -> 0
+       [(mod product 10)]               ;; mod 6 10 -> 6
+       (conj (mult-and-seq (int (/ product 10)))  (mod product 10))))) ;; / 30 10 -> 3
+
+(mod 30 10) ; 0
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Easy
+;; Group a Sequence:: Special Restrictions: [group-by]
+;; Given a function f and a sequence s, write a function which returns a map.
+;; The keys should be the values OF f applied to each item in s.
+;; The value at each key should be a vector of corresponding items in the order they appear in s.
+;; In fact we're implementing the [group-by] function
+;; (= (__ #(> % 5) [1 3 6 8]) {false [1 3], true [6 8]})
+
+;; (= (__ count [[1] [1 2] [3] [1 2 3] [2 3]])
+;;    {1 [[1] [3]],  2 [[1 2] [2 3]],  3 [[1 2 3]]})
+
+(defn group-by-fun
+  [func coll]
+  (reduce
+     (fn [m k]
+       (if (contains? m (func k))       ;; contains: true | false applied func key
+         (assoc m (func k) (conj (get m (func k)) k))
+         (assoc m (func k) [k]) ))
+  {} coll))
+
+;; demo::
+(group-by-fun #(> % 5) [1 3 6 8]) ;; {false [1 3], true [6 8]})
+
+(contains? {:true [1 2]} :true) ; true
+(doc get) ;; get map key -> value
+
+;; and using the recursion implementation:
+(defn group-by-fun
+  [func coll]
+  (letfn [(add-to-map
+             [m k v]
+           (if (contains? m k)
+              (assoc m k (conj (get m k) v))
+              (assoc m k [v])))]
+  (loop [acc {}
+        [head & tail] coll]
+    (if (nil? head)
+      acc
+      (recur (add-to-map acc (func head) head) tail)))))
+
+(group-by-fun #(> % 5) [1 3 6 8]) ;; {false [1 3], true [6 8]})
+
+;; both functions can be refactored to drop the [if] conditional by using the default
+;; if a key within the map is not found:
+(defn group-by-fun
+  [func coll]
+  (reduce
+     (fn [m k]
+         (assoc m (func k) (conj (get m (func k) []) k)))
+  {} coll))
+
+;; [conj] puts on top of the stack an element k, while "get m k []" is saying
+;; get value corresponding to the key k from the map, and if not found -> get me an empty vector.
+;; where the [conj] will push
+
+;; while the recursive function looks more simplified:
+(defn group-by-fun
+  [func coll]
+  (letfn [(add-to-map
+             [m k v]
+              (assoc m k (conj (m k []) v)))]
+  (loop [acc {}
+        [head & tail] coll]
+    (if (nil? head)
+      acc
+      (recur (add-to-map acc (func head) head) tail)))))
+
+;; small refactor and the improvement is seen. the [get] core-function is a litlle verbose
+;; but as we know we can use: m k -> to get the corresponding value, idiomatic clojurist way :)
+;; yes the add-to-map func is just for readability -> clean code ;)
+
