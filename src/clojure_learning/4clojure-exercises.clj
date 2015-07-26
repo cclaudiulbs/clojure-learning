@@ -1185,3 +1185,38 @@
 
 ;; demo:
 (mmap inc [1 2 3]) ; (2 3 4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Infix HOF
+;; Write a HOF that takes inline math operations, one level nested and produces a result
+;; (infix 2 + 3 / 5) -> 1
+(defn infix
+  [& ops]
+  (loop [[x op y & tail] ops]
+    (if (nil? tail)
+      (op x y)
+      (recur (conj tail (op x y))))))
+
+;; demo:
+(infix 2 + 3)
+(infix 2 + 3 / 5)
+
+;; Note on impl:
+;; constant scalling -> the in-list of infix-operations is reduced by 3, on each recursive iteration
+;; if only 3 ops -> give me the result
+;; else -> using the same stack(TCO) produce the result of each pair x op y and conj it on
+;; top of the list, until there's no more tail. each computed result is used to calculate the
+;; next result
+(conj '(1 2 3) 0) ; (0 1 2 3)
+
+;; using [reduce]::
+(defn infix
+  [head & tail]
+  (reduce
+     (fn [acc each]
+       ((first each) acc (second each)))
+     head
+     (partition-all 2 tail)))
+
+(infix 1 + 3 / 4 + 1)
+;; [partition-all] yields: (+ 3) (/ 4) (+ 1)
