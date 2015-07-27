@@ -1220,3 +1220,38 @@
 
 (infix 1 + 3 / 4 + 1)
 ;; [partition-all] yields: (+ 3) (/ 4) (+ 1)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Easy:
+;; Convert a binary number, provided in the form of a string, to its numerical value.
+;; (= 7     (__ "111"))
+;; (= 8     (__ "1000"))
+;; (= 65535 (__ "1111111111111111"))
+
+;; we need the pow func first: 1st version using HOFs
+(defn pow [x n] (reduce * 1 (repeat n x)))
+
+;; 2nd version using low-level recursion
+(defn pow
+  ([x n] (pow x x (dec n)))
+  ([initial acc n] (if (zero? n) acc (pow initial (* initial acc) (dec n)))))
+
+(pow 2 10) ; 8
+
+;; here's the func:
+(reduce + (map (fn [p x] (if (= x \1) (pow 2 p) 0)) (range 0 3) (vec "111")))
+
+(defn binary->int
+  [stream]
+  (letfn [(pow [x n] (reduce * 1 (repeat n x)))]
+    (apply +
+      (map (fn [b p]
+             (if (= b \1)
+               (pow 2 p)
+               0))
+           (vec stream) (reverse (range 0 (count stream)))))))
+
+(binary->int "111") ;7
+(binary->int "1000") ;8
+

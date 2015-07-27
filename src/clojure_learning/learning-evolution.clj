@@ -883,3 +883,35 @@ eval my-queue
 (map [:a :b :c :d] #{0 1}); (:a :b)
 ;; use a vector as a function in the map-operation over the given set ds
 
+
+(defn sum-divisibles
+  [x y bound]
+  (letfn [(module-nums [x] (filter #(= 0 (mod % x)) (range bound)) )]
+    (apply + (apply hash-set (concat (module-nums x) (module-nums y))))))
+
+(sum-divisibles 3 5 1000)
+(use 'clojure.repl)
+(doc mod)
+
+(apply hash-set (concat [1 2] [1 3])) ; #{1 3 2}
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; create a function which calculates the GCD of the given numbers
+;; recall that the GCD: is the common number whereas all the numbers can divide with
+;; and not yield a fractional result
+;; 8 12 -> 4
+;; 8 12 15 -> 1
+
+(defn gcd
+  [& nums]
+  (let [smallest (reduce min nums)
+        smallest-divisibles (filter #(= 0 (mod smallest %)) (range 1 (inc smallest)))]
+
+    [smallest smallest-divisibles]
+  ))
+
+(gcd 33 4 5)
+(reduce min '(33 3 4)) ; 3
+(range 1 5)
+
