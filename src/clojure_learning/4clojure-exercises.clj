@@ -1255,3 +1255,35 @@
 (binary->int "111") ;7
 (binary->int "1000") ;8
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sum of square of digits
+;; Write a function which takes a collection of integers as an argument.
+;; Return the count of how many elements are smaller than the sum of their squared component digits.
+;; For example: 10 is larger than 1 squared plus 0 squared;
+;; whereas 15 is smaller than 1 squared plus 5 squared.
+;; (= 8 (__ (range 10)))
+;; (= 50 (__ (range 1000)))
+
+;; 1st thing first: build the split num func -> able to calculate the sum of square digits
+(defn split-num-by-digits [x]
+  (if (< x 10) (list x)
+  (map (fn [each] (- (int each) (int \0))) ((comp vec str) x))))
+
+;; the pow function we already have -> anyway for squared we don't need it, since we're using the num itself
+(split-num-by-digits 123) ; (1 2 3)
+(split-num-by-digits 9) ; (9)
+
+(defn smaller-than-sum-of-squared-digs
+  [coll]
+  (letfn [(split-num-by-digits [x]
+              (if (< x 10)
+                (list x)
+                (map (fn [v] (- (int v) (int \0))) ((comp vec str) x))))
+          (sum-of-squared [x]
+              (reduce + (map #(* % %) (split-num-by-digits x))))]
+      (count (filter #(< % (sum-of-squared %)) coll))))
+
+;; demo:
+(smaller-than-sum-of-squared-digs (range 10)) ;8
+(smaller-than-sum-of-squared-digs (range 100)) ;50
+(smaller-than-sum-of-squared-digs (range 1000)) ;50
