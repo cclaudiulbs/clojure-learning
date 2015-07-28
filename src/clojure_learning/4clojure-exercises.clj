@@ -1287,3 +1287,43 @@
 (smaller-than-sum-of-squared-digs (range 10)) ;8
 (smaller-than-sum-of-squared-digs (range 100)) ;50
 (smaller-than-sum-of-squared-digs (range 1000)) ;50
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; To Tree, or not to Tree
+;; Trees: easy
+;; Write a predicate which checks whether or not a given sequence represents a binary tree.
+;; Each node in the tree must have a value, a left child, and a right child.
+;; in short: binary trees are the trees which have NO MORE than 3 nodes:
+;; -> 1 value, 1 left-branch, 1 right-branch
+;; (= true (__ '(:a (:b nil nil) nil))
+;; (= false (__ '(:a (:b nil nil)))
+;; (= false (__ [1 [2 [3 [4 false nil] nil] nil] nil])
+
+(defn binary-tree?
+  [xs]
+    (let [valid-node? #(= 3 (count %))
+          node? #(and (or (seq? %) (vector? %)))]
+    (->> xs
+       (reduce (fn [acc composite]
+              (if (node? composite)
+                (conj acc ((comp not empty?) composite) (binary-tree? composite))
+                (conj acc (and (valid-node? xs) composite))))  [])
+       flatten
+       (filter false?)
+       empty?)))
+
+
+;; demo:
+(binary-tree? '(:a (:b nil nil) nil))                  ; true
+(binary-tree? [1 [2 [3 [4 false nil] nil] nil] nil])   ; false
+(binary-tree? [1 [2 nil nil] [3 nil nil] [4 nil nil]]) ; false
+(binary-tree? '(:a nil ()))                            ; false
+
+(doc seq?) ; -> returns true if x implements ISeq
+(class ()) ; EmptyList
+(seq? ()) ; true
+(empty? ()); true
+(if-let [c (seq ())] c) ; nil
+
+;; TODO: take the time, to implement this solution using low-level recursion ONLY
