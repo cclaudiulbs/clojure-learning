@@ -1326,4 +1326,25 @@
 (empty? ()); true
 (if-let [c (seq ())] c) ; nil
 
-;; TODO: take the time, to implement this solution using low-level recursion ONLY
+;; the recursive version follows:
+(defn binary-tree?
+  ([xs] (binary-tree? []))
+  ([xs results]
+     (if (empty? xs)
+       results
+       (if (= 3 (count xs))
+          (if (sequential? (first xs))
+              (binary-tree? (first xs) results)
+              (binary-tree? (rest xs) results))
+          (conj results false)))))
+
+(binary-tree? '(:a (:b nil nil) nil))                  ; true
+(binary-tree? [1 [2 [3 [4 false nil] nil] nil] nil])   ; false
+(binary-tree? [1 [2 nil nil] [3 nil nil] [4 nil nil]]) ; false
+(binary-tree? '(:a nil ()))                            ; false
+
+
+
+(sequential? [])  ; true
+(sequential? '()) ; true
+(sequential? :3)  ; false
