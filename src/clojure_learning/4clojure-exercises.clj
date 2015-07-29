@@ -1296,10 +1296,6 @@
 ;; Each node in the tree must have a value, a left child, and a right child.
 ;; in short: binary trees are the trees which have NO MORE than 3 nodes:
 ;; -> 1 value, 1 left-branch, 1 right-branch
-;; (= true (__ '(:a (:b nil nil) nil))
-;; (= false (__ '(:a (:b nil nil)))
-;; (= false (__ [1 [2 [3 [4 false nil] nil] nil] nil])
-
 (defn binary-tree?
   [xs]
     (let [valid-node? #(= 3 (count %))
@@ -1317,34 +1313,33 @@
 ;; demo:
 (binary-tree? '(:a (:b nil nil) nil))                  ; true
 (binary-tree? [1 [2 [3 [4 false nil] nil] nil] nil])   ; false
-(binary-tree? [1 [2 nil nil] [3 nil nil] [4 nil nil]]) ; false
 (binary-tree? '(:a nil ()))                            ; false
 
+;; api-learning:
 (doc seq?) ; -> returns true if x implements ISeq
+(map sequential? [[] '()])  ; (true true)
 (class ()) ; EmptyList
 (seq? ()) ; true
-(empty? ()); true
 (if-let [c (seq ())] c) ; nil
 
-;; the recursive version follows:
-(defn binary-tree?
-  ([xs] (binary-tree? []))
-  ([xs results]
-     (if (empty? xs)
-       results
-       (if (= 3 (count xs))
-          (if (sequential? (first xs))
-              (binary-tree? (first xs) results)
-              (binary-tree? (rest xs) results))
-          (conj results false)))))
+;; the recursive version follows...interesting approach dude :)
+(defn binary-tree? [xs]
+  (letfn [(bin-node? [node]
+           (and (sequential? node) (= 3 (count (remove false? node)))))
+          (nested-nodes? [node]
+           ((comp not empty?) (filter sequential? node)))]
+  (if (bin-node? xs)
+    (if (nested-nodes? xs)
+      (if (sequential? (second xs))
+        (binary-tree? (second xs))
+        (binary-tree? (last xs)))                      ; handle right branch as well
+      true)
+    false)))
+
 
 (binary-tree? '(:a (:b nil nil) nil))                  ; true
 (binary-tree? [1 [2 [3 [4 false nil] nil] nil] nil])   ; false
 (binary-tree? [1 [2 nil nil] [3 nil nil] [4 nil nil]]) ; false
+(binary-tree? [ 1 nil  [2 [3 nil nil] [4 nil nil]]  ]) ; true -> handle right-branch as well
 (binary-tree? '(:a nil ()))                            ; false
 
-
-
-(sequential? [])  ; true
-(sequential? '()) ; true
-(sequential? :3)  ; false
