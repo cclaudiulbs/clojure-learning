@@ -1343,3 +1343,17 @@
 (binary-tree? [ 1 nil  [2 [3 nil nil] [4 nil nil]]  ]) ; true -> handle right-branch as well
 (binary-tree? '(:a nil ()))                            ; false
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Difficulty:	Medium
+;; Topics:	strings
+;; Create a function which takes lower-case and converts to java lowerCase camelCase
+(defn camel->case
+  [that]
+  (let [[head & tail] (clojure.string/split that #"-")]
+    (apply str
+      (reduce
+         (fn [xs x]
+            (conj xs (apply str (conj (rest x) (clojure.string/upper-case (first x))))))
+       [head] tail))))
+
+(camel->case "lower-case") ; "lowerCase"
