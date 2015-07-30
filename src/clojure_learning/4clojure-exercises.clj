@@ -1357,3 +1357,65 @@
        [head] tail))))
 
 (camel->case "lower-case") ; "lowerCase"
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Difficulty: Medium
+;; Write a function that splits a sentence up into a sorted list of words.
+;; Capitalization should not affect sort order and punctuation should be ignored.
+;; (= (__  "Have a nice day.") ["a" "day" "Have" "nice"])
+(defn sort-words
+  [xs]
+  (-> xs
+      (clojure.string/replace #"[^\s|\w]" "")
+      (clojure.string/split #"\s")
+      ((partial sort-by (comp clojure.string/lower-case)))))
+
+(sort-words "Have a nice day.")
+(doc sort-by)
+(sort-by (comp str first) ["have" "a" "nice"])
+
+
+;; brean teaser:
+(class (class (class []))) ; (class Class) java.lang.Class
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Difficulty: Easy? -> really i don't see this quite easy ;) as it's implying an algorithm...
+;; Pascal's triangle:
+;; - The first row is 1.
+;; - Each successive row is computed by adding together adjacent numbers in the row above,
+;;   and adding a 1 to the beginning and end of the row.
+
+(defn pascal-triangle [x]
+   (letfn [(make-row-until [x] (->> (repeat 1) (take x) vec))
+           (sum-adiacents [xs]
+              (loop [acc []
+                    [head & tail] xs]
+                (if (nil? tail) acc
+                (recur (conj acc (+ head (first tail))) tail))))]
+
+     (loop [acc (make-row-until 2)]
+       (if (= x (count acc))
+         acc
+         (if (< x 3)
+           (make-row-until x)
+           (recur ((comp vec flatten) [1 (sum-adiacents acc) 1])))))))
+
+;; demo:
+(map pascal-triangle (range 1 5))
+;;      ([1]
+;;      [1 1]
+;;     [1 2 1]
+;;    [1 3 3 1])
+
+;; helper func
+(defn sum-adiacents
+  [xs]
+  (loop [acc []
+        [head & tail] xs]
+    (if (nil? tail)
+      acc
+      (recur (conj acc (+ head (first tail))) tail))))
+
+;; nil? tail NOT head -> because we're accessing the tail using [first] function; :else NPE
+(sum-adiacents [1 3 3 1]) ; [4 6 4] -> OK :)

@@ -32,4 +32,13 @@ books ; [:clojure]
 ;; while the [in-ns] function handles the 'java.lang stuff, without creating any mappings
 ;; for functions and macros from 'clojure.core
 
-(all-ns)
+(all-ns) ;; -> list all ns
+
+;; the use of [defn- func] denotes the fact that the function is private to the namespace
+;; in which it was defined.
+;; hiphens must be replaced by underscores when naming a source file.
+
+;; the [ns] macro provides fined resource-management, through the use of:
+;; (ns some-ns (:use :require :load :import)) directives.
+;; the :use directive says use everything from that ns, without the need for prefixing the things.
+;; the :as defines an alias for the given things.
