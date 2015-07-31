@@ -1419,3 +1419,87 @@
 
 ;; nil? tail NOT head -> because we're accessing the tail using [first] function; :else NPE
 (sum-adiacents [1 3 3 1]) ; [4 6 4] -> OK :)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; the dot product
+;; The dot product of two vectors A = [A1, A2, ..., An] and B = [B1, B2, ..., Bn] is defined as:[1]
+;;     [A1 A2...] dot [B1 B2...] = sum{i=1}^n AiBi = A1B1 + A2B2 + ...
+(defn dot-product
+  [xs ys]
+  (reduce + (map #(* % %2) xs ys)))
+
+(dot-product [2 5 6] [100 10 1]) ; 256
+
+(defn dot-product
+  [xs ys]
+  (reduce
+     (fn [acc tuple] (+ (apply * tuple) acc))
+     0 (partition 2 (interleave xs ys))))
+
+(defn dot-product
+  ([xs ys] (apply + (dot-product xs ys [])))
+  ([[head1 & tail1] [head2 & tail2] acc]
+  (if (or (nil? head1) (nil? head2))
+      acc
+      (dot-product tail1 tail2 (conj acc (* head1 head2))))))
+
+(dot-product [2 5 6] [100 10 1]) ; 256
+;; the second function is used to accumulate the results of the first multiplication op
+;; while the invoker function is wrapped by the [apply] which applies the + func to the
+;; returned accumulator.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Count Occurrences
+;;  Difficulty:	Medium
+;; Topics:	seqs core-functions
+;; Restrictions: [frequencies]
+;; (= (__ [1 1 2 3 2 1 1]) {1 4, 2 2, 3 1})
+(defn frequencies-c
+  [xs]
+  (reduce
+     (fn [m k]
+       (if-let [[k v] (find m k)]
+         (assoc m k (inc v))
+         (assoc m k 1)))
+     {} xs))
+
+(frequencies-c [1 1 2 3 2 1 1])
+
+(find {1 2, 3 2} 1) ; [1 2]
+(get {1 2, 3 2} 1)  ; 2
+(assoc {1 2} 3 2)   ; {3 2, 1 2}
+(find {} 1) ; nil
+
+;; an interesting other user solution is:
+(defn count-occurs [xs]
+  (reduce
+    (fn [m k]
+      (update-in m [k]
+               (fn [x]
+                 (if
+                   (nil? x) 1
+                   (inc x)))))
+    {} xs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Parantheses Again
+;; Difficulty:	Medium
+;;
+;; Topics:	math combinatorics
+;; It is not a difficult exercise to find all the combinations of well-formed parentheses
+;; if we only have N pairs to work with. For instance, if we only have 2 pairs,
+;; we only have two possible combinations: "()()" and "(())".
+;; Any other combination of length 4 is ill-formed.
+;; (= #{"((()))" "()()()" "()(())" "(())()" "(()())"} (__ 3))
+(defn generate-parans
+  ([x] (generate-parans x []))
+  ([x buffer]
+   (letfn [(max-parans? [] (= (* x x) (count buffer)))]
+     (if (max-parans?)
+       buffer
+       (if (and (= (last buffer) "(") (= (count buffer) x))
+         (conj buffer ")")
+         (conj buffer "("))))))
+
+;; TODO: WIP
+(generate-parans 2)
