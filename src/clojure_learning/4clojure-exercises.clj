@@ -1491,15 +1491,80 @@
 ;; we only have two possible combinations: "()()" and "(())".
 ;; Any other combination of length 4 is ill-formed.
 ;; (= #{"((()))" "()()()" "()(())" "(())()" "(()())"} (__ 3))
+(require 'clojure.string)
 (defn generate-parans
-  ([x] (generate-parans x []))
-  ([x buffer]
-   (letfn [(max-parans? [] (= (* x x) (count buffer)))]
-     (if (max-parans?)
-       buffer
-       (if (and (= (last buffer) "(") (= (count buffer) x))
-         (conj buffer ")")
-         (conj buffer "("))))))
+  ([x]
+   (letfn [(to-binary
+              [x]
+              (Integer/toBinaryString x))
+           (left-padding
+              [bin-num]
+              (apply str (conj (repeat (inc (count bin-num)) 0) bin-num)))
+           (pow [x n] (reduce #(* % %2) (repeat n x)))]
 
-;; TODO: WIP
-(generate-parans 2)
+  (let [raw-mapped-bins (map #(left-padding (to-binary %)) (range (pow 2 x)))
+        mapped-bins raw-mapped-bins]
+    mapped-bins ))))
+
+;; WIP: not ready
+(generate-parans 3)
+(class (Integer. 2))
+(Integer/toBinaryString 3)
+
+;; here's the working solution:
+(defn gen-parans [x]
+  (letfn [(pow [x n]
+              (reduce * (repeat n x)))
+          (to-binary [x]
+              (Integer/toBinaryString x))
+          (left-padding [bin-num]
+             (apply str (conj (vec (repeat (- x (count bin-num)) 0) ) bin-num)))
+          (binary-nums-padded [exp]
+              (map (comp left-padding to-binary) (range 0 (pow 2 exp))))
+          (nest-op [acc]
+              (str "(" acc ")" ))
+          (nest-op? [each-exp]
+              (= 1 (Integer. (str each-exp))))
+          (append-op [acc]
+              (str acc "()"))
+          (gen-parans-recur
+             [binary-seq]
+             (loop [[head & tail] binary-seq
+                     acc ""]
+                 (if (nil? head)
+                    acc
+                   (if (nest-op? head)
+                     (recur tail (nest-op acc))
+                     (recur tail (append-op acc))))))]
+
+    (apply hash-set (map gen-parans-recur (binary-nums-padded x)))))
+
+;; 010
+(gen-parans 3)
+
+;; "(()())" "((()))" "()()()" "(())()"
+
+;; binary-nums-padded:
+;; "000"
+;; "001"
+;; "010"
+;; "100"
+;; "110"
+;; "011"
+;; "101"
+;; "111"
+
+;; work:
+(defn append-op [each-exp]
+    (format "%1s()" (clojure.string/replace each-exp #"0|1" "()")))
+(append-op \0);  ()()
+
+(let [[head & tail] "010"] [head tail]) ; [\0 \1 \0]
+(let [[head & tail] "010"] (clojure.string/replace head "0" "()")) ; "()"
+
+(map #(Integer. (str %)) (vec "123")) ; (1 2 3)
+
+(defn wrap-op [str-token]
+    (format "(%1s)" (clojure.string/replace str-token #"0|1" "()")))
+(wrap-op (str \0)) ; (())
+(clojure.string/replace "0" #"0|1" "()") ; "()"
