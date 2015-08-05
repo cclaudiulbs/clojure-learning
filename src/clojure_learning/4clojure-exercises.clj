@@ -1491,28 +1491,7 @@
 ;; we only have two possible combinations: "()()" and "(())".
 ;; Any other combination of length 4 is ill-formed.
 ;; (= #{"((()))" "()()()" "()(())" "(())()" "(()())"} (__ 3))
-(require 'clojure.string)
-(defn generate-parans
-  ([x]
-   (letfn [(to-binary
-              [x]
-              (Integer/toBinaryString x))
-           (left-padding
-              [bin-num]
-              (apply str (conj (repeat (inc (count bin-num)) 0) bin-num)))
-           (pow [x n] (reduce #(* % %2) (repeat n x)))]
-
-  (let [raw-mapped-bins (map #(left-padding (to-binary %)) (range (pow 2 x)))
-        mapped-bins raw-mapped-bins]
-    mapped-bins ))))
-
-;; WIP: not ready
-(generate-parans 3)
-(class (Integer. 2))
-(Integer/toBinaryString 3)
-
-;; here's the working solution:
-(defn gen-parans [x]
+(defn gen-parentheses [x]
   (letfn [(pow [x n]
               (reduce * (repeat n x)))
           (to-binary [x]
@@ -1522,27 +1501,60 @@
           (binary-nums-padded [exp]
               (map (comp left-padding to-binary) (range 0 (pow 2 exp))))
           (nest-op [acc]
-              (str "(" acc ")" ))
+              (list acc ))
           (nest-op? [each-exp]
               (= 1 (Integer. (str each-exp))))
-          (append-op [acc]
-              (str acc "()"))
-          (gen-parans-recur
+          (append-right [acc]
+              (conj acc ()))
+          (gen-parens-recur
              [binary-seq]
              (loop [[head & tail] binary-seq
-                     acc ""]
+                     acc ()]
                  (if (nil? head)
                     acc
                    (if (nest-op? head)
                      (recur tail (nest-op acc))
-                     (recur tail (append-op acc))))))]
+                     (recur tail (append-right acc))))))
+           (drop-leading-trailing-parens
+              [grouping-pars]
+              (apply str (butlast (rest grouping-pars))))]
 
-    (apply hash-set (map gen-parans-recur (binary-nums-padded x)))))
+    (let [r-appended-gen-parens (map gen-parens-recur (binary-nums-padded x))
+          l-appended-gen-parens (map reverse r-appended-gen-parens)]
+      (apply hash-set
+        (map
+           (comp drop-leading-trailing-parens str)
+           (concat l-appended-gen-parens r-appended-gen-parens))))))
 
-;; 010
-(gen-parans 3)
+;; demo:
+(gen-parentheses 2) ; #{"() ()" "(())"}
+(gen-parentheses 3) ; #{"((()))" "() (())" "(()) ()" "() () ()" "(() ())"}
 
-;; "(()())" "((()))" "()()()" "(())()"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; notes: each r-l gen parens generate a similar structure:
+;; (
+;;    (() () ()), ((() ())), ((()) ()), (((()))), (() () ()), ((() ())), ((()) ()), (((())))
+;; )
+
+;; the solution is to:
+;;    build function to drop the left-most + right-most parentheses
+(apply str (butlast (rest "(() () ())")))
+
+;; now define a nice function:
+(defn drop-leading-pars
+  [grouping-pars]
+  (apply str (butlast (rest grouping-pars))))
+
+;; demo:
+(drop-leading-pars "(() () ())") ; "() () ()"
+
+(apply str (map str (reverse "cclaudiu"))) ; "uidualcc"
+
+;; the current solution uses two operations: adding + nesting the grouping parentheses, that's why
+;; we can group them as a binary operation, and using the custom "pow" function we generate all
+;; the possible aggregations. having duplicates we now discard them using the hash-set features.
+;; The thing is that we have a left-add + right-add is because to handle the reverse situation
+;; in which case the acc is reversed by the adder.
 
 ;; binary-nums-padded:
 ;; "000"
@@ -1559,7 +1571,7 @@
     (format "%1s()" (clojure.string/replace each-exp #"0|1" "()")))
 (append-op \0);  ()()
 
-(let [[head & tail] "010"] [head tail]) ; [\0 \1 \0]
+(let [[head & tail] "010"] [head tail]) ; [\0 (\1 \0)]
 (let [[head & tail] "010"] (clojure.string/replace head "0" "()")) ; "()"
 
 (map #(Integer. (str %)) (vec "123")) ; (1 2 3)
@@ -1568,3 +1580,4 @@
     (format "(%1s)" (clojure.string/replace str-token #"0|1" "()")))
 (wrap-op (str \0)) ; (())
 (clojure.string/replace "0" #"0|1" "()") ; "()"
+(list ())  ; (())
