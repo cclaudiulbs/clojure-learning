@@ -1491,7 +1491,28 @@
 ;; we only have two possible combinations: "()()" and "(())".
 ;; Any other combination of length 4 is ill-formed.
 ;; (= #{"((()))" "()()()" "()(())" "(())()" "(()())"} (__ 3))
-(defn gen-parentheses [x]
+(require 'clojure.string)
+(defn generate-parans
+  ([x]
+   (letfn [(to-binary
+              [x]
+              (Integer/toBinaryString x))
+           (left-padding
+              [bin-num]
+              (apply str (conj (repeat (inc (count bin-num)) 0) bin-num)))
+           (pow [x n] (reduce #(* % %2) (repeat n x)))]
+
+  (let [raw-mapped-bins (map #(left-padding (to-binary %)) (range (pow 2 x)))
+        mapped-bins raw-mapped-bins]
+    mapped-bins ))))
+
+;; WIP: not ready
+(generate-parans 3)
+(class (Integer. 2))
+(Integer/toBinaryString 3)
+
+;; here's the working solution:
+(defn gen-parans [x]
   (letfn [(pow [x n]
               (reduce * (repeat n x)))
           (to-binary [x]
@@ -1499,7 +1520,8 @@
           (left-padding [bin-num]
              (apply str (conj (vec (repeat (- x (count bin-num)) 0) ) bin-num)))
           (binary-nums-padded [exp]
-              (map (comp left-padding to-binary) (range 0 (pow 2 exp))))
+              (if (zero? exp) nil
+                (map (comp left-padding to-binary) (range 0 (pow 2 exp)))))
           (nest-op [acc]
               (list acc ))
           (nest-op? [each-exp]
@@ -1580,4 +1602,63 @@
     (format "(%1s)" (clojure.string/replace str-token #"0|1" "()")))
 (wrap-op (str \0)) ; (())
 (clojure.string/replace "0" #"0|1" "()") ; "()"
-(list ())  ; (())
+
+
+;; my version of generate-parentheses was a litlle bit simpler :) in that
+;; i start with the repeated sets of l-parens + r-parens, and combine them
+;; by a "step"; "step" here is to say: combine ( or (( or ((( with the reflexive version of right-hand parens
+;; we will take an iterative progress of implementing this neat function :)
+;; WIP:
+(defn gen-parens
+  ([x]
+    (let [l-parens (vec (repeat x "("))
+          r-parens (vec (repeat x ")"))]
+       (apply str (gen-parens 1 l-parens r-parens []))))
+
+  ([step l-parens r-parens acc]
+      (if (nil? (first l-parens))
+            acc
+            (if (= 1 (count l-parens))
+              (conj acc (first l-parens) (first r-parens))
+              (concat (gen-parens step (subvec l-parens step) (subvec r-parens step) acc)
+                      (take step l-parens) (take step r-parens))))))
+
+;; for instance this function taking a step of 1, and 2(as 2 pairs) produces:
+(gen-parens 2) ;;   "()()"
+
+;; if we modify the step to 2, it will produce a set of nested parentheses:
+(gen-parens 2) ;;   "(())"
+
+;; NOTE:
+;; for a step higher than the number x provided to combine the parens, it throws an IndexOutOfBoundsException
+;; normally
+
+;; ofcourse we need all the possible valid combinations, so we should [map] through all the possibles
+;; "step"s from 1..total of repeated set of parens
+;; WIP still:
+(defn gen-parens
+  ([x]
+    (let [l-parens (vec (repeat x "("))
+          r-parens (vec (repeat x ")"))]
+       (map
+          (fn [each-step] (gen-parens each-step l-parens r-parens []))
+          (range 1 (inc x)))))
+
+  ([step l-parens r-parens acc]
+      (if (nil? (first l-parens))
+            acc
+            (if (zero? (dec (count l-parens)))
+              (conj acc (first l-parens) (first r-parens))
+              (concat (gen-parens step (subvec l-parens step) (subvec r-parens step) acc)
+                      (take step l-parens) (take step r-parens))))))
+
+;; the change, here, is mapping through all the steps starting from 1 to (inc x) to include total,
+;; because [range] excludes the last by default;
+;; the function produces:
+(gen-parens 2) ;;   ( "(" ")" "(" ")" ), ( "(" "(" ")" ")" )
+
+;; we also need to reverse the possible combinations, because for 3 the function produces:
+(gen-parens 3) ;;
+;; one-("(" ")" "(" ")" "(" ")"), two-("(" ")" "(" "(" ")" ")"),  last-("(" "(" "(" ")" ")" ")")
+
+;; as we see the second need to produce also the reversed version -> final version:
