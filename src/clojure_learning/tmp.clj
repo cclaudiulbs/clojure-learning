@@ -18,7 +18,8 @@
           l-combinations (map-over l-parens r-parens lazy-take-fn lazy-subvec-fn x [])
           r-combinations (map-over l-parens r-parens lazy-subvec-fn lazy-take-fn x [])]
 
-      (apply hash-set (map #(apply str %) (concat l-combinations r-combinations))))))
+      (apply hash-set (concat l-combinations r-combinations))
+      l-combinations)))
 
   ([step l-parens r-parens l-func r-func acc]
       (if (nil? (first l-parens))
@@ -30,10 +31,13 @@
               )))))
 
 
-(gen-parens 4) ;; "((()))" "()()()" "()(())" "(())()"
-;; "(())(())" "()((()))"
+(gen-parens 4)
 
-;; "(()()())" "(()())()" "((())())" "(())()()" "((()()))"
+;; missing from cip's version of binary:
+;; "(())(())"
+
+;; what he has over my vs:
+;; "(() ()) ()" "() (() ())" "() () (())" "(() (()))" "((() ()))" "(()) () ()" "(() () ())"
 
 ;; (range 1 (inc x)) -> is saying take (-1 and include the total
 (range 1 (inc 3)) ; (1 2 3)

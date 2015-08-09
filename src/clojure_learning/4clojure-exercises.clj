@@ -1512,7 +1512,7 @@
 (Integer/toBinaryString 3)
 
 ;; here's the working solution:
-(defn gen-parans [x]
+(defn gen-parentheses [x]
   (letfn [(pow [x n]
               (reduce * (repeat n x)))
           (to-binary [x]
@@ -1551,6 +1551,10 @@
 ;; demo:
 (gen-parentheses 2) ; #{"() ()" "(())"}
 (gen-parentheses 3) ; #{"((()))" "() (())" "(()) ()" "() () ()" "(() ())"}
+
+(gen-parentheses 4) ;
+
+(count (gen-parentheses 10))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; notes: each r-l gen parens generate a similar structure:
