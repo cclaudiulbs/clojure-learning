@@ -42,3 +42,31 @@ books ; [:clojure]
 ;; (ns some-ns (:use :require :load :import)) directives.
 ;; the :use directive says use everything from that ns, without the need for prefixing the things.
 ;; the :as defines an alias for the given things.
+
+
+(defrecord TreeNode [val l-branch r-branch])
+(def customer (->TreeNode 4 nil nil))
+
+(str (:val customer)) ; "cclaudiu"
+(keys customer)       ; (:val :l-branch :r-branch)
+
+(defn xconj
+  [node val]
+  (if (nil? node)
+    (->TreeNode val nil nil)
+    (if (< val (:val node))
+      (->TreeNode (:val node) (xconj (:l-branch node) val) (:r-branch node))
+      (->TreeNode (:val node) (:l-branch node) (xconj (:r-branch node) val)))))
+
+(def job (xconj customer 2))
+job                      ;; TreeNode{:val 4,
+;;    :l-branch                                               :r-branch nil}
+;; #user.TreeNode{:val 2, :l-branch nil, :r-branch nil}
+
+
+;; listing a binary tree:
+(defn xseq [tree]
+  (when tree
+    (lazy-cat (xseq (:l-branch tree)) [(:val tree)] (xseq (:r-branch tree)))))
+(xseq job) ; (2 4)
+
