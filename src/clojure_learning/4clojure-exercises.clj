@@ -1666,3 +1666,223 @@
 ;; one-("(" ")" "(" ")" "(" ")"), two-("(" ")" "(" "(" ")" ")"),  last-("(" "(" "(" ")" ")" ")")
 
 ;; as we see the second need to produce also the reversed version -> final version:
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; Split by Type
+;; Difficulty:	Medium
+;; Topics:	seqs
+;; Write a function which takes a sequence consisting of items with different types and splits them up
+;; into a set of homogeneous sub-sequences. The internal order of each sub-sequence should be maintained,
+;; but the sub-sequences themselves can be returned in any order (this is why 'set' is used in the test cases).
+;; (= (set (__ [1 :a 2 :b 3 :c])) #{[1 2 3] [:a :b :c]})
+(sort-by #() [1 :a 2 :b 3 :c])
+(reduce
+   (fn [xs-map each]
+     (if-let [m-vals (get xs-map (class each))]
+       (assoc xs-map (class each) (conj m-vals each))
+       (assoc xs-map (class each) (conj [] each)))) {} [1 :a 2 :b 3 :c])
+;; --> {clojure.lang.Keyword [:a :b :c] [1 2 3]}
+
+;; make a nice function:
+(defn split-by-type
+  [xs]
+  (letfn [(map-marshall [xs]
+             (reduce
+               (fn [xs-map x]
+                 (if-let [m-vals (get xs-map (class x))]
+                   (assoc xs-map (class x) (conj m-vals x))
+                   (assoc xs-map (class x) (conj [] x)))) {} xs))]
+    (apply hash-set (vals (map-marshall xs)))))
+
+;; demo:
+(split-by-type [1 :a 2 :b 3 :c]) ;; #{[:a :b :c] [1 2 3]}
+
+;; another neat solution is:
+(#(vals (group-by type %)) [1 :a 2 :b 3 :c]) ([1 2 3] [:a :b :c])
+
+
+;; work:
+(vals {:a [1 2 3] :b [4 5 6]}) ;; ([1 2 3] [4 5 6]) -> a list of vals
+(get {(class 1) 2} (class 1)) ;; 2
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; Find Distinct Items
+;; Difficulty:	Medium
+;; Topics:	seqs core-functions
+;; Special Restrictions: [clojure.core/distinct]
+;; Write a function which removes the duplicates from a sequence. Order of the items must be maintained.
+;; (= (__ [1 2 1 3 1 2 4]) [1 2 3 4])
+
+;; using recursion:
+(defn find-distinct
+  ([xs] (find-distinct (reverse xs) [])) ;; reverse for going recur's till end -> build from end
+  ([[head & tail] uniques]
+     (if (nil? head)
+        uniques
+        (if ((comp not empty?) (filter #(= head %) tail))
+          (recur tail uniques)
+          (conj (find-distinct tail uniques) head)))))
+
+;; demo:
+(find-distinct '([2 4] [1 2] [1 3] [1 3])) ; [[2 4] [1 2] [1 3]]
+(find-distinct [1 2 1 3 1 2 4]) ; [1 2 3 4]
+
+;; using HOFs:
+(defn find-distinct [xs]
+  (reduce
+     (fn [uniques x]
+       (if (empty? (filter (partial = x) uniques))
+         (conj uniques x)
+         uniques))
+     [] xs))
+
+
+(compare [1 2] [1 2])     ;; 0
+(identical? [1 2] [1 2])  ;; false
+(identical? 2 2)          ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Set Intersection
+;; Difficulty:	Easy
+;; Topics:	set-theory
+;; Write a function which returns the intersection of two sets.
+;; Special Restriction: [clojure.set/intersection]
+;; (= (__ #{0 1 2 3} #{2 3 4 5}) #{2 3})
+(defn find-intersect
+  [xs ys] (reduce #(if (get ys %2) (conj % %2) %) #{} xs))
+
+;; and the readable version :)
+(defn find-intersect
+  [xs ys]
+  (reduce
+     (fn [intersects x]
+       (if (get ys x)
+         (conj intersects x)
+         intersects) )
+      #{} xs))
+
+
+(find-intersect #{0 1 2 3} #{2 3 4 5})     ;; #{3 2}
+
+;; !!!!!!! others solution !!!!!!!
+(filter #{0 1 2 3} #{2 3 4 5})             ;; (3 2)
+((comp set filter) #{0 1 2 3} #{2 3 4 5})  ;; #{3 2}
+
+;; because filter takes a predicate, and the xs-coll acts as the function predicate
+;; while each item from ys is filtered against the xs-predicate function -> which
+;; returns the number or nil if its in the predicate-xs collection....NEAT!!! clojure style
+
+;;;;;;;;;;;;;;;;;;;;
+;; Cartesian Product
+;; Set-theory: easy
+;; (= (__ #{1 2 3} #{4 5})  #{[1 4] [2 4] [3 4] [1 5] [2 5] [3 5]})
+
+;; using HOFs
+(defn cartesian-prod
+  [xs ys]
+  ((comp (partial apply hash-set)
+         (partial partition 2)
+         flatten)
+      (reduce
+         (fn [acc x]
+           (conj acc (map (fn [y] [x y]) ys)))
+         [] xs)))
+
+
+(cartesian-prod #{1 2 3} #{4 5}) ;; #{(2 5) (3 4) (1 4) (1 5) (2 4) (3 5)}
+
+;; using imperative style:
+(defn imperative-cart-prod
+  [xs ys]
+  (apply hash-set (for [x xs
+                        y ys :while (not (nil? x))]
+                    [x y])))
+
+(imperative-cart-prod #{1 2 3} #{4 5}) ;; #{[2 5] [3 4] [1 4] [1 5] [2 4] [3 5]}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Symmetric Difference
+;; Set-theory: Easy
+;; Write a function which returns the symmetric difference of two sets.
+;; The symmetric difference is the set of items belonging to one but not both of the two sets.
+;; (= (__ #{1 2 3 4 5 6} #{1 3 5 7}) #{2 4 6 7})
+(doc clojure.set/difference)
+(clojure.set/difference #{1 2 3 4 5 6} #{1 3 5 7})
+(clojure.set/difference #{1 3 5 7} #{1 2 3 4 5 6})
+(defn diff
+  [xs ys]
+  (merge (clojure.set/difference xs ys) (clojure.set/difference ys xs)))
+
+(diff #{1 2 3 4 5 6} #{1 3 5 7}) ;; #{4 #{7} 6 2}
+
+(defn diff
+  [xs ys]
+  (apply hash-set (lazy-cat (remove xs ys) (remove ys xs))))
+
+;;  #{1 2 3 4 5 6} #{1 3 5 7}
+
+;; remember that: [hash-set] returns the wrapped data-structure with a set
+;; while [set] converts the data-structure to a set
+;; [apply hash-set] behaves in this case like [set], converting the data-structure to a set.
+;; ex:
+(set [1 2 3])            ;; #{1 3 2}
+(hash-set [1 2 3])       ;; #{[1 2 3]}
+(apply hash-set [1 2 3]) ;; #{1 3 2}
+
+;; another solution(other user) is using core-sets funcs:
+;; #(clojure.set/union (clojure.set/difference %1 %2) (clojure.set/difference %2 %1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Recognize Playing Cards
+;; Difficulty:	Easy
+;; Topics:	strings game
+;; http://www.4clojure.com/problem/128 ....long story...
+;; suits - Spades, Hearts, Diamonds, and Clubs
+;; (= {:suit :diamond :rank 10} (__ "DQ"))     ;; DQ = :diamond queen
+;; (= {:suit :heart :rank 3} (__ "H5"))        ;; H5 = :heart 5
+
+;; For purposes of determining rank, we will define the cards to be valued from 0 (the two) to 12 (the ace)
+
+(defn decode-card
+  [card-code]
+  (let [cards-suits {\D :diamond \H :heart \S :spade \C :club}
+        cards-schema ((comp (partial apply hash-map) reverse)
+                        (interleave (range 0 13)
+                                    (concat (map (comp first str) (range 2 10))
+                                            (list \T \J \Q \K \A))))
+        card-suit (first card-code)
+        card-rank (second card-code)]
+    {:suit (get cards-suits card-suit) :rank (get cards-schema card-rank)}))
+
+;; demo:
+(decode-card "H4")  ;;  {:suit :heart, :rank 2}
+
+;; work:
+;; generate cards mappings: 0..12 + map the 10 to T, + J + Q + K + A
+(apply hash-map (interleave (range 0 13) (concat (range 2 10) (list \T \J \Q \K \A))))
+;; {0 2, 7 9, 1 3, 4 6, 6 8, 3 5, 12 \A, 2 4, 11 \K, 9 \J, 5 7, 10 \Q, 8 \T}
+
+;; reverse them, as we get the human readable version: DA -> diamond-ace (for a simpler lookup ONLY)
+((comp (partial apply hash-map) reverse) (interleave (map (comp first str) (range 0 13)) (concat (range 2 10) (list \T \J \Q \K \A))))
+;; {\A \1, 7 \5, 4 \2, \J \9, \K \1, \Q \1, 6 \4, 3 \1, \T \8, 2 \0, 9 \7, 5 \3, 8 \6}
+
+
+(get (into {} (reverse {\D :diamond \S :spade})) \S) ;; :spade
+(get {\D :diamond \S :spade} \S) ;; :spade
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #{#{:a :b :c :d :e} #{:a :b :c :d} #{:a :b :c} #{:a :b} #{:a}}
+(defn not-intersected?
+  ([set-of-sets] (empty? (not-intersected? (vec set-of-sets) (vec set-of-sets) [])))
+  ([[head-set & tail-sets] checked-sets commons]
+   (if (empty? checked-sets)  ;; all sets are checkd for intersect items -> return
+     commons
+     (if (nil? tail-sets)     ;; first set is checked -> step to next, popping the checked-sets
+       (recur checked-sets (rest checked-sets) commons)
+       (let [found? (empty? (filter head-set (first tail-sets)))]
+          (recur (cons head-set (rest tail-sets)) checked-sets (conj commons found?)))))))
+
+(not-intersected? #{#{:a :b :c :d :e} #{:a :b :c :d} #{:a :b :c} #{:a :b} #{:a}}) ; false -> OK
+(not-intersected? #{#{\U} #{\s} #{\e \R \E} #{\P \L} #{\.}}) ; false???
+;; ---> TODO: finish impl

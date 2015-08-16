@@ -494,3 +494,4 @@
 ;; validate the data-that-needs-to-be-validated by applying details-validations rules
 ;; output should be something like a map, having the key bound to the failed validation
 ;; while the value: a vector of messages for which the key failed.
+

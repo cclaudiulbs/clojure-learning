@@ -915,3 +915,11 @@ eval my-queue
 (reduce min '(33 3 4)) ; 3
 (range 1 5)
 
+
+;; remember that: [hash-set] returns the wrapped data-structure with a set
+;; while [set] converts the data-structure to a set
+;; [apply hash-set] behaves in this case like [set], converting the data-structure to a set.
+;; ex:
+(set [1 2 3])            ;; #{1 3 2}
+(hash-set [1 2 3])       ;; #{[1 2 3]}
+(apply hash-set [1 2 3]) ;; #{1 3 2}
