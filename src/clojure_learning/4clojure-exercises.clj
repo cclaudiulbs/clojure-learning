@@ -1872,17 +1872,93 @@
 (get {\D :diamond \S :spade} \S) ;; :spade
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; #{#{:a :b :c :d :e} #{:a :b :c :d} #{:a :b :c} #{:a :b} #{:a}}
+;; Pairwise Disjoint Sets
+;; Difficulty:	Easy
+;; Topics:	set-theory
+;; Given a set of sets, create a function which returns true if no two of those sets have
+;; any elements in common1 and false otherwise
+
 (defn not-intersected?
-  ([set-of-sets] (empty? (not-intersected? (vec set-of-sets) (vec set-of-sets) [])))
+  ([set-of-sets]
+     (empty? (filter false? (not-intersected? (vec set-of-sets) (vec set-of-sets) []))))
+
   ([[head-set & tail-sets] checked-sets commons]
-   (if (empty? checked-sets)  ;; all sets are checkd for intersect items -> return
+   (if (empty? checked-sets)  ;; all sets are checkd for intersect items -> return commons
      commons
-     (if (nil? tail-sets)     ;; first set is checked -> step to next, popping the checked-sets
+     (if (nil? tail-sets)     ;; first set is checked with all others->step to next, popping the checked-sets
        (recur checked-sets (rest checked-sets) commons)
-       (let [found? (empty? (filter head-set (first tail-sets)))]
+       (let [found? (empty? (filter #(contains? head-set %) (first tail-sets)))] ;; *** will use the head-set as the fn-predicate
           (recur (cons head-set (rest tail-sets)) checked-sets (conj commons found?)))))))
 
-(not-intersected? #{#{:a :b :c :d :e} #{:a :b :c :d} #{:a :b :c} #{:a :b} #{:a}}) ; false -> OK
-(not-intersected? #{#{\U} #{\s} #{\e \R \E} #{\P \L} #{\.}}) ; false???
-;; ---> TODO: finish impl
+(not-intersected? #{#{:a :b :c :d :e} #{:a :b :c :d} #{:a :b :c} #{:a :b} #{:a}})
+;; [false false false false false false false false false false false false false false]
+
+(not-intersected? #{#{\U} #{\s} #{\e \R \E} #{\P \L} #{\.}}) ;
+;; [true true true true true true true true true true true true true true]
+
+;; but hey! pretty much the impl is done...because we have something like:
+;; [true true true true true true true true true true true true true true]
+
+;; ...in the output of the overloaded-func we only need to make a [filter] based on the "false"
+;; so that we know neither of the sets are having some common elements.
+
+;; !!!! upsssss.... 1 test is failing:
+(not-intersected? #{
+      #{ (#(-> *)) + (quote mapcat) #_ nil}
+      #{ '+ '* mapcat (comment mapcat)}
+      #{ (do) set contains? nil?}
+      #{ , , , #_, , empty?}}) ;; false ---> OKKKK, treating nils explictly using [contains?]
+
+;; nil is there -> and [filter] by using the head-set as a predicate-func discards nils
+(str #{1 2 (comment mapcat)}) ;; nil 1 2
+(str #{(do) nil?}) ;; nil nil-func
+(str #{ , , ,}) ;; #{}
+
+(filter #{nil 1 2} #{nil 3}) ; () -> this is the cause, present nils as elements
+
+(= nil nil) ;; true
+(contains? #{nil 1 2} nil) ;; true
+(filter #(contains? #{nil 1 2} %) #{nil 3}) ;; (nil)
+(empty? #{nil}) ;; false
+
+;; *** because the predicate func head-set is using [get] internally, is like:
+;; get an element from the collection: #{1 2 3} 2 -> 2
+;; and the [filter] func is seing 2? then not nil -> is taken
+;; but: #{1 2 nil} nil ---->>> nil, and filter works on truthy -> in clojure nil + false -> falsy
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Least Common Multiple <-> the opposite of GCD
+;; Difficulty:	Easy
+;; Topics:	math
+;; Write a function which calculates the least common multiple. Your function should accept a
+;; variable number of positive integers or ratios.
+
+;; LCM(a, b), IS THE SMALLEST POSITIVE INTEGER THAT IS DIVISIBLE BY(BY not WITH) BOTH(inclusive) a AND b.
+;; (== (__ 2 3) 6)
+;; (== (__ 5 3 7) 105)
+;; (== (__ 3/4 1/6) 3/2)
+;; (== (__ 1/3 2/5) 2)
+;; solution:
+;; real numbers:
+;; find the sum of each number -> yielding many sum of nums lists -> find least common number
+
+;; rational:
+;; 1. take all denominators + find their LCM by summing each and found least common number(reuse real-nums impl)
+;; 2. using the LCM for denominators -> build new list of numbers by: multiplying
+;; each fractional number with the found LCM:
+;; (+ (/ 2 21) (/ 1/6)) = (+ (/ 4 42) (/ 7 42)) -> LCM: (/ 11 42)
+(* 42 2/21) ; 4N
+(* 42 1/6)  ; 7N
+;; 3. using the result of processed numerators, divide each with the found LCM and
+;; 4. reduce the sum -> to get the LCM for fractal numbers
+
+
+(numerator 3/2)   ;; 3
+(denominator 3/2) ;; 2
+(take 40 (iterate #(+ % 5) 5)) ;; 5 10 15...105 110
+(take 40 (iterate #(+ % 3) 3)) ;; 3 6 9 ...105 108
+;; --> least common 105
+
+;; actually there's another solution for computing the LCM:
+;; (= LCM(a b) (/ (* a b) gcd(a b)))
