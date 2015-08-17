@@ -1940,25 +1940,45 @@
 ;; (== (__ 3/4 1/6) 3/2)
 ;; (== (__ 1/3 2/5) 2)
 ;; solution:
-;; real numbers:
+;;;;;;; real numbers:
 ;; find the sum of each number -> yielding many sum of nums lists -> find least common number
+;;;;;;; rational:
+;; (= LCM(a b) (/ (* a b) gcd(a b)))
 
-;; rational:
-;; 1. take all denominators + find their LCM by summing each and found least common number(reuse real-nums impl)
-;; 2. using the LCM for denominators -> build new list of numbers by: multiplying
-;; each fractional number with the found LCM:
-;; (+ (/ 2 21) (/ 1/6)) = (+ (/ 4 42) (/ 7 42)) -> LCM: (/ 11 42)
-(* 42 2/21) ; 4N
-(* 42 1/6)  ; 7N
-;; 3. using the result of processed numerators, divide each with the found LCM and
-;; 4. reduce the sum -> to get the LCM for fractal numbers
+(defn lcm [& xs]
+  (letfn [(gen-step-seq [bound step]
+            (take bound (iterate #(+ % step) step)))
+          (real-nums-lcm [xs]
+            (apply min
+                (reduce clojure.set/intersection
+                    (map (comp (partial apply hash-set)
+                               (partial gen-step-seq (reduce * xs)))
+                         xs))))
+          (find-numerators [xs] (map (fn [x] (if (ratio? x) (numerator x) x)) xs))
+          (find-denominators [xs] (map (fn [x] (if (ratio? x) (denominator x) 1)) xs))
+          (find-divisibles [x] (filter #(integer? (/ x %)) (gen-step-seq x 1)))
+          (gcd [xs]
+            (apply max
+              (reduce clojure.set/intersection
+                      (map (comp (partial apply hash-set) find-divisibles) xs))))]
+    (/ (real-nums-lcm (find-numerators xs)) (gcd (find-denominators xs)))))
+
+;; demo:
+(lcm 2 3)         ;; 6 -> OK
+(lcm 1/3 2/5)     ;; 2 -> OK
+(lcm 3/4 1/6)     ;; 3/2 -> NOK 3
+(lcm 7 5/7 2 3/5) ;; 210 -> OK
+(lcm 5 3 7) ;; 105 -> OK
+
+;; most elegant solution:
+(defn lcm [& nums]
+    (letfn [(gcd [a b] (if (zero? b) a (gcd b (mod a b))))]
+      (/ (reduce * nums) (reduce gcd nums))))
 
 
+(doc every?) ;; every pred coll -> boolean: returns true if predicate(x) is true for every x in coll
 (numerator 3/2)   ;; 3
 (denominator 3/2) ;; 2
 (take 40 (iterate #(+ % 5) 5)) ;; 5 10 15...105 110
-(take 40 (iterate #(+ % 3) 3)) ;; 3 6 9 ...105 108
-;; --> least common 105
-
-;; actually there's another solution for computing the LCM:
-;; (= LCM(a b) (/ (* a b) gcd(a b)))
+(apply min [1 2 3]) ;; 1
+(min 1 2 3) ;; 1
