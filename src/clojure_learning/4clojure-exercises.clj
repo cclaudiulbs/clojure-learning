@@ -1982,3 +1982,68 @@
 (take 40 (iterate #(+ % 5) 5)) ;; 5 10 15...105 110
 (apply min [1 2 3]) ;; 1
 (min 1 2 3) ;; 1
+
+;; using euclid algorithm:
+(defn gcd [a b]
+  (if (zero? b) a
+    (gcd b (rem a b))))
+;; for any a>=b
+(gcd 8 5) ;; 1
+(gcd 121 11) ;; 11
+(gcd 72 27) ;; 9
+;; 8 5 -> 5 3 -> 3 2 -> 2 1 -> 1 0 -> 0 1 -> 1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Pascal's Trapezoid
+;; Difficulty:	Easy
+;; Topics:	seqs
+;; Write a function that, for any given input vector of numbers, returns an infinite lazy sequence
+;; of vectors, where each next one is constructed from the previous following the rules used in
+;; Pascal's Triangle. For example, for [3 1 2], the next row is [3 4 3 2].
+;; (= (take 5 (__ [1]))       [[1] [1 1] [1 2 1] [1 3 3 1] [1 4 6 4 1]])
+;; (= (take 2 (__ [3 1 2]))   [[3 1 2] [3 4 3 2]])
+
+;; some warm-up :)
+(defn iterate-lazy [start]
+  (lazy-seq
+     (cons start (iterate-lazy (inc start)))))
+
+;; demo of the iterate-lazy func:
+(take 2 (iterate-lazy 1)) ;; (1 2)
+
+;; real-impl:
+(defn lazy-pascal [xs]
+  (letfn [(new-row-recur
+            [[head secnd & tail]]
+            (if (nil? secnd)
+              (list)
+              (conj (new-row-recur (cons secnd tail)) (+' head secnd))))] ;; don't loose the secnd!
+    (lazy-seq
+       (cons xs (lazy-pascal (concat [(first xs)] (new-row-recur xs) [(last xs)]))))))
+
+;; demo
+(take 2 (lazy-pascal [3 1 2]))
+(take 5 (lazy-pascal [1]))
+
+;; extracting for quicker feedback in the repl:
+(defn new-row [[head secnd & tail]]
+    (if (nil? secnd)
+      (list)
+      (conj (new-row (cons secnd tail)) (+ head secnd))))
+(new-row [3 4 3 2]) ;; (7 7 5)
+(new-row [3 1 2])   ;; (4 3)
+
+;; IMPORTANT: on Arithmetic operations
+;; Beware of arithmetic overflow! In clojure (since version 1.3 in 2011), if you use an
+;; arithmetic operator like [+] and the result is too large to fit into a 64-bit integer,
+;; an exception is thrown.
+;; You can use +' to indicate that you would rather overflow into Clojure's slower, arbitrary-precision bigint.
+
+;; case study on this exercise. reading others solutions:
+;; (fn [v0] (iterate (fn [v] (mapv +' (conj v 0) (cons 0 v))) v0))
+(doc mapv)
+;; or:
+(partial iterate
+           (fn [nums]
+             (vec (map +' (conj nums 0) (cons 0 nums)))))
+
