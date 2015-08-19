@@ -2015,23 +2015,36 @@
 (defn lazy-pascal [xs]
   (letfn [(new-row-recur
             [[head secnd & tail]]
-            (if (nil? secnd)
-              (list)
-              (conj (new-row-recur (cons secnd tail)) (+' head secnd))))] ;; don't loose the secnd!
+             (lazy-seq
+                (if (nil? secnd)
+                  (list)
+                  (conj (new-row-recur (cons secnd tail)) (+ head secnd)))))] ;; don't loose the secnd!
     (lazy-seq
-       (cons xs (lazy-pascal (concat [(first xs)] (new-row-recur xs) [(last xs)]))))))
+       (cons xs (lazy-pascal (lazy-cat [(first xs)] (new-row-recur xs) [(last xs)]))))))
 
 ;; demo
-(take 2 (lazy-pascal [3 1 2]))
-(take 5 (lazy-pascal [1]))
+(take 2 (lazy-pascal [3 1 2])) ;; ([3 1 2] (3 4 3 2))
+(class (take 5 (lazy-pascal [1]))) ;; clojure.lang.LazySeq
+(lazy-pascal [1]) ;; IntegerOverflow -> use: +' to defer a BigInteger instance
+
+(defn new-row-recur
+            [[head secnd & tail]]
+             (lazy-seq
+                (if (nil? secnd)
+                  (lazy-seq)
+                  (conj (new-row-recur (cons secnd tail)) (+ head secnd)))))
+
+(class (new-row-recur [3 4 5 6 9])) ;; clojure.lang.LazySeq
 
 ;; extracting for quicker feedback in the repl:
 (defn new-row [[head secnd & tail]]
     (if (nil? secnd)
       (list)
       (conj (new-row (cons secnd tail)) (+ head secnd))))
+
 (new-row [3 4 3 2]) ;; (7 7 5)
 (new-row [3 1 2])   ;; (4 3)
+(class (new-row [3 1 2])) ;; clojure.lang.PersistentList
 
 ;; IMPORTANT: on Arithmetic operations
 ;; Beware of arithmetic overflow! In clojure (since version 1.3 in 2011), if you use an
@@ -2047,3 +2060,75 @@
            (fn [nums]
              (vec (map +' (conj nums 0) (cons 0 nums)))))
 
+
+;;;;;;;;;;;;;;;;
+;; Juxtaposition
+;; Difficulty:	Medium
+;; Topics:	higher-order-functions core-functions
+;; Take a set of functions and return a new function that takes a variable number of arguments
+;; and returns a sequence containing the result of applying each function
+;; left-to-right to the argument list.
+;; (= [21 6 1] ((__ + max min) 2 3 5 1 6 4))
+(defn juxt-disguised
+  [& funcs]
+  (fn [& args] (map #(apply % args) funcs)))
+
+;; demo:
+((juxt-disguised + max min) 2 3 5 1 6 4)  ;; (21 6 1)
+
+;; now the recursive solution:
+(defn juxt-disguised [& funcs]
+  (fn [& xs]
+    (loop [[head-fn & tail-fns] funcs
+           acc []]
+      (if (nil? head-fn)
+        acc
+        (recur tail-fns (conj acc (apply head-fn xs)))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;; Partition a Sequence
+;; Difficulty:	Medium
+;; Topics:	seqs core-functions
+;; Special Restrictions: partition + partition-all
+
+;; Write a function which returns a sequence of lists of x items each.
+;; Lists of less than x items should not be returned.
+;; (= (__ 3 (range 9)) '((0 1 2) (3 4 5) (6 7 8)))
+;; (= (__ 3 (range 8)) '((0 1 2) (3 4 5)))
+(defn partition-disguised
+  [parted xs]
+  (let [some-part (take parted xs)]
+    (if (< (count some-part) parted) ;; -> replace this with empty? check -> take the rem items
+      (list)
+      (cons some-part (partition-disguised parted (drop (count some-part) xs))))))
+
+(partition-disguised 3 (range 9)) ;; ((0 1 2) (3 4 5) (6 7 8))
+(partition-disguised 3 (range 8)) ;; ((0 1 2) (3 4 5))
+
+(doc drop) ;; drop n xs -> all but n items
+
+;; here's another version now, including the rem items using recursivity:
+(defn my-partition-all
+  [parted xs]
+  (loop [acc [] part [] [head & tail] xs]
+    (if (nil? head)
+        (conj acc part)
+      (if (= (count part) parted)
+        (recur (conj acc part) [] (cons head tail))
+        (recur acc (conj part head) tail)))))
+
+(my-partition-all 3 (range 9)) ;; [[0 1 2] [3 4 5] [6 7 8]]
+(my-partition-all 3 (range 8)) ;; [[0 1 2] [3 4 5] [6 7]]
+
+;; and a version using lazy sequence would be neat:
+(defn lazy-partition
+  [parted xs]
+  (lazy-seq
+    (let [some-part (take parted xs)]
+      (if (< (count some-part) parted) ;; -> replace this with empty? check -> take the rem items
+        (list)
+        (cons some-part (lazy-partition parted (drop (count some-part) xs)))))))
+
+(class (lazy-partition 3 (range 8))) ;; clojure.lang.LazySeq
+(lazy-partition 3 (range 100000000000)) ;; niceeeeeeeeee
