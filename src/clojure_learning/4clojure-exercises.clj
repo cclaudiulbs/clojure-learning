@@ -2018,7 +2018,7 @@
              (lazy-seq
                 (if (nil? secnd)
                   (list)
-                  (conj (new-row-recur (cons secnd tail)) (+ head secnd)))))] ;; don't loose the secnd!
+                  (conj (new-row-recur (cons secnd tail)) (+' head secnd)))))] ;; don't loose the secnd!
     (lazy-seq
        (cons xs (lazy-pascal (lazy-cat [(first xs)] (new-row-recur xs) [(last xs)]))))))
 
@@ -2132,3 +2132,38 @@
 
 (class (lazy-partition 3 (range 8))) ;; clojure.lang.LazySeq
 (lazy-partition 3 (range 100000000000)) ;; niceeeeeeeeee
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Longest Increasing Sub-Seq
+
+;; Difficulty:	Hard
+;; Topics:	seqs
+;; Given a vector of integers, find the longest consecutive sub-sequence of increasing numbers.
+;; If two sub-sequences have the same length, use the one that occurs first.
+;; An increasing sub-sequence must have a length of 2 or greater to qualify.
+;; (= (__ [1 0 1 2 3 0 4 5]) [0 1 2 3])
+;; time-complexity: O(n) <- as it requires to scale all the collection
+(ns hard)
+(defn find-greater-consecs
+  ([[head & tail]] (find-greater-consecs tail [[head]]))
+  ([[head & tail] xs-of-xs]
+   (letfn [(greater-coll [xs ys]
+              (if (< (count xs) (count ys)) ys xs))
+           (find-first-greatest-coll
+              [xs-of-xs]
+              (reduce greater-coll [] xs-of-xs))
+           (apply-min-length-rules [xs-of-xs]
+              (if (> (count xs-of-xs) 1) xs-of-xs []))]
+
+     (if (nil? head)
+       (-> (find-first-greatest-coll xs-of-xs)
+           apply-min-length-rules)
+       (if (= (inc (last (last xs-of-xs))) head)
+           (recur tail (conj xs-of-xs (conj (last xs-of-xs) head)))
+           (recur tail (conj xs-of-xs [head])))))))
+
+
+(find-greater-consecs [1 0 1 2 3 0 4 5 6 7])  ;; [0 1 2 3]
+(find-greater-consecs [7 6 5 4]) ;; [0 1 2 3] ;; []
+
