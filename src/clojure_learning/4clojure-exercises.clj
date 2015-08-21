@@ -2182,25 +2182,19 @@
 ;; hence, abuse of the clojure's values and denormalize the trees into sequences, inversing
 ;; the left->to->right branches and compare the yield sequence-values.
 ;; assume first it's a valid binary tree! then create a function which validates-first the binary-tree?
+;; DEPTH-FIRST-SEARCH -> in depth
 (defn reverse-tree-rec
-  ([tree] (reverse-tree-rec tree []))
-  ([[node l-branch r-branch] rev-tree]
+  ([[node l-branch r-branch]]
      (if (nil? node)
-       rev-tree
-       (if l-branch
-         (recur l-branch (conj rev-tree [node r-branch l-branch]))
-         (recur r-branch (conj rev-tree [node r-branch l-branch]))))))
+       nil
+      [node (reverse-tree-rec r-branch) (reverse-tree-rec l-branch)])))
+
 
 ;;       [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]]
-;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]]
-
+;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
 
 (reverse-tree-rec [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]])
-
-[[2 [3 [4 [5 nil nil] [6 nil nil]] nil] nil]
-   [3 nil [4 [5 nil nil] [6 nil nil]]]
-     [4 [6 nil nil] [5 nil nil]] [5 nil nil]]
-
+;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
 
 ;; work:
 (= [1 [1 2] nil] [1 [1 2] nil]) ;; true
