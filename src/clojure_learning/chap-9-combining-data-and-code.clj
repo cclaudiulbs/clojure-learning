@@ -327,3 +327,25 @@ books ; [:clojure]
 ;; like [defrecord] does, hence no: get, assoc in-place!
 ;; for these reasons, we can still lookup the value bound to the new custom-type using java interoperability:
 (.cust-val (->SomeCustomType 3)) ;; 3
+
+;; in the body of a defrecord, we can take up to 2 actions: extend a protocol, or override and extend
+;; java's interfaces/objects
+(defrecord Some [some-val]
+  Object
+  (toString [this] (str "---" some-val "---")))
+
+(str (->Some "cclaudiu")) ;; "---cclaudiu---"
+
+(defn lazy-pascal [xs]
+  (letfn [(new-row-recur [[head secnd & tail]]
+           (lazy-seq
+              (if (nil? secnd)
+                (lazy-seq)
+                (conj (new-row-recur (cons secnd tail)) (+ head secnd)))))]
+    (lazy-seq
+       (cons xs (lazy-pascal (lazy-cat[(first xs)] (new-row-recur xs) [(last xs)]))))))
+
+(take 3 (lazy-pascal [1 2]))
+(class (lazy-pascal [1 2])) ;; clojure.lang.LazySeq
+
+
