@@ -2245,3 +2245,35 @@
 (empty? (filter false? [true false])) ;; same as using filter + empty
 ((comp empty? (partial filter false?)) [true false]) ;; false -> using func composition and partial application
 ((comp empty? (partial filter false?)) [true true]) ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Prime Numbers
+;; Difficulty:	Medium
+;; Topics:	primes
+;; Write a function which returns the first x number of prime numbers.
+;; (= (__ 2) [2 3])
+;; (= (__ 5) [2 3 5 7 11])
+(take 5 (range)) ; (0 1 2 3 4)
+(filter #(zero? (rem 5 %)) (range 2 5)) ;; (5)
+
+(defn prime-nums
+  [bound]
+  (letfn [(prime? [x]
+            (empty? (filter #(zero? (rem x %)) (range 2 x))))]
+    (filter prime? (range 2 bound))))
+
+;; demo:
+(prime-nums 15) ;; (2 3 5 7 11 13)
+
+;; well we should change the impl to return the actually prime-nums primes? x n
+(defn first-x-prime-nums
+  [bound]
+  (letfn [(prime? [x]
+            (empty? (filter #(zero? (rem x %)) (range 2 x))))]
+    (take bound (nnext (filter prime? (range))))))
+
+(first-x-prime-nums 5) ;; (2 3 5 7 11)
+(first-x-prime-nums 2) ;; (2 3)
+
+;; work:
+(filter prime? (nnext (range))) ;; (2 3 5 ... lazyseq to infinite)
