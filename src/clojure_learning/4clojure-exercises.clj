@@ -2189,12 +2189,28 @@
        nil
       [node (reverse-tree-rec r-branch) (reverse-tree-rec l-branch)])))
 
-
-;;       [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]]
-;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
-
+;; demo:
 (reverse-tree-rec [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]])
 ;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
+
+;; going further on validating the nested-binary-tree-like-data-structures
+(defn validate-binary-tree
+  [[node l-branch r-branch :as xs]]
+  (letfn [(node? [xs] (= 3 (count xs)))]
+    (if (nil? node) []
+      (lazy-cat
+        (conj (validate-binary-tree l-branch) (node? xs))
+        (conj (validate-binary-tree r-branch) (node? xs))))))
+
+(validate-binary-tree [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil])
+;; (true true true true true true true true true true)
+
+(validate-binary-tree [[3 nil [4 [6 nil nil] [5 nil nil]]] nil])
+;; (false false) --> OK
+
+;; going further on implementing the real solution from these function composed
+(defn comp-balanced-bin-tree?
+  [tree-xs tree-ys]())
 
 ;; work:
 (= [1 [1 2] nil] [1 [1 2] nil]) ;; true
