@@ -102,9 +102,10 @@
 ;;;;;;
 ;; Delay macro
 ;;;;;;
+;; Delays allow us to define a "task-definition" without having to execute it, right aways, or
+;; require the result immediately.
 ;; Delays are behaving as complement to futures, in that we controll WHEN the task should be executed.
 ;; we do this by using [force] function. <-- causing a task to start.
-(doc delay)
 (def d (delay
           (let [msg "some nice message would only be executed when [force] is invoked on this delay"]
                 msg)))
@@ -112,8 +113,64 @@
 d         ;; Delay -> pending -> not executed YET
 (force d) ;; "some nice message..." gets printed
 
-;; As in [future] s case [delay] s requests are executed ONCE! and the results are CACHED!
+;; As in [future] case [delay] requests are executed ONLY ONCE! and the results are CACHED!
 
 ;;;;;;;;;
 ;; Promises
 ;;;;;;;;;
+;; Promises allow to decouple the results of executions, from the task that produce those results,
+;; and WHEN that task is scheduled to run.
+;; for creating a promise: [promise], and serve a value to a promise using: [deliver]
+(doc deliver) ;; deliver to-promise value -> nil
+;; One can only deliver a value to a promise ONLY ONCE, as in the case with futures/delays.
+;; trying to dereference the value earlier would yield a blocking mechanism.
+
+;; Promises open the world to clean asynchronous programming style. For instance in javascript,
+;; jQuery provides promises, that provide the solution to what is called - callback-hell scenario.
+;; the cool thing in clojure, is that one can [deliver] values to the promise in cause.
+;; in fact this is the only mechanism to pass something to a promise, since a promise
+;; returns a promise-object
+(let [my-promise (promise)] (class my-promise)) ;; clojure.core$promise$reify
+(let [my-promise (promise)]
+  (deliver my-promise 4)
+  (deref my-promise))  ;; 4
+
+;; the [deliver] func can be used oNLY ONCE to pass a value to a promise.
+(let [my-promise (promise)]
+    (println "Future will start immediately in another thread but waiting the deref-promise-value")
+    (future  (println (format "future gets promise value and executes: %1s" (deref my-promise))))
+    (Thread/sleep 2000)
+    (deliver my-promise "cclaudiu"))
+
+;; This is in fact what i'm finding interesting, while using promises. To control the execution
+;; from outside and not from inside the callbacks.
+;; Here, defined [future] starts execution immediately in another thread, but it has a dependency
+;; on the dereferenced value for the promise. Other computation might replace Thread/sleep,
+;; and once we have some ajax-callback-respone, we can [deliver] it to our RUNNING FUTURE,
+;; that will resume execution.
+;; This concept requires mixin the promise with the future use-cases.
+
+;; Instead, "state" means "the value of an identity at a point in time."
+;; Atoms correspond to the idea of values in Clojure.
+;; It's clear that numbers are values. How would it make sense for the number 15 to "mutate"
+;; into another number? It wouldn't! All of Clojure's built-in data structures are likewise values.
+;; They're just as unchanging and stable as numbers.
+
+;; These atoms are produced by some metaphysical process.
+;; You'll see how Clojure implements this idea in a minute.
+;; For example, the "Cuddle Zombie" process gets applied to the atom F1 to produce atom F2.
+;; The process then gets applied to the atom F2 to produce atom F3, and so on.
+
+;; This makes even more sense when you consider that, in your programs, you are dealing with
+;; information about the world. It doesn't make sense to say that information has changed;
+;; it only makes sense to say that you've received new information.
+;; At 12:00pm on Friday, Fred was in a state of 50% decayed. At 1:00pm, he was 60% decayed.
+;; These are both facts that you can process, and
+;; THE INTRODUCTION OF A NEW FACT DOES NOT INVALIDATE A PREVIOUS FACT.
+
+;; Now i consider the functional thinking is more into normal processes and concepts than OOP.
+;; Why because, it makes sense to think, that if you change, you don't invalidate old states.
+;; those states remain unchanged, but it is the thinking that NEW events/states are added
+;; and old/states cannot be changed anymore.
+
+

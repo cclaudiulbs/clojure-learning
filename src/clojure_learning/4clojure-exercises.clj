@@ -2179,28 +2179,32 @@
 ;;           [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]])
 ;;        true)
 ;; how i think of? it's quite hard to go recursively and compare both trees from the inner-most level
-;; hence, abuse of the clojure's values and denormalize the trees into sequences, inversing
+;; using clojure's support for values over identities, denormalize the trees into sequences, inversing
 ;; the left->to->right branches and compare the yield sequence-values.
 ;; assume first it's a valid binary tree! then create a function which validates-first the binary-tree?
+
 ;; DEPTH-FIRST-SEARCH -> in depth
+;; Step1: reverse the so-called-binary-tree
 (defn reverse-tree-rec
   ([[node l-branch r-branch]]
-     (if (nil? node)
-       nil
-      [node (reverse-tree-rec r-branch) (reverse-tree-rec l-branch)])))
+     (when-not (nil? node)
+        [node (reverse-tree-rec r-branch) (reverse-tree-rec l-branch)])))
 
 ;; demo:
 (reverse-tree-rec [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]])
-;;       [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
+;;                [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]
 
-;; going further on validating the nested-binary-tree-like-data-structures
+;; go recursively INSIDE the binary tree reversing the branches: left-with-right, but start
+
+;; Step2: going further on validating the nested-binary-tree-like-data-structures
 (defn validate-binary-tree
-  [[node l-branch r-branch :as xs]]
+  [[node l-branch r-branch :as tree]]
   (letfn [(node? [xs] (= 3 (count xs)))]
-    (if (nil? node) []
+    (if (nil? node)
+      []
       (lazy-cat
-        (conj (validate-binary-tree l-branch) (node? xs))
-        (conj (validate-binary-tree r-branch) (node? xs))))))
+        (conj (validate-binary-tree l-branch) (node? tree))
+        (conj (validate-binary-tree r-branch) (node? tree))))))
 
 (validate-binary-tree [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil])
 ;; (true true true true true true true true true true)
@@ -2208,9 +2212,36 @@
 (validate-binary-tree [[3 nil [4 [6 nil nil] [5 nil nil]]] nil])
 ;; (false false) --> OK
 
-;; going further on implementing the real solution from these function composed
-(defn comp-balanced-bin-tree?
-  [tree-xs tree-ys]())
+;; Step3: implement the real solution using these function composed
+(defn symetric-bin-tree?
+  [[node l-branch r-branch :as tree]]
+  (letfn [(bin-tree-nodes?
+            [[node l-branch r-branch :as tree]]         ;; destructing the so called tree:bind names to coll items
+              (letfn [(node? [xs] (= 3 (count xs)))]
+                (if (nil? node)
+                  []
+                  (lazy-cat
+                    (conj (bin-tree-nodes? l-branch) (node? tree))
+                    (conj (bin-tree-nodes? r-branch) (node? tree))))))
+
+          (binary-tree? [tree] (every? true? (bin-tree-nodes? tree)))
+
+          (reverse-tree-recur
+             [[node l-branch r-branch]]
+             (when-not (nil? node)
+                [node (reverse-tree-recur r-branch) (reverse-tree-recur l-branch)]))]
+    (and (binary-tree? tree)
+         (= l-branch (reverse-tree-recur r-branch)))))
 
 ;; work:
-(= [1 [1 2] nil] [1 [1 2] nil]) ;; true
+(= [1 [1 2] nil] [1 [1 2] nil]) ;; comparing values!!! true
+
+(= (balanced-bin-tree? [1 [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]] [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]])
+       true)
+
+(doc contains?) ;; -> contains? coll key -> returns true if key present in the collection
+(every? true? [true false]) ;; false
+(every? true? [true true])  ;; true
+(empty? (filter false? [true false])) ;; same as using filter + empty
+((comp empty? (partial filter false?)) [true false]) ;; false -> using func composition and partial application
+((comp empty? (partial filter false?)) [true true]) ;; true
