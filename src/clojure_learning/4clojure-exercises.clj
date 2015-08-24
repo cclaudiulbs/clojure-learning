@@ -2277,3 +2277,90 @@
 
 ;; work:
 (filter prime? (nnext (range))) ;; (2 3 5 ... lazyseq to infinite)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Filter Perfect Squares
+;; Difficulty:	Medium
+;; Topics:
+;; Given a string of comma separated integers, write a function which returns a new comma
+;; separated string that ONLY CONTAINS the numbers which are perfect squares.
+;; (= (__ "4,5,6,7,8,9") "4,9")
+;; how i think? create a lazy-pow-seq of each num started from 2. then extract the string-seq
+;; into workable real numbers seq. then found a way to check lazily(as we started with a lazy-solution)
+;; to iterate and check each realified-number in the lazy-pow-seq
+
+;; Step1:
+(defn lazy-pows-start-with [x]
+  (letfn [(pow [x] (reduce * [x x]))]
+  (lazy-seq
+     (cons (pow x) (lazy-pows-start-with (inc x))))))
+
+;; demo:
+(reduce * [8 8]) ;; 64
+
+(class (lazy-pows-start-with 2))  ;; clojure.lang.LazySeq
+(lazy-pows-start-with 2)          ;; (4 9 16 25 36 ...)
+
+;; Step2: impl function to tranform the comma-sep string-seq into a seq of numbers
+(defn to-num-seq [str-seq reg]
+  (map read-string (clojure.string/split str-seq reg)))
+
+;; demo:
+(to-num-seq "4,5,6,7,8,9" #",") ;; (4,5,6,7,8,9)
+
+;; Step3: using a lazy-sequence + recursivity version, over filter which blocks when comparing using predicate
+;; and the produced lazy-pows-seq
+(defn contained-nums
+  [lazy-xs nums acc]
+  (if (empty? nums)
+    acc
+    (if (> (first lazy-xs) (apply max nums))
+      (recur (rest lazy-xs) (rest nums) acc)
+      (if-let [contained-x ((set nums) (first lazy-xs))]
+        (recur (rest lazy-xs) (rest nums) (conj acc contained-x))
+        (recur (rest lazy-xs) nums acc)))))
+
+;; demo:
+(if-let [lazy-pows-seq (lazy-seq [4 9 16 25 36 42 100])]
+  (contained-nums lazy-pows-seq [4 5 6 7 8 9 16] [])) ;; [4 9 16]
+
+(if-let [lazy-pows-seq (lazy-seq [4 9 16 25 36 49 64 81])]
+  (contained-nums lazy-pows-seq [15,16,25,36,37] [])) ;; [16 25 36]
+
+
+;; Real implementation composed of the 3 implemented funcs:
+(defn filter-perf-squares [seq-str]
+  (letfn [(pow-x-start-with
+             [start]
+             (letfn [(pow [x] (reduce * [x x]))]
+               (lazy-seq
+                 (cons (pow start) (pow-x-start-with (inc start))))))
+          (split-by-comma
+            [str-seq]
+             (map read-string (clojure.string/split str-seq #",")))
+          (find-squares
+            [lazy-pows-seq xs acc]
+            (if (empty? xs)
+              (apply str (interpose "," acc))
+              (if (> (first lazy-pows-seq) (apply max xs))
+                (recur (rest lazy-pows-seq) (rest xs) acc)
+                (if-let [contained-x ((set xs) (first lazy-pows-seq))]
+                  (recur (rest lazy-pows-seq) (rest xs) (conj acc contained-x))
+                  (recur (rest lazy-pows-seq) xs acc)))))]
+
+    (find-squares (pow-x-start-with 2) (split-by-comma seq-str) [])))
+
+;; demo:
+(filter-perf-squares "4,5,6,7,8,9")  ;; "4,9"
+(filter-perf-squares "15,16,25,36,37")  ;; "16,25,36"
+
+;; some clojure-doc
+(doc interpose)             ;; interpose sep coll -> lazy-seq items separated by sep
+(interpose "," [1 2 3])             ;; (1 "," 2 "," 3)
+(apply str (interpose "," [1 2 3])) ;; "1,2,3"
+
+;;;;;;; another user interesting solution ;;;;;;;
+(fn [s]
+  (let [xs (map #(Integer. %) (clojure.string/split s #","))
+        p? (fn [x] (some #(= x (* % %)) (range 2 x)))]
+    (clojure.string/join "," (filter p? xs))))
