@@ -173,4 +173,129 @@ d         ;; Delay -> pending -> not executed YET
 ;; those states remain unchanged, but it is the thinking that NEW events/states are added
 ;; and old/states cannot be changed anymore.
 
+;;;;;;;;;;;;;
+;; Atom Reference Types
+;;;;;;;;;;;;;
+;; Atoms are bound to reference only, as they point to some immutable data-structures. however
+;; how i see it, is that an atom operations are defined atomically, that is: either they all succeed
+;; as a unit, either they fail as a whole unit. Now an atom implements the "compare-and-set" semantics
+;; in that the value to be set on the atom is compared first with the previous value, and then set to the
+;; new state. The mechanism is more complex...though. unlike futures/delays/promises any attempts to
+;; dereference them would NOT result in a blocking mechanism. Oposed with futures/delays/promises which
+;; may be interpreted as: "give the result of the computation NOW, i will wait until is done",
+;; the atoms behave slightly in other direction: "give the result of the atom-reference-type regardless
+;; the state in which the computation/value is" -> non-blocking!
+
+(def my-atom (atom {:name "claudiu" :age 34}))
+
+;; 2 types of dereferencing are available:
+@my-atom
+(deref my-atom)
+
+;; once, the atom may be updated, however is not the atomic referenced data which changes, but is only the
+;; reference type. remember clojure has (oposed to java) only mutable references(not mutable references
+;; that point to mutable data, as java). but the operations on the atoms are entirely thread-safe and easy to
+;; share accross threads.
+
+;; the operation to update an atom-reference-type is: [swap!]:
+;; func signature:   swap! [atom-ref func[atom-curr-state]] -> atom-ref-updated
+
+(swap! my-atom (fn [curr-state] (merge-with + curr-state {:age 50})))
+@my-atom
+
+;; it is impossible for my-atom to remain in an unconsistent state.
+;; it is also possible to not lock/hardcode the behavior of updating the atom in the callback func itself,
+;; but rather pass an external value to "update" the atom-reference-type.
+;; the thing is that the callback-func to be applied on the atom-reference-type, takes normally one argument
+;; that is the atom-current-state. but it also can behave and take n-ary arguments. the condition is that
+;; the current-atom-reference-state should be the 1st argument:
+
+;; 1. define a func agnostic:
+(defn update-my-atom
+  [curr-state new-age]
+  (merge-with + curr-state {:age new-age}))
+
+(update-my-atom {:name "cclaudiu" :age 24} 60) ;; {:name "cclaudiu" :age 84}
+
+;; use the defined function to handle atom's state
+@my-atom
+(swap! my-atom update-my-atom 20)   ;; {:age 170 :name "cclaudiu"}
+
+;; Compare and set:how it works?
+;; It reads the current state of the atom
+;; It then applies the update function to that state
+;; Next, it checks whether the value it read in step 1 is identical to the atom's current value
+;; If it is, then swap! updates the atom to refer to the result of step 2
+;; If it isn't, then swap! retries, going through the process again with step 1.
+
+;; one thing to note, is that [swap!] operates synchronous, that is if the callback function happen to
+;; call Thread/sleep -> the update blocks for certain period.
+
+;; The power of prefix notation:
+(< 100 200 300) ;; true
+(let [x 200]
+  (< 100 x 300)) ;; true
+
+;; While atom-reference-types allow us to manage the state of independent identities, there are several times
+;; when we want to cascade a set of changes over a suite of other references. This operation is not approach-able
+;; using atoms, as they relate to mutate reference on each atom indepdendently. We need some sort of mechanism
+;; to simulate transactional db semantics. In Clojure ACI (without D-urables) are supported, since Durable
+;; reffers to persist in some data-store the changes, so that are used later in time.
+;; A-tomic: reffers that either all operations are cascaded as a single unit, either not.
+;; C-onsistent: the state always appear in a consistent state to other-transactions, no partial state here.
+;; I-solated: the changes that are done in one transactions are not seen until there's a commit mechanims
+;;           by other transactions. each transaction has its piece of cake, which is private from others
+
+;; Clojure provides all the A-C-I properties of a database transaction, but in-memory.
+;; [Refs] provide the same concurrency safetyness as a database-transaction.(we're not detail STM for now
+;; but only how to it is applied in clojure)
+
+;; modifying a ref is done by using the mutable-function: [alter] which MUST be done in a transaction.
+;; each transaction is started by invoking the: [dosync] macro.
+(doc dosync) ;; runs the expression in an implicit [do] in a transaction. starts a transaction if NONE
+;; is already running on this thread. -> any uncaught exception aborts the transaction. the effects on Refs
+;; are atomic.
+;; any [alter] ing is done in isolation, and cannot be see from outside of the current transaction -> can
+;; call [alter] as many times as it is needed.
+;; a toy example would be sufficient to understand the power of STM that clojure provides:
+(doc alter) ;; -> must be called in a transaction. alter [ref func & args]
+
+(def counter (ref 0))
+;; spawn 2 threads asynchronous: 1 starts a transaction
+(do
+  (future
+    (dosync
+       (alter counter inc)
+       (println @counter)
+       (Thread/sleep 1000)
+       (alter counter inc)
+       (println @counter)))
+  (Thread/sleep 300)
+  (println @counter))
+
+;; 1   --> printed from inside the future-spawned thread. that thread now sleeps and Scheduler passes to the main thread
+;; 0   --> which does NOT sees the update yet, and prints 0, the initial state of counter, time passes
+;; 2   --> and the future-thread has the chance again to execute, alters again the state and prints 2
+@counter ;; 2
+
+;; automatically the transaction commits the changes when it ends.no need for explicitly closing the transaction.
+;; the commit works similarly to the atom-reference-types compare-and-set semantics. including retries for transaction
+;; commits.
+
+;; "Safe, easy, concurrent coordination of state changes."
+
+;; Here's how [alter] behaves:
+;; 1. Reach outside the transaction and read the ref's current state.
+;; 2. Compare the current state TO the state the ref STARTED within the transaction.
+;; 3. If the two differ, make the entire transaction RETRY
+;; 4. Otherwise COMMIT the altered ref state
+
+;; Refs have one more trick in the bag: [commute]; here's how commute behave as opossed to [alter]
+;; 1. Reach outside the transaction, and take the current state of ref(same as alter until here)
+;; 2. Run the [commute] function AGAIN using the current taken state.
+;; 3. Commit the result
+
+;; [commute] does NOT use a transaction-retry mechanism!!! instead it is used mainly as a performance improver
+;; but this function can leave the data in an inconsistent state. because it does not uses a retrial mechanism
+;; it takes the outside-curr-state only once, and then commits it.
 
