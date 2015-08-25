@@ -2364,3 +2364,104 @@
   (let [xs (map #(Integer. %) (clojure.string/split s #","))
         p? (fn [x] (some #(= x (* % %)) (range 2 x)))]
     (clojure.string/join "," (filter p? xs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Perfect Numbers
+;; Difficulty:	Medium
+;; A number is "perfect" if the sum of its divisors equal the number itself. 6 is a perfect number because 1+2+3=6
+;; (= (__ 6) true)
+;; (= (__ 7) false)
+;; (= (__ 496) true)
+;; 1) find divisors of a number, including 1. 2) apply sum of them 3) check reduced sum with the number itself
+(defn find-divisors
+  [x]
+  (let [possible-divs (take (quot x 2) (iterate inc 1))]
+    (filter (fn [each] (zero? (rem x each))) possible-divs)))
+
+(find-divisors 6) ;; (1 2 3)
+(find-divisors 11) ;; (1)
+(find-divisors 10) ;; (1 2 5)
+(quot 13 2) ;; 6
+
+(defn perf-number?
+  [x]
+  (letfn [(find-divisors [x]
+            (let [possible-divs (take (quot x 2) (iterate inc 1))]
+              (filter #(zero? (rem x %)) possible-divs)))]
+    (= x (reduce + (find-divisors x)))))
+
+(perf-number? 6) ;; true
+(perf-number? 7) ;; false
+(perf-number? 496) ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Power Set
+;; Difficulty:	Medium
+;; Topics:	set-theory
+;; Write a function which generates the power set of a given set.
+;; The power set of a set x is the set of all subsets of x, including the empty set and x itself.
+;; (= (__ #{1 :a}) #{#{1 :a} #{:a} #{} #{1}})
+;; (= (__ #{1 2 3})
+;;    #{#{} #{1} #{2} #{3} #{1 2} #{1 3} #{2 3} #{1 2 3}}
+;; 1) build the binary representation of all the possible numbers: 2 power(count set)
+;; 2) bind: x y z -> to 0 1 1; whereas x = 0, y = z = 1 -> #{y z} -> yields one set
+(defn binary-representation
+  [exp]
+  (letfn [(left-padding-seq
+            [how-many padded]
+             (take how-many (lazy-cat (reverse (seq padded)) (repeat how-many 0))))
+          (to-binary
+             [x]
+             (map #(Integer/valueOf (str %)) (seq (Integer/toBinaryString x))))
+          (gen-bit-combinations
+             [x]
+             (let [bin-val (Math/pow 2 exp)]
+                (map
+                   (fn [x] (->> x
+                               to-binary
+                               (left-padding-seq exp)))
+                   (range 1 (inc bin-val)))))]
+
+    (gen-bit-combinations exp)))
+
+(binary-representation 3)
+;; (1 0 0) (0 1 0) (1 1 0) (0 0 1) (1 0 1) (0 1 1) (1 1 1) (0 0 0)
+
+(binary-representation 2)
+;; ((1 0) (0 1) (1 1) (0 0))
+
+(count (binary-representation 10)) ;; 1024 -> OK 2 power 10 -> 1024
+
+;; stepping fw to how to replace the actual positional-1-s with the actual bound values
+;; (1 0 1) -> (:a 0 :b)
+;; Step2:
+(defn assoc-entries
+  [x-set]
+  (letfn [(left-padding-seq
+            [how-many padded]
+             (take how-many (lazy-cat (reverse (seq padded)) (repeat how-many 0))))
+          (to-binary
+             [x]
+             (map #(Integer/valueOf (str %)) (seq (Integer/toBinaryString x))))
+          (gen-bit-combinations
+             [x]
+             (let [bin-val (Math/pow 2 (count x-set))]
+                (map
+                   (fn [x] (->> x
+                               to-binary
+                               (left-padding-seq (count x-set))))
+                   (range 1 (inc bin-val)))))
+          (map-to-vals
+             [x-set]
+             (map (fn [bit-pair]
+                    (apply hash-map (interleave (seq x-set) bit-pair)))
+                  (gen-bit-combinations (count x-set))))]
+    (map-to-vals x-set)
+    ))
+
+(assoc-entries #{:a :b :c})
+;; {:c 1, :b 0, :a 0}
+;; {:c 0, :b 1, :a 0}
+;; {:c 1, :b 1, :a 0}
+;; {:c 0, :b 0, :a 1} .....
+;; next step: filter 0-keys
