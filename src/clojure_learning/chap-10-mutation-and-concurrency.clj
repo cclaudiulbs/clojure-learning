@@ -299,3 +299,136 @@ d         ;; Delay -> pending -> not executed YET
 ;; but this function can leave the data in an inconsistent state. because it does not uses a retrial mechanism
 ;; it takes the outside-curr-state only once, and then commits it.
 
+;;;;;;
+;; vars
+;;;;;;
+;; vars are associations/mappings from symbols to objects. New vars can be created with [def]
+
+;; this example is just to debate with what the author from the braveclojure says about constant vars binding:
+;; "Unlike regular vars, however, you can temporarily change the value of dynamic vars by using binding"
+(def my-job "clojure-programmer")
+(do
+  (println my-job)
+  (let [my-job "js-programmer"]
+    (println my-job)))
+;; prints both: clojure-programmer from outside scope, and also js-programmer as a rebinding of the inner local scope.
+
+;; clojure also has dynamic-vars, that simulate the use of static-bindings defined by [let] and add several
+;; things on top.
+;; a dynamic var is in the form of:
+(def ^:dynamic *some-job* "clojure-programmer")
+(binding [*some-job* "js-programmer"]
+  *some-job*)
+;; js-programmer
+
+;; the lisp notion of: earmuffers when it comes to declare the name of a dynamic binding: *name*
+;; we can also nest bindings in other bindings, and the scope is kept consistent.
+
+(def ^:dynamic *to-mail* "claudiu.cosar@gmail.com")
+(defn send-mail [message]
+  (str "TO: " *to-mail* ", message: " message))
+
+(send-mail "aloha") ;; "TO: claudiu.cosar@gmail.com, message: aloha"
+;; in our tests we may want to mock and don't spam claudiu with all emails, so we need a re-binding
+(binding [*to-mail* "test@gmail.com"]
+  (send-mail "test case sending mail to test recipients..."))
+;; "TO: test@gmail.com, message: test case sending mail to test recipients..."
+
+
+;; let's try it with a static-binding-let:
+(def somebody "cclaudiu@gmail.com")
+(defn send-mail [message]
+  (format "TO: %1s, message: %2s" somebody message))
+
+(send-mail "clojure real name") ;; wysiwyg
+
+;; attempt to re-bind using local-let
+(let [somebody "test@gmail.com"]
+  (send-mail "mocking through core [let] a test-recipient"))
+;; "TO: cclaudiu@gmail.com, message: mocking through core [let] a test-recipient"
+
+;; hence --> therefore same behavior for [let] and [binding] of "static-binding" vs "dynamic-binding"
+
+;; most common dynamic vars are used to name a shared-common resource, like a built in dynamic resource:
+;; *out*, or *print-length* and so on...
+;; because they are dynamic we can control their visibility, and can "override" some of them to make
+;; them approapriate in our context:
+(binding [*print-length* 1]
+  (print ["cclaudiu" "cosar"])) ;; prints: [cclaudiu ...]
+
+;; well this is a behavior we cannot approach using well-known let-bindings. This sort of use is defined
+;; in terms of configurations, hence dynamic-bindings are often used in configurations...
+
+;; because dynamic-binding allows to mutate the state of some vars, using the [set!] function
+;; and because i don't quite use mutation in clojure, i m gonna skip this part of side-effecting world.
+
+;;;;;;;;
+;; binding dynamically per thread of execution
+;;;;;;;;
+;; as we know by now there are dynamic vars bound to some values depdnedending on their execution context.
+;; REPL binds the dynamic *out* to its REPL console, and so on.
+;; when we create manually a new thread, every dynamic-binding var rollsback to its initial value.
+(.write *out* "printed on the REPL as REPL bound this dynamic out-var to its REPL console")
+(.start (Thread. #(.write *out* "printed on the STDOUT")))
+(println "repl console")
+
+;; to overcome this, we can use an intermediary var that captures the current *out* value(as "that" in js)
+;; and then rebinding the *out* from within the local thread to the saved value
+(let [repl-out *out*]
+  (.start
+     (Thread. #(binding [*out* repl-out]
+                 (.write *out* "repl console in action")))))
+
+
+;; Also note that any dynamic binding needs to be declared FIRST, prior using it and [binding]
+(binding [*c* "that"])  ;; unable to resolve symbol var: c
+
+;; declared:
+(def ^:dynamic *c* "initial root value")
+;; used:
+(binding [*c* "that"]
+  *c*)   ;; that
+;; so using dynamic binding requires a 2-step approach
+
+;; Clojure provides the option to alter a var's root value. using the function: [alter-var-root] we can
+;; mutate the value of a var. I'm not interested in mutation when it comes to Clojure but we have to know
+;; that we CAN if we want :)
+
+;;;;;;;;;;;;;;;
+;; Clojure parallelism with: pmap (divide and conquer)
+;;;;;;;;;;;;;;;
+
+
+(ns for-clojure)
+(declare struct-type?)
+(map struct-type? [#{} {} [] '()])  ;; (:set :map :vector :list)
+(defn struct-type?
+  [ds]
+  (let [seqable? (fn [xs ys]
+                   (and (= (inc (count xs)) (count ys)) (nil? (get ys xs))))
+        new-ds (conj ds ds)]
+    (if (seqable? ds new-ds)
+      (if (identical? (last new-ds) ds)
+        :vector
+        (if (identical? (first new-ds) ds)
+          :list))
+      (if (= new-ds ds)
+        :map
+        :set
+       ))))
+
+(struct-type? [1 2])
+(struct-type? [])
+(struct-type? {})
+(struct-type? #{})
+(conj [] [])
+(conj [1 2] [1 2])
+(conj [:a :b] [:a :b])
+(def ab (conj [:a :b] [:a :b]))
+(get ab [:a :b])
+
+(def ab (conj {:a :b} {:a :b}))
+(get ab {:a :b})
+(count [[]])
+(def lol (conj '() '()))
+(first lol)
