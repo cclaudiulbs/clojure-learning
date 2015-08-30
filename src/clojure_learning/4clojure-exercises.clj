@@ -2455,13 +2455,165 @@
              [x-set]
              (map (fn [bit-pair]
                     (apply hash-map (interleave (seq x-set) bit-pair)))
-                  (gen-bit-combinations (count x-set))))]
-    (map-to-vals x-set)
-    ))
+                  (gen-bit-combinations (count x-set))))
+          (filter-maps-by-val
+             [m-val m]
+              (map
+                 (fn [each-map]
+                   (reduce
+                      (fn [m entry]
+                        (if (zero? (val entry)) m
+                          (conj m entry)))
+                      {} each-map))
+                 m))]
 
+    ((comp (partial filter-maps-by-val 0)
+            map-to-vals) x-set)))
+
+;; demo:
 (assoc-entries #{:a :b :c})
+;; ({:c 1} {:b 1} {:b 1, :c 1} {:a 1} {:a 1, :c 1} {:a 1, :b 1} {:a 1, :b 1, :c 1} {})
+
+;; before applying the filter-maps-by-val func, we had this result:
 ;; {:c 1, :b 0, :a 0}
 ;; {:c 0, :b 1, :a 0}
 ;; {:c 1, :b 1, :a 0}
 ;; {:c 0, :b 0, :a 1} .....
-;; next step: filter 0-keys
+;; next step: filter 0-keys + map the keys into sets and we're done :)
+
+(defn filter-maps-by-val
+  [m-val m]
+  (map
+     (fn [each-map]
+       (reduce
+          (fn [m entry] (if (zero? (val entry)) m (conj m entry))) {} each-map)) m))
+
+;; demo:
+(filter-maps-by-val 0 [{:foo 0 :bar 1 :zip 0}])  ;; ({:bar 1}) --> cool :)
+(doc val) ;; -> returns the value in the map-entry
+
+;; next step: extract all the keys of each map into sets
+(defn keys-to-sets [maps]
+  (map (comp set keys) maps))
+
+;; demo:
+(keys-to-sets '({:c 1} {:b 1} {:b 1, :c 1} {:a 1} {:a 1, :c 1} {:a 1, :b 1} {:a 1, :b 1, :c 1} {}))
+;; (#{:c} #{:b} #{:c :b} #{:a} #{:c :a} #{:b :a} #{:c :b :a} #{})
+
+
+;; Note: (comp set keys) partial application can be translated into: (comp (partial apply hash-set) keys)
+;; but because [set] function transforms the given structure into a set is more less-to-write + readable
+(keys {:c 1 :a 1}) ;; (:c :a)
+
+;; final function which yields power-sets algorithm:
+(defn power-sets
+  [x-set]
+  (letfn [(left-padding-seq
+            [how-many padded]
+             (take how-many (lazy-cat (reverse (seq padded)) (repeat how-many 0))))
+          (to-binary
+             [x]
+             (map #(Integer/valueOf (str %)) (seq (Integer/toBinaryString x))))
+          (gen-bit-combinations
+             [x]
+             (let [bin-val (Math/pow 2 (count x-set))]
+                (map
+                   (fn [x] (->> x
+                               to-binary
+                               (left-padding-seq (count x-set))))
+                   (range 1 (inc bin-val)))))
+          (map-to-vals
+             [x-set]
+             (map (fn [bit-pair]
+                    (apply hash-map (interleave (seq x-set) bit-pair)))
+                  (gen-bit-combinations (count x-set))))
+          (filter-maps-by-val
+             [m-val m]
+              (map
+                 (fn [each-map]
+                   (reduce
+                      (fn [m entry]
+                        (if (zero? (val entry)) m
+                          (conj m entry)))
+                      {} each-map))
+                 m))
+          (keys-to-sets [maps]
+            (map (comp set keys) maps))]
+    ((comp
+         set
+         keys-to-sets
+        (partial filter-maps-by-val 0)
+         map-to-vals)
+       x-set)))
+
+;; demo....niceeeeeeeee:
+(power-sets #{:a :b :c})
+;; #{#{:c} #{:b} #{:c :b} #{:a} #{:c :a} #{:b :a} #{:c :b :a} #{}}
+
+;; Study function:
+(fn power-set [xs]
+	(letfn [(gen-next [xs acc]
+				(if (contains? acc xs)
+					(conj acc #{})
+					(recur xs (set (for [x xs ys acc] (conj ys x))))))]
+	(gen-next xs #{#{}})))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Black Box Testing
+;; Difficulty:	Medium
+;; Topics:	seqs testing
+;; Special Restrictions: class, instance?, type, vector?, sequential?, list?, seq?, map?, set?, getClass
+;; Clojure has many sequence types, which act in subtly different ways. The core functions
+;; typically convert them into a uniform "sequence" type and work with them that way,
+;; but it can be important to understand the behavioral and performance differences so that
+;; you know which kind is appropriate for your application.
+
+;; Write a function which takes a collection and returns one of :map, :set, :list, or :vector
+;; - describing the type of collection it was given.
+;; You won't be allowed to inspect their class or use the built-in predicates like list?
+;; - the point is to poke at them and understand their behavior.
+;; (= :map (__ {:a 1, :b 2}))
+;; (= :vector (__ [1 2 3 4 5 6]))
+(defn type-of
+  [some-struct]
+  (let [foo [:some :foo]
+        bar [:some :bar]
+        is-vector? #(and (identical? (last (conj % foo bar)) bar)   ;; lifo behavior from last
+                         (identical? (last (butlast (conj % foo bar))) foo)
+                         (nil? (get (conj % foo) :some)))           ;; associative by index
+        is-list? #(and (identical? (first (conj % foo bar foo)) foo)
+                       (identical? (second (conj % foo bar foo)) bar) ;; lifo behavior from first
+                       (nil? (get (conj % foo) :some)))
+        is-set? #(and (= 2 (count (conj (empty %) foo bar foo))))   ;; uniques
+        is-map? #(and (= :bar ((conj % foo bar) :some))             ;; override map-entry
+                      (= 1 (count (conj (empty %) foo bar))))]      ;; only one-map-entry added
+    (cond (is-set? some-struct) :set
+      	  (is-vector? some-struct) :vector
+          (is-list? some-struct) :list
+          (is-map? some-struct) :map)))
+
+;; refactored function to take in control the properties associated to each ds: associative? + reversible?
+(defn type-of [ds]
+  (if (associative? ds)
+    (if (reversible? ds) :vector :map)
+    (if (= 1 (count (conj (empty ds) :foo :foo))) :set :list)))
+
+(associative? '(1 2))  ;; false
+(associative? #{1 2})  ;; false
+(associative? [1 2])   ;; true
+(associative? {1 2})   ;; true
+
+(reversible? '(1 2))   ;; false
+(reversible? [1 2])    ;; true
+(reversible? {1 2})    ;; false
+(reversible? #{1 2})   ;; false
+
+;; demo:
+(map type-of [{} #{} [] ()])  ;; (:map :set :vector :list)
+(= [:map :set :vector :list] (map type-of [{} #{} [] ()])) ;; true
+(= :set (type-of #{10 (rand-int 5)})) ;; true
+
+;; Note: TWO sets are NOT identical, even if they have all the items the same, and use the same "given" order
+(identical? #{1 2 3} #{1 3 2}) ;; false
+(identical? #{1 2 3} #{1 2 3}) ;; false
