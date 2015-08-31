@@ -90,6 +90,7 @@
 
 (generate-parens 1)
 (map generate-parens (range 1 3))
+(generate-parens 10)
 
 (.concat "this" "that")
 (.concat "" "(")
@@ -100,3 +101,20 @@
 
 (first (repeat 1 "("))
 (subvec ["(" "(" "("] 0)
+
+(ns parser)
+(use 'clojure.repl)
+(def simple-text "text")
+(def complex-text "<b>te</b> <i>xt</i>")
+(def composed-text (str simple-text "\n" complex-text))
+
+;; whois this?
+composed-text ;; "text\n<b>te</b> <i>xt</i>"
+
+;; the thing :) --> might be enhanced, but for simple cases as these works
+(def complex-pattern (re-pattern #"(?i)(?:<\w>)?[a-zA-Z]+.*[a-zA-Z]*(?:</\w>)?"))
+
+;; with output:
+(re-seq complex-pattern simple-text)   ;; ("text")
+(re-seq complex-pattern complex-text)  ;; ("<b>te</b> <i>xt</i>")
+(re-seq complex-pattern composed-text) ;; ("text" "<b>te</b> <i>xt</i>")

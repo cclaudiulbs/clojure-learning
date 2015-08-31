@@ -2617,3 +2617,36 @@
 ;; Note: TWO sets are NOT identical, even if they have all the items the same, and use the same "given" order
 (identical? #{1 2 3} #{1 3 2}) ;; false
 (identical? #{1 2 3} #{1 2 3}) ;; false
+
+
+;;;;;;;;;;;;;;;;;
+;; Anagram Finder
+;; Difficulty: Medium
+;; GIven a vector of strings, output a set of subsets(where each subset contains the
+;; possible permutations of chars foreach item)
+;; Each subset should have at least 2 words. A set that does not contain any anagrams is not included.
+;; (= (__ ["veer" "lake" "item" "kale" "mite" "ever"])
+;;    #{#{"veer" "ever"} #{"lake" "kale"} #{"mite" "item"}})
+
+;; How i think: map on initial vector of words, passing a reduce function which operates on outer-map-item and initial vector
+;; checking using [every?] if the outer-map-item contains all the chars reduced by the next function
+
+(defn anagram-finder
+  [words]
+    (set
+      (filter #(> (count %) 1)
+        (map (fn [outer-word]
+          (reduce
+            (fn [acc inner-word]
+              (if (= (sort outer-word) (sort inner-word))
+                (conj acc inner-word)
+                acc))
+            #{} words)) words))))
+
+(anagram-finder ["meat" "mat" "team" "mate" "eat"])  ;; #{#{"meat" "mate" "team"}}
+
+(doc every?) ;; returns true if predicate x is true forall the x in coll, else false
+(= ["a" "b" "c"] (sort ["b" "c" "a"])) ;; true
+(= [\a \b \c] (sort "bca"))
+
+;; TODO: now impl anagram-finder using recursion
