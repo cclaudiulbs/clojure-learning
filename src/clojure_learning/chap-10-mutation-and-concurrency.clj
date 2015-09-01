@@ -394,41 +394,40 @@ d         ;; Delay -> pending -> not executed YET
 ;; mutate the value of a var. I'm not interested in mutation when it comes to Clojure but we have to know
 ;; that we CAN if we want :)
 
+;;;;;;;;;;;;
+;; A little more about Clojure Concurrency Model from: the joy of clojure
+;;;;;;;;;;;;
+;; Because each transaction has its own isolated snapshot, a retry is harmless.
+;; Clojure allows for only 1 transaction per thread.
+;; The STM allows you to perform arbitrary sets of read/write operations on arbitrary
+;; sets of data in a consistent (Papadimitriou 1986) way.
+;; With Clojure we get a consistent view of the world without any manually locking mechanisms.
+;; In applications of any size, the inclusiion of locks for managing concurrent access to shared mutable state,
+;; ads an un-necessary complexity(incidental complexity);
+;; with manual locking, one should handle very granularly each lock once an exception is being thrown.
+;; since the exception might be thrown from one thread and the lock can be held from a thread that died.
+;; With Clojure we wont have any deadlocks at all.
+
+;; The things that make Clojure STM unhappy:
+;; 1. Any I/O operation in the body of a transaction is highly discouraged.
+;; this is because transactions are "restarted" and a I/O operation which has side effects makes
+;; the I/O operation repeatable for every transaction restart. To workaround this always use: [io!] macro
+;; when in transaction and require accidentally I/O operations.
+(io! (println "printing something nice"))
+
+;; when in transactions, and have I/O operations: the above invocation would throw an exception:
+(dosync (io! (println "in transaction -> throwing exception")))
+;; java.lang.IllegalStateException: I/O in transaction
+
+;; I/O in transactions are somehow evil, so take special care with I/O
+
+;; 2. rule is to not perform mutations on mutable objects within transactions!
+
+;; 3. Avoid large transactions(that are large units of work in a transaction). This is somehow hard to track,
+;; but a general rule of thumb is: "get in and get out as quickly as possible" :)
+
+
 ;;;;;;;;;;;;;;;
 ;; Clojure parallelism with: pmap (divide and conquer)
 ;;;;;;;;;;;;;;;
 
-
-(ns for-clojure)
-(declare struct-type?)
-(map struct-type? [#{} {} [] '()])  ;; (:set :map :vector :list)
-(defn struct-type?
-  [ds]
-  (let [seqable? (fn [xs ys]
-                   (and (= (inc (count xs)) (count ys)) (nil? (get ys xs))))
-        new-ds (conj ds ds)]
-    (if (seqable? ds new-ds)
-      (if (identical? (last new-ds) ds)
-        :vector
-        (if (identical? (first new-ds) ds)
-          :list))
-      (if (= new-ds ds)
-        :map
-        :set
-       ))))
-
-(struct-type? [1 2])
-(struct-type? [])
-(struct-type? {})
-(struct-type? #{})
-(conj [] [])
-(conj [1 2] [1 2])
-(conj [:a :b] [:a :b])
-(def ab (conj [:a :b] [:a :b]))
-(get ab [:a :b])
-
-(def ab (conj {:a :b} {:a :b}))
-(get ab {:a :b})
-(count [[]])
-(def lol (conj '() '()))
-(first lol)
