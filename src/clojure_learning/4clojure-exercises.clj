@@ -2650,3 +2650,57 @@
 (= [\a \b \c] (sort "bca"))
 
 ;; TODO: now impl anagram-finder using recursion
+(defn anagram-finder
+  ([words] (anagram-finder words words words [#{}]))
+  ([[head & tail] next-comp-words init-words words-acc]
+     (if (empty? next-comp-words)  ;; rest returns a lazyseq and empty else(don't check for nil?)
+       (apply hash-set
+         (filter #(> (count %) 1) words-acc))
+       (if (nil? head)
+         (recur init-words (rest next-comp-words) init-words (conj words-acc #{}))  ;; rebind initial words for next checked word
+         (if (= (sort head) (sort (first next-comp-words)))
+           (recur tail next-comp-words init-words (conj (vec (butlast words-acc)) (conj (last words-acc) head)))
+           (recur tail next-comp-words init-words words-acc))))))
+
+(anagram-finder ["meat" "mat" "team" "mate" "eat"])  ;; COOL dude :)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Build [reductions] a similar version of [reduce], that takes either 2 or 3 args and returns
+;; a lazy sequence of all the intermediate values that reduce computes.
+;; Difficulty: Medium
+;; Category: seqs-core-funcs
+;; Special Restrictions: [reduction]
+(take 5 (reductions + (range)))   ;; (0 1 3 6 10)
+(take 5 (reductions + 2 (range))) ;; (2 2 3 5 8)
+
+;; currently works for lazy-infinite-seqs
+(defn reduction
+  [func init xs]
+  (lazy-seq
+     (let [intermediate-result (apply func (list init (first xs)))]
+       (cons init (reduction func intermediate-result (rest xs))))))
+
+(take 5 (reduction + 2 (range))) ;; (2 2 3 5 8)
+(take 5 (reduction * 2 (iterate inc 1))) ;; (2 2 4 12 48)
+
+;; now make it work with finite-number of elements + handle init/acc as optional
+(defn reduction
+  ([func xs] (reduction func (first xs) (rest xs)))
+  ([func init xs]
+      (lazy-seq
+         (if (empty? xs)
+           (list init)
+           (let [inter-result (func init (first xs))]
+             (cons init (reduction func inter-result (rest xs))))))))
+
+;; demo:
+(take 5 (reduction + 2 (range))) ;; (2 2 3 5 8)
+(reduction + 2 (range))          ;; (2 2 3 5 8 ... 120 ... 122...infinite)
+(reduction * 2 [3 4 5])          ;; (2 6 24 120)
+
+(class (reduction + 1 (range)))  ;; clojure.lang.LazySeq
+
+(take 5 (reduction + 2 (range))) ;; (2 2 3 5 8)
+(reduction conj [1] [2 3 4])     ;; ([1] [1 2] [1 2 3] [1 2 3 4])
+(reduction + 0 '(1 2 3))
+

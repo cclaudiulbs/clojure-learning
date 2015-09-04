@@ -923,3 +923,18 @@ eval my-queue
 (set [1 2 3])            ;; #{1 3 2}
 (hash-set [1 2 3])       ;; #{[1 2 3]}
 (apply hash-set [1 2 3]) ;; #{1 3 2}
+
+
+(ns records-testing)
+(defrecord person [name age])
+(defn create-person
+  [{:keys [name age] :or {name "some" age 0}}]
+  (->person name age))
+
+(def new-person (create-person nil))
+new-person ;; person{:name "some", :age 0}
+
+(def claudiu (->person "claudiu" nil))
+(:age claudiu) ;; -> nil
+(find claudiu :age) ;; [:age nil]
+(get claudiu :age)  ;; nil
