@@ -2704,3 +2704,87 @@
 (reduction conj [1] [2 3 4])     ;; ([1] [1 2] [1 2 3] [1 2 3 4])
 (reduction + 0 '(1 2 3))
 
+;;;;;;;;;;;;;;;;;;;;;
+;; Happy Numbers
+;; Difficulty: Medium
+;; A Happy number is any number which when: split by digits, applying square on each digit
+;; and then sum the numbers and recursive going the next cycle again yields 1.
+;; A sad number is one that loops endesly.
+;; For example, 19 is happy, as the associated sequence is:
+;;     1**2 + 9**2 = 82
+;;     8**2 + 2**2 = 68
+;;     6**2 + 8**2 = 100
+;;     1**2 + 0**2 + 0**2 = 1.
+(defn happy-number?
+  ([x] (happy-number? x []))
+  ([x init]
+  (letfn [(pow-of-two [x] (reduce * [x x]))
+          (to-int [c] (- (int c) (int \0)))
+          (pow-and-sum
+            [digits]
+             (reduce +
+                (map (comp pow-of-two to-int) digits)))]
+    (let [curr (pow-and-sum (str x))]
+      (if-let [happy (= 1 curr)]
+        happy
+        (if (and ((comp not nil?) (last init)) (> curr (pow-of-two (last init))))
+          false
+          (recur (pow-and-sum (str curr)) (conj init curr))))))))
+
+;; notes: the init acc persists across the recursion the last pow-and-sum digit; if the digit starts
+;; and powers itself -> wrong path -> it is not a happy number, since it should be reduced not increased.
+;; we start from [0] to avoid nil checking and avoid incidental complexity for nil checking;
+;; once the recursion processed: 3 -> 9 -> 81; we store this in the acc and break the recursion if > (last acc) curr.
+
+(happy-number? 19) ;; true ;;  curr 100 ;; last-init 82
+(happy-number? 20) ;; false ;; curr 37  ;; last-init 4
+(happy-number? 7)  ;; true  ;; curr 130 ;; last-init 49
+(happy-number? 3)  ;; false
+(happy-number? 2)  ;; false
+(happy-number? 986543210)  ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Trees into tables
+;; Difficulty:	Easy
+;; Topics:	seqs maps
+;; Because Clojure's for macro allows you to "walk" over multiple sequences in a nested fashion,
+;; it is excellent for transforming all sorts of sequences.
+;; If you don't want a sequence as your final output (say you want a map), you are often
+;; still best-off using for, because you can produce a sequence and feed it into a map, for example.
+(for [x (range 1 3) y (range 5 7)] [x y]) ;; ([1 5] [1 6] [2 5] [2 6])
+
+;; (= (__ '{a {p 1, q 2}
+;;          b {m 3, n 4}})
+;;    '{[a p] 1, [a q] 2
+;;      [b m] 3, [b n] 4})
+
+;; solution:
+(defn trees-to-tables
+  [big-hash]
+  (letfn [(get-path [[key-entry m]]
+             (map (fn [x y z]
+                    [[x y] z])
+                  (repeat (count m) key-entry)
+                  (keys m)
+                  (vals m)))]
+    (into {} (apply
+                concat
+                  (map get-path big-hash)))))
+
+;; demo:
+(trees-to-tables '{a {p 1, q 2} b {m 3, n 4}})
+;; {[a p] 1, [a q] 2, [b m] 3, [b n] 4}
+
+;; refactoring -> using mapcat instead of [concat] + [map]
+(defn trees-to-tables
+  [big-hash]
+  (letfn [(get-path [[key-entry m]]
+             (map (fn [x y z]
+                    [[x y] z])
+                  (repeat (count m) key-entry)
+                  (keys m)
+                  (vals m)))]
+    (into {} (mapcat get-path big-hash))))
+
+
+(into {} '([[a p] 1] [[a q] 2])) ;; {[a p] 1, [a q] 2}
