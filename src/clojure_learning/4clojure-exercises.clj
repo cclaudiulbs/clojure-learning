@@ -2788,3 +2788,27 @@
 
 
 (into {} '([[a p] 1] [[a q] 2])) ;; {[a p] 1, [a q] 2}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Intro to Trampoline
+;;
+;; Difficulty:	Medium
+;; Topics:	recursion
+;; trampoline f & args -> if f returns func -> trampoline calls f with POSSIBLE(if specified) args that were given
+;; else with no args(foo #() inside foo -> no sign of %)
+;; -> and again until the return is not a function but a concrete result,
+;; if f doesnt return a function -> calls f with supplied & args
+
+;; The [trampoline] function takes a function f and a variable number of parameters.
+;; Trampoline calls f with any/possible parameters that were supplied.
+;; If f returns a function, trampoline calls that function with NO/or possible-specified-inside-f arguments.
+;; This is repeated, until the return value is not a function, and then trampoline returns that non-function value.
+;; This is useful for implementing mutually recursive algorithms in a way that won't consume the stack.
+(defn demo []
+   (letfn
+     [(foo [x y] #(bar (conj x y) y))
+      (bar [x y] (if (> (last x) 10)
+                   x
+                   #(foo x (+ 2 y))))]
+     (trampoline foo [] 1)))
+;; what's the result?
