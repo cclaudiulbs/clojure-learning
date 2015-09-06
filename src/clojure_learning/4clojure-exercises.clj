@@ -2812,3 +2812,64 @@
                    #(foo x (+ 2 y))))]
      (trampoline foo [] 1)))
 ;; what's the result?
+
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Merge with a Function
+;;
+;; Difficulty:	Medium
+;; Topics:	core-functions
+;; Special Restrictions: [merge-with]
+;; Write a function which takes a func and a varargs maps, using the function it merges the existing values
+;; in the first map, from the rest of maps
+;; = (__ * {:a 2, :b 3, :c 4} {:a 2} {:b 2} {:c 5})
+;;    ->  {:a 4, :b 6, :c 20})
+(defn merge-maps-with
+  [func & [head secnd & tail]]
+  (letfn [(merge-one
+             [func x-map y-map]
+             (reduce
+                (fn [acc entry]
+                  (if (get y-map (first entry))
+                    (assoc acc (first entry) (func (second entry) (get y-map (first entry))))
+                    (assoc acc (first entry) (second entry))))
+                {} x-map))]
+  (if (nil? secnd)
+    head
+    (recur func (cons (merge-one func head secnd) tail)))))
+
+(merge-maps-with * {:a 2, :b 3, :c 4} {:a 2} {:b 2} {:c 5})  ;; {:c 20 :b 6 :a 4}
+;; -> OK if the first map is the biggest map -> else:
+(merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {2 10, 1 7} --> the [3 15] entry is lost
+
+;; -> find a way to use inside the [reduce] as the sequential the most big map, leaving the checker the
+;; smallest one, since if the checker does tno have the entry -> use the one from the sequential map
+
+;; -> to fix this:
+(defn merge-maps-with
+  [func & [head secnd & tail]]
+  (letfn [(merge-one
+             [func x-map y-map]
+             (if (< (count x-map) (count y-map))
+               (recur func y-map x-map)
+               (reduce
+                (fn [acc entry]
+                  (if-let [found-val (get y-map (first entry))]
+                    (assoc acc (first entry) (func (second entry) found-val))
+                    (conj acc entry)))
+                {} x-map)))]
+  (if (nil? secnd)
+    head
+    (recur func (cons (merge-one func head secnd) tail)))))
+
+(merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {3 15, 2 10, 1 7}
+
+;; this solves temporarily the problem: the recur and switching the maps for handling associative operations
+;; but having this case:
+(merge-maps-with concat {:a [3], :b [6]} {:a [4 5], :c [8 9]} {:b [7]} {:z [20]})
+;; -> correct result: {:a [3 4 5], :b [6 7], :c [8 9]}
+(reduce #(assoc % (second %2) (first %2)) {} (seq {:a 1 :b 2}))
+(conj {1 2} {3 4})
+
+(dissoc {1 2 3 4} 1)
+(- 10 3 8) ;; -1
