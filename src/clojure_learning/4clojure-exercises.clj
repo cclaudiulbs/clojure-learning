@@ -2824,16 +2824,17 @@
 ;; in the first map, from the rest of maps
 ;; = (__ * {:a 2, :b 3, :c 4} {:a 2} {:b 2} {:c 5})
 ;;    ->  {:a 4, :b 6, :c 20})
+;; initial draft:
 (defn merge-maps-with
   [func & [head secnd & tail]]
   (letfn [(merge-one
-             [func x-map y-map]
+             [func first-map next-map]
              (reduce
                 (fn [acc entry]
-                  (if (get y-map (first entry))
-                    (assoc acc (first entry) (func (second entry) (get y-map (first entry))))
+                  (if (get next-map (first entry))
+                    (assoc acc (first entry) (func (second entry) (get next-map (first entry))))
                     (assoc acc (first entry) (second entry))))
-                {} x-map))]
+                {} first-map))]
   (if (nil? secnd)
     head
     (recur func (cons (merge-one func head secnd) tail)))))
@@ -2842,34 +2843,49 @@
 ;; -> OK if the first map is the biggest map -> else:
 (merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {2 10, 1 7} --> the [3 15] entry is lost
 
-;; -> find a way to use inside the [reduce] as the sequential the most big map, leaving the checker the
-;; smallest one, since if the checker does tno have the entry -> use the one from the sequential map
-
-;; -> to fix this:
+;; -> find a way to operate the func application from left->to->right, don't interchange the order
+;; -> the final version:
 (defn merge-maps-with
   [func & [head secnd & tail]]
-  (letfn [(merge-one
-             [func x-map y-map]
-             (if (< (count x-map) (count y-map))
-               (recur func y-map x-map)
+  (letfn [(merge-two
+             [func first-map next-map]
                (reduce
-                (fn [acc entry]
-                  (if-let [found-val (get y-map (first entry))]
-                    (assoc acc (first entry) (func (second entry) found-val))
-                    (conj acc entry)))
-                {} x-map)))]
+                  (fn [acc entry]
+                    (if-let [found-val (get acc (first entry))]
+                      (assoc acc (first entry) (func found-val (second entry) ))
+                      (conj acc entry)))
+                  first-map next-map))]
   (if (nil? secnd)
     head
-    (recur func (cons (merge-one func head secnd) tail)))))
+    (recur func (cons (merge-two func head secnd) tail)))))
 
 (merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {3 15, 2 10, 1 7}
-
-;; this solves temporarily the problem: the recur and switching the maps for handling associative operations
-;; but having this case:
 (merge-maps-with concat {:a [3], :b [6]} {:a [4 5], :c [8 9]} {:b [7]} {:z [20]})
-;; -> correct result: {:a [3 4 5], :b [6 7], :c [8 9]}
-(reduce #(assoc % (second %2) (first %2)) {} (seq {:a 1 :b 2}))
-(conj {1 2} {3 4})
+;; {:z [20], :c [8 9], :a (3 4 5), :b (6 7)}
+;; correct!!! whohoooooooo :)
 
-(dissoc {1 2 3 4} 1)
-(- 10 3 8) ;; -1
+;; some explanations: instead of using an EMPTY accumulator(as in the first-draft-version), we somehow loose
+;; any entry that is not part of the first but is contained in the second. because we reduce only on the first map
+;; and check for the entries that are contained in the second. but with the entries that are contained in the second
+;; and not contained in the first, we loose them, since the reduce is done only on the first-map.
+;; -> solution is to use as the initial acc the first map-entry, and not the empty {} acc.
+
+;; another approach for the func is to accumulate the values for each key into vectors, and then applying the
+;; func on that vector of vals for each key
+(- 10 3 8) ;; -1 -> use the power of prefix notation!!! :)
+
+;; my second approach in resolving the core [merge-with] any number of maps, is to use the [reduce] func to nest 2 levels
+;; one for each map, and second for checking the entries in each map
+(defn merge-maps-with
+  [func & maps]
+  (reduce
+     (fn [outer-acc each-map]
+       (reduce
+          (fn [outer-acc map-entry]
+            (if-let [found-val (get outer-acc (first map-entry))]
+               (assoc outer-acc (first map-entry) (func found-val (second map-entry)))   ;; found -> merge-with
+               (conj outer-acc map-entry)))                                              ;; new entry -> just conj'
+          outer-acc  each-map))
+     {} maps))
+
+(merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {3 15, 2 10, 1 7}
