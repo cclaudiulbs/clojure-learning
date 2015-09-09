@@ -2889,3 +2889,101 @@
      {} maps))
 
 (merge-maps-with - {1 10, 2 20} {1 3, 2 10, 3 15}) ;; {3 15, 2 10, 1 7}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Palindromic Numbers
+;; Difficulty:	Medium
+;; Topics:	seqs math
+;; A palindromic number is a number that is the same when written forwards or backwards (e.g., 3, 99, 14341).
+;; Write a function which takes an integer n, as its only argument, and returns an increasing lazy sequence
+;; of all palindromic numbers that are not less than n.
+;; The most simple solution will exceed the time limit!
+(defn palindrom? [x]
+  (let [stringified (str x)]
+    (= stringified (apply str (reverse stringified)))))
+
+;; demo:
+(palindrom? 22) ;; true
+(palindrom? 23) ;; false
+
+(defn gen-lazy-seq [start]
+  (lazy-seq
+     (cons start (gen-lazy-seq (inc start)))))
+
+;; demo:
+(gen-lazy-seq 3) ;; (3 4 5 ... infinite)
+
+;; final function:
+(defn gen-palindrom-nums [x]
+  (letfn [(palindromic-num? [x]
+            (let [stringified (str x)]
+              (= stringified (apply str (reverse stringified)))))]
+  (lazy-seq
+    (if (palindromic-num? x)
+      (cons x (gen-palindrom-nums (inc x)))
+      (gen-palindrom-nums (inc x))))))
+
+(gen-palindrom-nums 10) ;; (11 22 33 44 66 77 88 99 101 111 121 ... infinite)
+(class (gen-palindrom-nums 10)) ;; clojure.lang.LazySeq
+
+(= (take 26 (gen-palindrom-nums 0))
+   [0 1 2 3 4 5 6 7 8 9
+    11 22 33 44 55 66 77 88 99
+    101 111 121 131 141 151 161]) ;; true
+
+;; BUT...on 4clojure this solution yields: the most simple solution yields a timeout...
+;; trying another solution...
+
+;; poping first + last from the sequence:
+(defn palindromic-num? [xs states]
+    (if (nil? xs)
+      ((comp not empty?) states)
+      (if (= (first xs) (last xs))
+        (recur (butlast (rest xs)) (conj states true))
+        false)))
+
+;; using TCO:
+(defn palindromic-num? [x]
+  (loop [xs (seq (str x))
+         state nil]
+    (if (nil? xs)
+      state
+      (if (= (first xs) (last xs))
+        (recur (butlast (rest xs)) true)
+        false))))
+(palindromic-num? 1234554321) ;; true
+(palindromic-num? 1234559321) ;;
+
+(defn gen-palindrom-nums
+  [x]
+  (letfn [(palindromic-num? [x]
+            (loop [xs (seq (str x))
+                   states []]
+              (if (nil? xs)
+                ((comp not empty?) states)
+                (if (= (first xs) (last xs))
+                  (recur (butlast (rest xs)) (conj states true))
+                  false))))
+          (gen-lazy-palindroms [x]
+            (lazy-seq
+               (if (palindromic-num? x)
+                 (cons x (gen-lazy-palindroms (inc x)))
+                 (gen-lazy-palindroms (inc x)))))]
+    (gen-lazy-palindroms x)))
+
+;; this solution succeeded execution of 5 tests out of 7. on the 6th test -> timeout error...
+;; althought the solution is correct -> this is a performance tweak...
+(gen-palindrom-nums 15)
+(take 2 (gen-palindrom-nums 1234550000)) ;;(1234554321 1234664321)
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; trying another solution: 1st reverse the number and compare it with the origin:
+(defn reverse-num [x]
+  (loop [init x
+         reversed 0]
+    (if (> init reversed)
+      (let [new-rev (+ (* reversed 10) (rem init 10))]
+        (recur (/ init 10) new-rev))
+      reversed)))
+
+(reverse-num 23)
