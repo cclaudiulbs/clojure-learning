@@ -2978,12 +2978,121 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; trying another solution: 1st reverse the number and compare it with the origin:
-(defn reverse-num [x]
+(defn palindrome? [x]
   (loop [init x
          reversed 0]
-    (if (> init reversed)
-      (let [new-rev (+ (* reversed 10) (rem init 10))]
-        (recur (/ init 10) new-rev))
-      reversed)))
+    (if (not= 0 init)
+      (recur (quot init 10) (+ (* reversed 10) (mod init 10)))
+      (= x reversed))))
 
-(reverse-num 23)
+(palindrome? 2) ;; true
+(palindrome? 101) ;; true
+(palindrome? 13) ;; false
+
+(defn gen-palindromes
+  [start]
+  (letfn [(palindrome? [x]
+            (loop [init x
+                   reversed 0]
+              (if (not= 0 init)
+                (recur (quot init 10) (+ (* reversed 10) (rem init 10)))
+                (= x reversed))))
+          (gen-palins [x]
+            (if (palindrome? x)
+              (cons x (lazy-seq (gen-palins (inc x))))
+              (recur (inc x))))]
+    (gen-palins start)))
+;; -> this yields in a non-lazy-sequence
+(class (gen-palindromes 10))  ;; clojure.lang.Cons
+
+;; this is more lazyness:
+(defn gen-palindromes
+  [start]
+  (letfn [(palindrome? [x]
+            (loop [init x
+                   reversed 0]
+              (if (not= 0 init)
+                (recur (quot init 10) (+ (* reversed 10) (mod init 10)))
+                (= x reversed))))]
+    (filter palindrome? (iterate inc start))))
+
+(class (gen-palindromes 10))  ;; clojure.lang.LazySeq
+(gen-palindromes 10000)
+
+;;;;;;;;;;;;;;;;;;;;
+;; Global take-while
+;; Difficulty:	Medium
+;; Topics:	seqs higher-order-functions
+;; write a function which takes a counter, a predicate, and a collection. the function should return
+;; ALL(not only the ones that predicate func matched) the items from the collection,
+;; into a lazy-seq, until and excluding the last item which matched the predicate
+;; implementation:
+(defn global-take-while
+  ([x predicate xs]
+     (global-take-while x predicate xs []))
+  ([x predicate [head & tail] acc]
+     (if (or (nil? head) (zero? x))
+       (butlast acc)
+       (if (predicate head)
+          (recur (dec x) predicate tail (conj acc head))
+          (recur x predicate tail (conj acc head))))))
+
+;; in action:
+(global-take-while 4 #(= 2 (mod % 3))
+         [2 3 5 7 11 13 17 19 23])
+;; should yield: (= [2 3 5 7 11 13], and it does :) but...the class is not a lazy-seq
+
+(class (butlast [1 2 3])) ;; persistentVector$chunkedSeq
+(class (global-take-while 4 #(= 2 (mod % 3)) [2 3 5 7 11 13 17 19 23])) ;; persistentVector$chunkedSeq
+
+;; however we do want a lazy-seq back, and not a chunked-seq:
+(defn global-take-while
+  [x predicate xs]
+  (letfn [(lazy-take-until
+            [x pred [head & tail]]
+            (lazy-seq
+               (let [butlast-count (dec x)
+                     butlast-match #(if (predicate %) (dec %2) %2)]
+                (when-not
+                  (and (or (nil? head) (zero? butlast-count))
+                       (and (predicate head) (zero? butlast-count)))
+                   (cons
+                      head
+                        (lazy-take-until (butlast-match head x) predicate tail))))))]
+   (lazy-take-until x predicate xs)))
+
+
+(class (global-take-while 4 #(= 2 (mod % 3)) [2 3 5 7 11 13 17 19 23])) ;; clojure.lang.LazySeq !!! whohooo
+(global-take-while 4 #(= 2 (mod % 3)) [2 3 5 7 11 13 17 19 23])
+;; (2 3 5 7 11 13) --> NICEE
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Partially Flatten a Sequence
+;; difficulty:	medium
+;; Topics:	seqs
+;; Write a function which flattens any nested combination of sequential things (lists, vectors, etc.),
+;; but maintains the lowest level sequential items.
+;; The result should be a sequence of sequences with only one level of nesting.
+;; (= (__ '( (1 2), ((3 4), ((((5 6)))))))
+;;    '( (1 2), (3 4), (5 6)) )
+
+;; first draft using mutually recursive algorithm(through trampoline)
+(defn partial-flatten
+  ([nested-xs]
+   (letfn [(linear-traverse
+              [[head & tail] acc]
+              #(if (nil? head)
+                 acc
+                 (if (sequential? head)
+                   (conj acc (depth-traverse head acc))
+                   (linear-traverse tail (conj acc head)))))
+           (depth-traverse
+            [xs acc]
+            #(if-let [some-seq (seq xs)]
+               (if (= 1 (count some-seq))
+                   (depth-traverse (last some-seq) acc)
+                   (linear-traverse some-seq acc))))]
+     (trampoline linear-traverse nested-xs []))))
+
+(seq '(1 2 3))
+(partial-flatten [[[[:a :b]]] [[:c :d]] [:e :f]])

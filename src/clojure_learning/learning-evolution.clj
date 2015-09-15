@@ -938,3 +938,40 @@ new-person ;; person{:name "some", :age 0}
 (:age claudiu) ;; -> nil
 (find claudiu :age) ;; [:age nil]
 (get claudiu :age)  ;; nil
+
+;;;;;;;;;;;;;;
+;; Remember that popping a multiple times a vector -> will NOT yield the same vector anymore.
+;; They are EQUAL, but they don't share the same ROOT anymore.
+(def v1 (apply vector (range 0 4)))
+v1
+(def v2 (pop v1))
+(def v3 (pop v1))
+(= v2 v3) ;; true
+(identical? v2 v3) ;; false
+;; the root of the persisted-vector changes, since it's not a 4 elements but a 3 after popping.
+;; what shares in common continued shared, what leaf nodes need to change is path-copied and
+;; only the last leaf is copied entirely and the value is changed.
+;; in sh terms: vectors are persisted data-structures; the persistent property comes from the fact
+;; that when a new vector is created it is created based on the initial one, using structural sharing,
+;; hence the initial vector is persisted in memory and not changed.
+;; a vector is implemented in clojure as a balanced binary tree, but with small changes:
+;; every internal node contains at most 2 elements that each one refer at most to 2 branches(left/right)
+;; to other referential nodes. The "binary-tree-like" is balanced, in that the same depth exists for
+;; all the nodes. The leaf nodes, are the nodes which do not reference anymore, but they keep only
+;; the SORTED values from left-most-branch -> right-most-branch.
+;; when a vector is attempted to chance -> what not change is shared(through structural sharing),
+;; while what needs to change -> is PATH-COPIED and the referenced leaf-nodes are copied and then
+;; the values of the elements are changed.
+;; the power of this relies in the fact that there's NO deep copy, NO memory consumption, no large-time-complexity
+;; penalties are involved. Operations are O(1) constant time, and memory is kept at minimum.
+;; when working with vectors, most constant time operations are the ones which operate on the top of the stack,
+;; because there's space for adding new values. and if not, the new nodes are generated, through path-copy
+;; of the right-most path, until a null returns, if null back? then create a new node.
+
+(peek (range 1e9))  ;; exception thrown: clojure.lang.LazySeq -> cannot be cast to clojure.lang.IPersistentStack
+(peek (list 1 2 3)) ;; 1
+
+(first (range 1e9)) ;; 0 -> constant time operation -> O(1)
+(last (range 1e9))  ;; linear operation -> O(n)
+
+(doc commute)
