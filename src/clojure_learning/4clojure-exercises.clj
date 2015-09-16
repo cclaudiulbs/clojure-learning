@@ -2952,7 +2952,7 @@
         (recur (butlast (rest xs)) true)
         false))))
 (palindromic-num? 1234554321) ;; true
-(palindromic-num? 1234559321) ;;
+(palindromic-num? 1234559321) ;; false
 
 (defn gen-palindrom-nums
   [x]
@@ -3076,23 +3076,44 @@
 ;; (= (__ '( (1 2), ((3 4), ((((5 6)))))))
 ;;    '( (1 2), (3 4), (5 6)) )
 
-;; first draft using mutually recursive algorithm(through trampoline)
-(defn partial-flatten
-  ([nested-xs]
-   (letfn [(linear-traverse
-              [[head & tail] acc]
-              #(if (nil? head)
-                 acc
-                 (if (sequential? head)
-                   (conj acc (depth-traverse head acc))
-                   (linear-traverse tail (conj acc head)))))
-           (depth-traverse
-            [xs acc]
-            #(if-let [some-seq (seq xs)]
-               (if (= 1 (count some-seq))
-                   (depth-traverse (last some-seq) acc)
-                   (linear-traverse some-seq acc))))]
-     (trampoline linear-traverse nested-xs []))))
+(every? sequential? [[1 2] [3 4]]) ;; true
+(every? sequential? [[1 2] 3])     ;; false
 
-(seq '(1 2 3))
+;; and stop playing around :) -> here's the real implementation
+(defn partial-flatten
+  [nested-xs]
+  (letfn [(nest-level-more-than-one?
+            [xs]
+            (letfn [(nested? [xs counter]
+                       (if (sequential? xs)
+                         (nested? (first xs) (inc counter))
+                         (> counter 1)))]
+              (nested? xs 0)))
+          (flatten-to-one-level
+            [nested-xs]
+            (reduce
+               (fn [acc xs]
+                  (if (nest-level-more-than-one? xs)
+                    (lazy-cat (flatten-to-one-level xs) acc) ;; don't loose the current state
+                    (cons xs acc))) ;; will maintain one level of nesting
+               (list) nested-xs))]
+    (reverse (flatten-to-one-level nested-xs))))
+
+(partial-flatten [ [ [[:a :b]] [:foo :bar] ], [[:c :d]], [:e :f] ])
 (partial-flatten [[[[:a :b]]] [[:c :d]] [:e :f]])
+(partial-flatten '( (1 2), ((3 4), ((((5 6)))))))
+(partial-flatten  [["Do"] ["Nothing"]])
+
+
+((comp not every?) (complement sequential?) [1 2 [3 4]]) ;; true
+
+(defn nested-more-than-one? [xs]
+  (letfn [(nested?
+           [xs counter]
+           (if (sequential? xs)
+             (nested? (first xs) (inc counter))
+             (> counter 1)))]
+    (nested? xs 0)))
+
+;; demo:
+(nested-more-than-one? [[[:a :b]]]) ;; true
