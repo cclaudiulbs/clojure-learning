@@ -3099,13 +3099,12 @@
                (list) nested-xs))]
     (reverse (flatten-to-one-level nested-xs))))
 
-(partial-flatten [ [ [[:a :b]] [:foo :bar] ], [[:c :d]], [:e :f] ])
-(partial-flatten [[[[:a :b]]] [[:c :d]] [:e :f]])
-(partial-flatten '( (1 2), ((3 4), ((((5 6)))))))
-(partial-flatten  [["Do"] ["Nothing"]])
+(partial-flatten [[[[:a :b]]] [[:c :d]] [[:e :f]]]) ;; ([:a :b] [:c :d] [:e :f])
+(partial-flatten '( (1 2), ((3 4), ((((5 6)))))))   ;; ((1 2) (3 4) (5 6))
+(partial-flatten  [["Do"] ["Nothing"]])             ;; (["Do"] ["Nothing"])
 
 
-((comp not every?) (complement sequential?) [1 2 [3 4]]) ;; true
+((comp not every?) sequential? [1 2 [3 4]]) ;; true
 
 (defn nested-more-than-one? [xs]
   (letfn [(nested?
@@ -3117,3 +3116,32 @@
 
 ;; demo:
 (nested-more-than-one? [[[:a :b]]]) ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Euler's Totient Function
+;; Difficulty:	Medium
+;; Two numbers are coprime if their greatest common divisor equals 1.
+;; Euler's totient function f(x) is defined as the number of positive integers less than x which are coprime to x.
+;; (= (__ 10) (count '(1 3 7 9)) 4)
+;; (= (__ 40) 16)
+;; (= (__ 1) 1)
+(defn gcd [a b]
+  (if (zero? b) a
+    (gcd b (rem a b))))
+
+(defn euler-totient-fn [x]
+  (letfn [(gcd [a b]
+            (if (zero? b) a
+              (gcd b (rem a b))))
+          (coprime? [x y]
+            (= 1 (gcd x y)))]
+    (count
+       (reduce
+          (fn [acc each]
+            (if (coprime? x each)
+              (conj acc each)
+              acc))
+          [] (range 1 (inc x))))))
+
+(euler-totient-fn 40)  ;; 16, but without [count] looks like:  [1 3 7 9 11 13 17 19 21 23 27 29 31 33 37 39]
+(euler-totient-fn 1)   ;; 1
