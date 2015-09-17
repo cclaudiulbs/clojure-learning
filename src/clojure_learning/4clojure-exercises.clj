@@ -3145,3 +3145,66 @@
 
 (euler-totient-fn 40)  ;; 16, but without [count] looks like:  [1 3 7 9 11 13 17 19 21 23 27 29 31 33 37 39]
 (euler-totient-fn 1)   ;; 1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Identify keys and values
+;; Difficulty:	Medium
+;; Topics:	maps seqs
+;; Given an input sequence of keywords and numbers, create a map such that each key in the map is a keyword,
+;; and the value is a sequence of all the numbers (if any) between it and the next keyword in the sequence.
+;; (= {:a [1 2 3], :b [], :c [4]} (__ [:a 1 2 3 :b :c 4]))
+;; (= {:a [1], :b [2]} (__ [:a 1, :b 2]))
+;; first draft:
+(defn cons-map
+  [xs]
+  (letfn [(map-entries [xs]
+            (loop [[head & tail] xs
+                   acc []]
+              (if (nil? head) acc
+                (if (keyword? head)
+                  (recur tail (conj acc [head]))
+                  (let [last-entry (peek acc)]
+                    (recur tail (conj (pop acc) (conj last-entry head))))))))
+          (add-default-for-missing-vals [xs]
+           (map #(if (= 1 (count %)) (conj % []) %) xs))]
+    (-> xs
+        map-entries
+        add-default-for-missing-vals)))
+
+;; 1st draft outputs:
+(cons-map [:a 1 2 3 :b :c 4]) ;; ([:a 1 2 3] [:b []] [:c 4])
+
+;; 2nd draft is the final solution
+(defn cons-map
+  [xs]
+  (letfn [(map-entries [xs]
+            (loop [[head & tail] xs
+                   acc []]
+              (if (nil? head) acc
+                (if (keyword? head)
+                  (recur tail (conj acc [head]))
+                  (let [last-entry (peek acc)]
+                    (recur tail (conj (pop acc) (conj last-entry head))))))))
+          (add-default-for-missing-vals-and-format-entry [xs]
+           (map #(if (= 1 (count %))
+                   (conj % [])
+                   [(first %) (rest %)]) xs))
+          (reduce-in-map
+             [entries-seq]
+             (reduce
+                (fn [m entry]
+                  (conj m (apply hash-map entry)))
+                {} entries-seq))]
+    (-> xs
+        map-entries
+        add-default-for-missing-vals-and-format-entry
+        reduce-in-map)))
+
+;; demo:
+(cons-map [:a 1 2 3 :b :c 4])  ;; {:c (4), :b [], :a (1 2 3)}  --> whooohooo :)
+(apply hash-map [:a '(1 2 3)]) ;; {:a '(1 2 3)}
+
+;; others solution is(pretty much how we started by trying to use: [partition-by] core func)
+(fn to-map [xs]
+    (apply hash-map
+    	(mapcat #(if (keyword? (first %1)) (interpose '() %1) (list %1)) (partition-by keyword? xs))))
