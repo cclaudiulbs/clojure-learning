@@ -3251,3 +3251,62 @@
       (recur (applied-fn))
       applied-fn)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The Balance of N
+;; Difficulty:	Medium
+;; Topics:	math
+;; Balanced Numbers are: whose component digits have the same sum on the left and right halves of the number.
+;; (= true (__ 11))
+;; (= false (__ 123))
+;; (= true (__ 89098))
+(defn balanced? [x]
+    (letfn [(to-int [x] (Integer/parseInt x))
+            (sum-reduce-chars [seq-chars]
+              (reduce + (map (comp to-int str) seq-chars)))
+            (even-count-chars? [seq-chars] (zero? (rem (count seq-chars) 2)))
+            (take-from [with seq-chars]
+              [(take (quot (count seq-chars) 2) seq-chars)
+               (drop (+ with (quot (count seq-chars) 2)) seq-chars)])
+            (split-in-halfs [seq-chars]
+              (if (even-count-chars? seq-chars)
+                (take-from 0 seq-chars)
+                (take-from 1 seq-chars)))
+            (sum-reduce-half [func seq-chars]
+              (sum-reduce-chars (func (split-in-halfs (str x)))))]
+      (= (sum-reduce-half first x)
+         (sum-reduce-half second x))))
+
+(balanced? 1234321) ;; true
+
+;; work:
+(letfn [(to-int [x-str] (Integer/parseInt x-str))]
+  (reduce + (map (comp to-int str) [\1 \2 \3]))) ;; 6
+
+(Integer. "123")  ;; 123
+(Integer/parseInt "123") ;; 123
+(take 2 "1234")
+(doc drop)
+(reduce )
+
+(quot 5 2)
+(zero? (rem (count "1233") 2)) ;; true
+
+;; refactoring...
+(defn balanced? [x]
+    (letfn [(take-from [with seq-chars]
+              (let [all (count seq-chars)]
+                [(take (quot all 2) seq-chars)
+                 (drop (+ with (quot all 2)) seq-chars)]))
+            (split-in-halfs [seq-chars]
+              (if (even? (count seq-chars))
+                (take-from 0 seq-chars)
+                (take-from 1 seq-chars)))
+            (sum-reduce-chars [seq-chars]
+              (reduce + (map int seq-chars)))
+            (sum-reduce-half [func seq-chars]
+              (sum-reduce-chars (func (split-in-halfs (str x)))))]
+      (= (sum-reduce-half first x)
+         (sum-reduce-half second x))))
+
+(balanced? 1234321) ;; true
