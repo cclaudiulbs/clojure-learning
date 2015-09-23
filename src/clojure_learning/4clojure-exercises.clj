@@ -3310,3 +3310,48 @@
          (sum-reduce-half second x))))
 
 (balanced? 1234321) ;; true
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sequence of pronunciations
+;; Difficulty:	Medium
+;; Topics:	seqs
+;; The function should produce a lazy-sequence of the previous pronunciation
+;; (= [3 1 2 4] (first (__ [1 1 1 4 4])))
+;; (= [[3 1 2 4] [1 3 1 1 1 2 1 4]] (take 2 (__ [1 1 1 4 4])))
+(defn lazy-pronunciation
+  [xs]
+  (letfn [(subseq-by-first [xs]
+            (take-while (fn [each]
+                          (= (first xs) each))
+                         xs))
+          (pronounce-once [xs]
+            (loop [remained xs
+                   acc []]
+              (if (empty? remained)
+                acc
+                (let [result (subseq-by-first remained)]
+                  (recur (drop (count result) remained) (conj acc (count result) (first result)))))))]
+    (lazy-seq
+       (let [each-time (pronounce-once xs)]
+          (cons each-time (lazy-pronunciation each-time))))))
+
+(take 2 (lazy-pronunciation [1 1 2 3]))  ;; ([2 1 1 2 1 3] [1 2 2 1 1 2 1 1 1 3])
+(class (lazy-pronunciation [1 1 2 3]))   ;; clojure.lang.LazySeq
+
+
+;; small refactoring --> using core [iterate] instead of building the lazy-seq
+(defn lazy-pronunciation
+  [xs]
+  (letfn [(subseq-by-first [xs]
+            (take-while (fn [each]
+                          (= (first xs) each))
+                         xs))
+          (pronounce-once [xs]
+            (loop [remained xs
+                   acc []]
+              (if (empty? remained)
+                acc
+                (let [result (subseq-by-first remained)]
+                  (recur (drop (count result) remained) (conj acc (count result) (first result)))))))]
+    (iterate #(pronounce-once %) (pronounce-once xs))))
+
