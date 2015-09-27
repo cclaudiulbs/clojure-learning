@@ -3399,3 +3399,25 @@
 (pairwise-checker? "[")            ;; false -> OK
 (pairwise-checker? "([]([(()){()}(()(()))(([[]]({}([)))())]((((()()))))))") ;; false -> OK
 (pairwise-checker? "([]([(()){()}(()(()))(([[]]({}()))())]((((()()))))))")  ;; false
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Digits and bases
+;; Difficulty:	Medium
+;; Topics:	math
+(defn nums-by-base [x base]
+  (letfn [(num-seq-by-base [n base]
+             (if (zero? n) []
+                (conj (num-seq-by-base (quot n base) base) (rem n base))))]
+    (if (zero? x) [0]
+      (num-seq-by-base x base))))
+
+;; in action
+(nums-by-base 11 2)                 ;; [1 0 1 1]
+(nums-by-base 0 11)                 ;; [0]
+(nums-by-base Integer/MAX_VALUE 42) ;; [16 18 5 24 15 1]
+(nums-by-base 1234501 10)           ;; [1 2 3 4 5 0 1]
+(nums-by-base 10 10)                ;; [1 0]
+
+
+(doc juxt)
+((juxt inc str dec) 1) ;; [2 "1" 0]
