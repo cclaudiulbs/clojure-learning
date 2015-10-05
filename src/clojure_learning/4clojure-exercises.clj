@@ -3421,3 +3421,40 @@
 
 (doc juxt)
 ((juxt inc str dec) 1) ;; [2 "1" 0]
+
+;;;;;;;;;;;;;
+;; Find the dups and apply a func on them given a collection of entities.
+(defn apply-fn-on-dups
+  [func xs]
+  (letfn [(find-dups [sorted-xs]
+            (loop [[head & tail] sorted-xs
+                   dups []]
+              (if (nil? head) dups
+                (if (or (some #(= head %) dups) (= head (first tail)))
+                  (recur tail (conj dups head))
+                  (recur tail dups)))))]
+  (apply func (find-dups (sort xs)))))
+
+;; 2nd version without using "sort" func: find-duplicates and apply a func on them
+(defn apply-fn-on-dups
+  [func xs]
+  (letfn [(contains-val? [x coll]
+            (some #(= x %) coll))]
+    (loop [uniques [(first xs)]
+           [searched & tail] (rest xs)
+           dups []]
+        (if (nil? searched)
+          (apply func
+              (reduce
+                 (fn [dups x]
+                    (if (contains-val? x uniques)
+                      (conj dups x)
+                      dups))
+               dups dups))
+          (if (contains-val? searched uniques)
+            (recur uniques tail (conj dups searched))
+            (recur (conj uniques searched) tail dups))))))
+
+(apply-fn-on-dups + [1 2 3 4 3 3 5 5]) ;; 22
+(apply-fn-on-dups * [1 2 3 4 3 3 5 3]) ;; 729
+(some #(= 32 %) [1 32 33]) ;; true

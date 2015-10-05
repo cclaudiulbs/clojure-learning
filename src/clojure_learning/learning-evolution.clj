@@ -975,3 +975,33 @@ v1
 (last (range 1e9))  ;; linear operation -> O(n)
 
 (doc commute)
+
+;; Build a macro which takes the reversed version of all the clojure operations yield a valid clojure data-structure
+;; (reverse-ops nltnirp "this gets printed")
+(require '(clojure [string :as str]
+                   [walk :as walk]))
+(use '(clojure [repl :as repl]))
+
+(defmacro reverse-it [form]
+  (walk/postwalk
+     (fn [form-entry]
+        (if (symbol? form-entry)
+          (symbol (str/reverse (name form-entry)))
+          form-entry))
+     form))
+
+(repl/doc walk/postwalk)
+
+(reverse-it (nltnirp "this gets printed")) ;; --> prints the entry
+
+(reverse-it
+   (od
+      (fi (emos (nf [x] (= 12 x)) [12 13 14])
+        (nltnirp "Found 12!!!"))))
+(macroexpand (reverse-it (nltnirp "this gets printed")))
+(macroexpand-1
+    (reverse-it
+     (od
+      (fi (emos (nf [x] (= 12 x)) [12 13 14])
+        (nltnirp "Found 12!!!")))))
+(symbol? #(= 2 2)) ;; false
