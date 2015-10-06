@@ -1,6 +1,6 @@
 (ns cclaudiu)
 
-*clojure-version*
+;; *clojure-version*
 
 (use 'clojure.repl)
 (use 'clojure.java.javadoc)
@@ -1115,4 +1115,9 @@ v1
 ;; to provide a default
 
 ;; but we can also build it
-(defn nil-fn)
+(defn nil-fn [] ())
+
+(< 0 10) ;; true
+(> 0 10) ;; false
+(< 0 10 11 12) ;; true
+(< 0 10 -1) ;; false

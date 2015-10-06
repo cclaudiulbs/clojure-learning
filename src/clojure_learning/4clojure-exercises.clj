@@ -3611,3 +3611,62 @@
 ;; 120 Problems solved by now: Rank 706 out of 37.700 users......
 ;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;
+;; Intervals
+;; Difficulty: Medium
+;; Topics:
+;; Write a function that takes a sequence of integers and returns a sequence of "intervals".
+;; Each interval is a a vector of two integers, start and end, such that all integers between
+;; start and end (inclusive) are contained in the input sequence.
+;; (= (__ [1 2 3]) [[1 3]])
+;; (= (__ [10 9 8 1 2 3]) [[1 3] [8 10]])
+(defn find-consecutives [xs]
+  (loop [acc []
+         [head & tail] (sort xs)]
+    (if (nil? head) acc
+      (if (= (dec head) (last (last acc)))
+        (recur (conj
+                  ((comp vec butlast) acc)
+                      (conj ((comp vec last) acc) head)) tail)
+        (recur (conj acc [head]) tail)))))
+
+(find-consecutives [1 2 3])        ;; [[1 2 3]]
+(find-consecutives [10 9 8 1 2 3]) ;; [[1 2 3] [8 9 10]]
+
+(map #(apply vector [(first %) (last %)]) (find-consecutives [10 9 8 1 2 3]))
+;; ([1 3] [8 10]) --> whoooohooo :) this is the function
+
+;; simplifying the func application:
+(map #(list (first %) (last %)) (find-consecutives [10 9 8 1 2 3]))
+
+;; now lets compose it into one, and handle the corner-cases as well... :P
+(defn find-intervals [xs]
+  (letfn [(find-consecutives [coll]
+            (loop [acc []
+                   [head & tail] (sort xs)]
+              (if (nil? head) acc
+                (if (and (not= (dec head) ((comp last last) acc))
+                         (not= head ((comp last last) acc)))
+                  (recur (conj acc [head]) tail)
+                  (recur (conj
+                            ((comp vec butlast) acc)
+                                (conj ((comp vec last) acc) head))
+                         tail)))))
+          (find-bounds [xxs]
+            (if (and (= 1 (count xxs)) (every? (partial = (first xxs)) (rest xxs)))
+              ((comp list list) ((comp first first) xxs) ((comp last last) xxs))
+              (map #(list (first %) (last %)) xxs)))]
+    (-> xs
+        find-consecutives
+        find-bounds)))
+
+(find-intervals [1 2 3])        ;; ((1 3))
+(find-intervals [10 9 8 1 2 3]) ;; ((1 3) (8 10))
+(find-intervals (repeat 7 1))   ;; ((1 1))
+(find-intervals [])             ;; '()
+
+;; some work:
+(def coll [1 1 1 1])
+(every? (partial = (first coll)) (rest coll)) ;; true
+
+;; TODO: refactor the previous find-intervals function
