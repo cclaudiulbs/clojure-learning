@@ -219,3 +219,48 @@
 ;; that do not clash with other namespace-define-vars on macro invocation.
 
 ;; remember that macros DONT evaluate their arguments!
+
+;; however double evaluation is a behavior that macros have; when a macro relies and tries to use more than
+;; one time an expression, or form that has side-effects, there will be un-expected behavior for those macros.
+;; this principle is tight to macro-hygiene.
+(defmacro double-eval-demo [s-expr]
+  `(do
+     (println (str "evaluating: " ~s-expr)
+     (println (str "double-evaluation: " ~s-expr)))))
+
+(double-eval-demo (rand-int 10))
+;; 2 and 3 get printed -> therefore the s-expr is each time evaluated as a whole, therefore it should be
+;; free of side-effects.
+
+(macroexpand-1 '(double-eval-demo (rand-int 10)))
+;; (do (clojure.core/println
+;;       (clojure.core/str "evaluating: " (rand-int 10))
+;;     (clojure.core/println
+;;       (clojure.core/str "double-evaluation: " (rand-int 10)))))
+;; this is the macro compiled and remember on compilation, macro changes into this expanded form.
+;; there we see also the double invoked (rand-int) expressions, which normally yield 2 diff results each time.
+
+;; the clojure idiom for solving this is to introduce a local binding, and use it anywhere it requires
+(defmacro double-eval-demo-solved [sexpr]
+  `(let [one-time# ~sexpr]
+    (do
+      (println one-time#)
+      (println one-time#))))
+(double-eval-demo-solved (rand-int 10)) ;; -> there! solved
+(macroexpand-1 '(double-eval-demo-solved (rand-int 10)))
+;; (let [one-time__6329__auto__ (rand-int 10)])
+
+;; remember that is NOT a good pattern, to put complex logic inside of a macro! dont do this. macros should
+;; behave as a thin layer on top of other macros, that one time can be replaceable by function application.
+
+;; other neat info: the misterious zipmap function :)
+(zipmap [:foo :bar] [1 2]) ;; {:bar 2, :foo 1}
+;; mapcat is the result of applying [concat] on the result of applying [map fn colls].
+
+(mapcat #(vec (% (inc %2))) [:foo :bar] [1 2])
+
+(mapcat #(apply str (concat % %2)) ["some" "none"] ["foo" "bar"])
+
+;; internally macros are imlemented as functions, that take 2 extra arguments: form + env, in addition to the
+;; macro's signature arguments, when they are invoked by the clojure compiler.
+

@@ -1005,3 +1005,114 @@ v1
       (fi (emos (nf [x] (= 12 x)) [12 13 14])
         (nltnirp "Found 12!!!")))))
 (symbol? #(= 2 2)) ;; false
+
+;; Working with conditionals-macros: [if-let]
+;; here's an idiom while working with conditional-lets
+(def coll (list 1 2 3))
+(if-let [[x & xs] (and (seq? coll) (seq coll))]
+  (str (inc x)))
+;; by default if-let, when-let will bind to the local var the result of the expression; if that result
+;; is a boolean then we cannot any longer use destructuring to "name" that elements
+(if-let [[x & xs] (seq? coll)]
+  (str (inc x)))
+;; this code when executed will fire an exception: cannot use [nth] on Type Boolean!!!!
+;; this is because the result of the predicate [seq?] yields a boolean, not a collection
+;; which normally cannot be destructured as a collection.
+
+;; but because we're using composite '(and (seq? coll) (seq coll)) -> the first condition indeed yields
+;; a boolean, however the second yields either a collection which is evaluated as a TRHUTY thing,
+;; either a nil -> which resolves to a FALSY thing.
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; building a function which <<filters>> a collection taking a predicate and the coll itself
+;; and yields a clojure.lang.LazySeq Type back:
+(defn filter-rec [predicate [head & tail]]
+  (lazy-seq
+     (if (nil? head)
+       (list)
+        (if (predicate head)
+          (cons head (filter-rec predicate tail))
+          (filter-rec predicate tail)))))
+
+(class (filter-rec (partial = 2) [1 2 3])) ;; clojure.lang.LazySeq
+(filter-rec (partial < 10) (range 5 20))  ;; filter all values which are higher than 10 (< 10 18) -> TRUE
+(take 5 (filter-rec (partial > 10) (range))) ;; (0 1 2 3 4)
+
+;; 2nd version using an accumulator...
+(defn filter-rec
+  ([pred xs] (filter-rec pred xs []))
+  ([pred [head & tail] acc-seq]
+    (if (nil? head)
+      acc-seq
+      (if (pred head)
+        (filter-rec pred tail (conj acc-seq head))
+        (filter-rec pred tail acc-seq)))))
+
+;; 3rd version using some macros and avoiding destructuring over lazy-ness given by (rest)
+(defn lazy-filter
+  [pred coll]
+  (lazy-seq
+     (when-let [xs (and (sequential? coll) (seq coll))]
+       (let [head (first xs)
+             tail (rest xs)]
+         (if (pred head)
+           (cons head (lazy-filter pred tail))
+           (lazy-filter pred tail))))))
+
+(class (lazy-filter (partial = 2) [1 2 3])) ;; clojure.lang.LazySeq
+(lazy-filter (partial < 10) (range 5 20))  ;; filter all values which are higher than 10 (< 10 18) -> TRUE
+; (lazy-filter (partial > 10) (range)) ;; this fails running infinitely -> use [take] to reduce the sequence filtered:
+(take 5 (lazy-filter (partial < 10) (range))) ;; this fails running indefintely
+
+;; this is synonym to what the core function does(however much simplified...)
+(filter (partial < 10) (range 5 20))
+
+;; list* will take pretty much all the args and concatenate them into a one collection;
+;; the condition is for at least one argument to be a collection.
+(list* 1 [2 3]) ;; (1 2 3)
+
+;; clojure.lang.PersistentQueue/EMPTY
+;; test
+;; fnil
+;; counted? reversible?
+;; clojure.data/diff
+
+;; small demo of how to use a PersistentQueue
+;; bind
+(def persistent-queue (clojure.lang.PersistentQueue/EMPTY))
+(class persistent-queue) ;; clojure.lang.PersistentQueue
+
+;; populate the queue
+(def ten-items-queue (reduce conj persitend-queue (range 0 10)))
+
+;; demo
+(map str ten-items-queue)
+(peek ten-items-queue) ;; 0
+(def nine-items-queue (pop ten-items-queue))
+(peek nine-items-queue) ;; 1
+
+;;;;;;;;;;;;;;;
+;; [fnil] clojure pearl:
+;; demonstrating one another clojure pearl: fnil function
+;; fnil takes a function which might take an argument which is nil -> and instead waiting for
+;; un-expected behavior(of that function having a nil argument), it uses the next so called "default"
+;; argument passed to fnil instead of that nil argument
+
+;; define a basic function that takes a map -> using destructuring of map using :keys
+(defn to-vec [{:keys [foo bar]}]         ;; -> and returns a vector with those values associated to :keys
+  [foo bar])
+
+;; first attempt...passing a nil, instead of a valid map
+(to-vec nil) ;; [nil nil]
+
+;; protecting the function with fnil wrapper
+(def to-vec-with-default-fn
+  (fnil to-vec {:foo 10 :bar 20}))
+
+(to-vec-with-default-fn nil) ;; [10 20]
+
+;; this is usefull when we have a third party library on which we don't own and don't have control over it.
+;; to provide a default
+
+;; but we can also build it
+(defn nil-fn)
