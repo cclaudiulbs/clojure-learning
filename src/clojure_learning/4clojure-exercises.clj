@@ -1667,6 +1667,7 @@
 
 ;; as we see the second need to produce also the reversed version -> final version:
 
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; Split by Type
 ;; Difficulty:	Medium
@@ -3689,37 +3690,82 @@
 ;; -> 28
 (defn calc [forms]
   (fn [bound-map]
-    (let [ops {'/ "/" '* "*" '+ "+" '- "-"}]
-    (letfn [(resolve-one
-              [bound-map [head & tail]]
-                 (when-not (nil? head)
-                   (cons (if (symbol? head)
-                           (if-let [func (get ops head)]
-                             (read-string func)
-                             (get bound-map head))
-                           head)
-                         (resolve-one bound-map tail))))]
-      (resolve-one bound-map forms)
-;;       (map #(resolve-one bound-map %) (list forms))
-      ))))
+    (let [ops {'/ / '* * '+ + '- -}]
+      (letfn [(rebind-and-apply
+                [m-vals [func & args]]
+                (apply
+                   (get ops func)
+                      (reduce
+                        (fn [acc el]
+                          (if (symbol? el)
+                            (conj acc (get m-vals el))
+                            (if (sequential? el)
+                              (conj acc (rebind-and-apply m-vals el))
+                              (conj acc el))))
+                        [] args)))]
+      (rebind-and-apply bound-map forms)))))
 
-(eval ((calc '(/ a b)) '{a 16 b 8}))
-((calc '(/ a b)) '{a 8 b 2}) ;; (/ 8 2)
-((calc '(* (+ a 2) (- 10 b))) '{a 16 b 8})
+;; in action:
+((calc '(/ a b)) '{a 8 b 2})              ;; 4
+((calc '(+ a b)) '{a 16 b 8})             ;; 24
+((calc '(* (+ a 2) (- 10 b))) '{a 3 b 4}) ;; 30
 
-(cons (first '(/ 2 3)) (cons 3 (cons 3 '()))) ;; (/ 3 3)
-(symbol? (first '(/ 2 3)))  ;; true
-(fn? (first '(/ 2 3)))   ;; false
-(symbol? (first '(a b))) ;; true
+(comment
+  (symbol? (first '(/ 2 3)))  ;; true
+  (fn? (first '(/ 2 3)))   ;; false
+  (symbol? (first '(a b))) ;; true
+  (apply (resolve (first '(+ 1 1))) [8 3]) ;; 11
+  (apply (ns-resolve *ns* (first '(+ 1 1))) [8 3]) ;; 11
+  (symbol? (first '(/ 2))) ;; true
+  (apply (first '(+ 1 1)) [8 3]) ;; 11
+  (fn? (first '(+ 1 1)))
+)
 
-(apply (resolve (first '(+ 1 1))) [8 3]) ;; 11
-(apply (ns-resolve *ns* (first '(+ 1 1))) [8 3]) ;; 11
-(symbol? (first '(/ 2))) ;; true
-(apply (ns-resolve *ns* (first '(/ 1 1))) [8 2])
-(fn? (ns-resolve *ns* (first '(/ 1 1))))
-(ns-resolve *ns* (first '(/ 1 1)))
-(symbol? (ns-resolve *ns* (first '(/ 1 1))))
-(fn? clojure.core//)
-(source eval)
-(list '(/ 1 2))
-(clojure.string/replace symbol? "avc" "as")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Equivalence Classes
+;; Difficulty:	Medium
+;; Topics:
+;; A function f defined on a domain D induces an equivalence relation on D, as follows:
+;; a is equivalent to b with respect to f, if and only if (f a) is equal to (f b).
+;; Write a function with arguments f and D that computes the equivalence classes of D with respect to f.
+;; (= (__ #(* % %) #{-2 -1 0 1 2})
+;;    #{#{0} #{1 -1} #{2 -2}})
+
+;; -2 * -2 = 2 * 2
+;; -1 * -1 = 1 * 1
+;;  0 * 0 = 0 * 0
+;; how i think of?
+;; map the fun over each set-el -> ({el val}...{}); then group-by func applied to each -> filter with [a b]
+(defn find-equivalent-classes
+  [func xset]
+   (map
+      (fn [x]
+        (assoc {} x (func x)))
+      xset))
+
+;; current computation yields:
+(find-equivalent-classes #(* % %) #{-2 -1 0 1 2})
+;; ({0 0} {1 1} {-2 4} {-1 1} {2 4})
+
+;; final version:: then group-by func + filter idempotent? + map...
+(defn find-equivalent-classes
+  [func xset]
+  (letfn [(idempotent? [f x] (= (f x) (f (f x))))]
+    (->> xset
+       (group-by func)
+       (filter (fn [map-entry]
+                 (let [k (first map-entry)
+                       v (second map-entry)]
+                   (or (< 1 (count v))
+                       (idempotent? func (first v))
+                       (idempotent? func (last v))))))
+       (map (comp set second))   ;; (#{0} #{1 -1} #{-2 2} #{-3 3})
+       set)))                    ;; last set is for making the 4clojure tests run, although we have the above val :(
+
+;; in application:
+(find-equivalent-classes #(* % %) #{-3 -2 9 -1 0 1 2 3 5}) ;; #{#{-3 3} #{1 -1} #{-2 2} #{0}}
+(find-equivalent-classes identity #{0 1 2 3 4})            ;; #{#{0} #{1} #{2} #{3} #{4}}
+(= (find-equivalent-classes identity #{0 1 2 3 4})
+   #{#{0} #{1} #{2} #{3} #{4}})                            ;; -> true
+
+
