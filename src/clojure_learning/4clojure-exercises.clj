@@ -3670,3 +3670,56 @@
 (every? (partial = (first coll)) (rest coll)) ;; true
 
 ;; TODO: refactor the previous find-intervals function
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Universal Computation Engine
+;; Difficulty:	Medium
+;; Topics:	functions
+;; Special Restrictions: [eval] + [resolve]
+;; Given a mathematical formula in prefix notation, return a function that calculates the value of the formula.
+;; The formula can contain nested calculations using the four basic mathematical operators,
+;; numeric constants, and symbols representing variables.
+;; The returned function has to accept a single parameter containing the map of variable names to their values.
+;; (= 2 ((__ '(/ a b))
+;;       '{b 8 a 16}))
+
+;; ((func '(* (+ 2 a)
+;;           (- 10 b)))
+;;    '{a 2 b 3})
+;; -> 28
+(defn calc [forms]
+  (fn [bound-map]
+    (let [ops {'/ "/" '* "*" '+ "+" '- "-"}]
+    (letfn [(resolve-one
+              [bound-map [head & tail]]
+                 (when-not (nil? head)
+                   (cons (if (symbol? head)
+                           (if-let [func (get ops head)]
+                             (read-string func)
+                             (get bound-map head))
+                           head)
+                         (resolve-one bound-map tail))))]
+      (resolve-one bound-map forms)
+;;       (map #(resolve-one bound-map %) (list forms))
+      ))))
+
+(eval ((calc '(/ a b)) '{a 16 b 8}))
+((calc '(/ a b)) '{a 8 b 2}) ;; (/ 8 2)
+((calc '(* (+ a 2) (- 10 b))) '{a 16 b 8})
+
+(cons (first '(/ 2 3)) (cons 3 (cons 3 '()))) ;; (/ 3 3)
+(symbol? (first '(/ 2 3)))  ;; true
+(fn? (first '(/ 2 3)))   ;; false
+(symbol? (first '(a b))) ;; true
+
+(apply (resolve (first '(+ 1 1))) [8 3]) ;; 11
+(apply (ns-resolve *ns* (first '(+ 1 1))) [8 3]) ;; 11
+(symbol? (first '(/ 2))) ;; true
+(apply (ns-resolve *ns* (first '(/ 1 1))) [8 2])
+(fn? (ns-resolve *ns* (first '(/ 1 1))))
+(ns-resolve *ns* (first '(/ 1 1)))
+(symbol? (ns-resolve *ns* (first '(/ 1 1))))
+(fn? clojure.core//)
+(source eval)
+(list '(/ 1 2))
+(clojure.string/replace symbol? "avc" "as")
