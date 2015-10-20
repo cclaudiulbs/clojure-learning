@@ -1121,3 +1121,11 @@ v1
 (> 0 10) ;; false
 (< 0 10 11 12) ;; true
 (< 0 10 -1) ;; false
+
+;; build a reverse function:
+(defn reverse-rec [xs]
+  (loop [rev []
+         [head & tail] xs]
+    (if (nil? head) rev
+      (recur (cons head rev) tail))))
+(reverse-rec [1 2 3 4]) ;; (4 3 2 1)
