@@ -495,3 +495,109 @@
 ;; output should be something like a map, having the key bound to the failed validation
 ;; while the value: a vector of messages for which the key failed.
 
+;;;;;;;;;;;;;;;;
+;; Macros from clojure-programming:: macro idioms
+;; Macros should NOT embedd complex behavior within them.
+;; Macros should ideally be a thin layer on top of existing functions (or other macros)—or should
+;; be easily replicable by these.
+;; Normally there are counterexamles, such as the [for] macro, which on the first guess embedds complex
+;; logic, however there's nothing inside [for] macro that cannot be reproduced via combining the
+;; following functions: mapcat, filter, map, and let macro.
+;; Macros should delegate complex behavior to functions, and keep only that logic where the
+;; functions are NOT good enough of: controlling the evaluation
+
+;; the [defmacro] instruction, will automatically bind two default implicit vars inside the macro
+;; defined itself: &env + &form.
+;; the &env will be a map, having the keys mapped to the current ns-schema vars. it is helpful for
+;; debuging purposes.
+(defmacro simplify [expr]
+  (let [locals (set (keys &env))]              ;; note that the macro embedds the computation (compiles it)
+    (if (some locals (flatten expr))
+      expr                                     ;; do nothing -> return the expression
+      (do
+        (println "Evaluating expr: " expr)
+        (list `quote (eval expr))))))          ;; return a const list: (quote evaled-expression)
+
+(simplify (apply + '(1 2 3)))
+
+;; this is a simple example, where a macro pre-validates the application of an expresison at compile-time
+;; and if the expression does use some locals defined in the current schema, it will simply return the expr
+;; unevaluated, else will print a small report, and will evaluate the expression given.
+
+(def langs-map {:clojure "coolest programming language" :java "you have to earn something"})
+(simplify (:clojure langs-map))
+(use '[clojure.walk :as walk])
+(macroexpand '(simplify (:clojure langs-map)))
+(walk/macroexpand-all '(simplify (:clojure langs-map))) ;; (quote "coolest programming...")
+
+;; from here we see that the expression is evaluated at compile-time, and returned UN-EVALUATED quoted back.
+
+;; while this might seem not quite impressive, this small macro can take the time-penalties that
+;; runtime might pay, and will put them at compile-time. this macro can optimize any time-consuming
+;; operation at compile-time, hence the runtime will have a constant time of execution, taking
+;; the compiled value instead of pre-compute it again.
+
+(defn f [a b c]
+  (+ a b c (simplify (apply + (range 5e7)))))  ;; takes the time when compiling
+(f 1 2 3) ;; returns immediatelly
+
+(defn f' [a b c]
+  (simplify (apply + a b c (range 5e7)))) ;; returns immediatelly
+(f' 1 2 3) ;; takes the time to compute the application of + on range.
+
+;; this small thing opens the gate to make code faster at runtime, by the use of compile-time constants
+;; the distinction between func f and f', is that the f does NOT depend upon locals: a b c, defined
+;; as func arguments -> but only upon the constant form, while f' depends upon the constants
+;; the args of func f' passed to the macro "simplify"
+;; i like more and more this approach :) so, we can optimize code using this approach, in that
+;; any code that is independent and modular can be optimized at compile-time, while code that
+;; depends upon locals may be evaluated normally.
+
+;; Internally clojure macros behave as functions, but with the addition that it takes two extra-arguments:
+;; &form + &env as implicit arguments.
+
+;; the other implicit argument: &form, contains the whole macro definition with its arguments and macro-symbol
+;; as defined by the user. it also contains all the type-hints. It is really the form that the clojure-reader
+;; reads. usage:
+;; (-> &form meta :line)
+;; take &form, apply meta func on it, with the result of meta which is a map, apply :line func-key on that meta-map.
+
+;; let's see how the [or] macro is implemented in a very simplistic way:
+(defmacro orr
+  ([] nil)
+  ([x] x)
+  ([x & tail]
+   `(let [evaled-x# ~x]
+      (if evaled-x#
+        evaled-x#
+        (orr ~@tail)))))
+
+(orr (< 2 1) true) ;; true
+
+;;;;;;;;;;;;
+;; Threading macros in depth: -> ->>
+;; Scope: cleaning chain function calls and java-interoperability of methods-chaining
+
+;; This way, rather than reading code inside-out (which can be difficult with deeply nested
+;; calls), we can read our code sequentially, left-to-right as a series of successive actions:
+;; “Start with [1 2 3], reverse it, conj 4 onto it, then prn it.”
+
+(prn (conj (reverse [1 2 3]) 4)) ;; (4 3 2 1)
+;; instead we would like to read the code top-down :)
+(-> [1 2 3]
+    reverse
+    (conj 4)
+    prn)
+
+;; how to implement it?
+;; It’s not hard to envision a macro to do this. Given a series of forms, we’ll take the first
+;; form and insert it as the second item in the second form, then take the resulting form
+;; and insert it as the second item in the third form, and so on.
+;; in addition the macro should treat any form that is not a list
+;; (such as reverse) sha'll consider a list item -> so that the user is not enforced to write code like:
+;; (-> [1 2 3] (reverse) (conj 4) (prn))
+
+;; 1 -> impl a function which checks if a form is a sequence -> treat the special no-list-item scenario
+;; 2 -> recursively pass each form as the second item in the next form.
+
+
