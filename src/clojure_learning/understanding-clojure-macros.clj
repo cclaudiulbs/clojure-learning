@@ -600,4 +600,25 @@
 ;; 1 -> impl a function which checks if a form is a sequence -> treat the special no-list-item scenario
 ;; 2 -> recursively pass each form as the second item in the next form.
 
+(defmacro simplify [form]
+  (let [locals (apply hash-set (keys &env))]
+    (if (some locals (flatten form)) form
+      (list `quote (eval form)))))
+(defn f [a b c]
+  (+ a b c (simplify (apply + (range 5e7)))))  ;; takes the time when compiling
+(f 1 2 3) ;; returns immediatelly
 
+(defn f' [a b c]
+  (simplify (apply + a b c (range 5e7)))) ;; returns immediatelly
+(f' 1 2 3) ;; takes the time to compute the application of + on range.
+
+(defmacro thread-first [head & tail]
+  `(let [tail# ~tail
+         head# ~head]
+    (if (nil? tail#) head#
+      (let [evaled-head# (if (seq? head#) (eval head#) head#)
+            first-tail# (first tail#)
+            rest-tail# (rest tail#)]
+        (recur (cons (concat (first first-tail#) evaled-head# (rest (first tail#))) rest-tail#))))))
+
+(thread-first [1 2 3] (conj 4))

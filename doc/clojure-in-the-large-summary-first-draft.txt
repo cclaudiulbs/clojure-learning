@@ -1,0 +1,54 @@
+1. instead of defining a global state in the form of db-connections, thread pools, user-caches
+through using "def"s or "let"s, take the approach of "encapsulating" componentns.
+Encapsulating does not refer here to data-hiding, but GROUPING related things together,
+and decoupling things which should not be related.
+2. Build a Protocol, for instance for the db-connection:
+LifecycleProtocol, that has 2 methods: start and stop
+Note: whenever you find yourself building one method protocols -> you should really use plain
+functions, since the one-method protocol can be easily represented by a function.
+3. Create a Record(which yes internnally behaves, and is part of the map abstraction)
+that implements the protocol LifecycleProtocol:
+defrecord Database [host port conn]
+4. Each of the protocols implemented methods must take the component on which
+they are working on as arguments:
+  (start [component])
+and return an updated state of that component:
+  (assoc component :conn (db/connect host port))
+Note: clojure records behaving as maps, participate in the map-abstraction, hence returning the updated-state.
+
+5. Avoid creating states via global-state mechanism, and start creating constructor functions for
+that "mutable" state:
+(defn new-db-conn [host port]
+  (->Database (:host host :port port)))
+
+Note: a component needs to have some state.
+Always pass around the component on which other component depends on. Each component should
+aquire/take the dependencies through argument-injection. This way the component method pretty much
+behaves as a pure function -> referential transparency(the method is clearly revealing the intention)
+A component can depend on other dependencies.
+
+Another version is to take the approach of declaring dependencies by name. This way, the component
+might take a map of key/val pairs, in which the keys are the names associated to the components.
+(defn notify-user [users-api username msg]
+  (let [{:keys [db email-service]} users-api
+        address (get-email db username)]
+    (send-email email-service address msg)))
+
+Usually a special component, that knows how to acuire its dependencies, in the form of a "System"
+or a "Application", is in the form of a map:
+(defn new-system [config]
+  (let [db (database config)]
+    (->System (:email-service (email-service...)
+               :database-conn (db)))))
+
+It can build the dependencies graph for other components.
+Each value for the System Map Component, specifies the :keys as names for the components,
+while the values are the actual components which the system uses.
+
+Using this approach, one can easily replace the database for a test-env, since the System is
+a pure record(thus a map):
+(defn test-system []
+  (assoc (new-system default-config) :database-conn (test-database...)))
+
+This is a form of dependency injection.
+
