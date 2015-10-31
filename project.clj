@@ -1,5 +1,5 @@
 (defproject clojure-learning "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
+  :description "All my path in learning the most impressive language"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

@@ -3922,3 +3922,52 @@
 (from-romans "XLVIII")    ;; 48
 
 ;; i did the most elegant solution :P no offence :)
+
+(ns clojure-exercises
+  (:require [clojure.test :refer :all])
+  (use clojure.repl))
+;;;;;;;;;;;;;;;;;;;;;;;
+;; Write Roman Numerals
+;; Difficulty:	Medium
+;; Topics:	strings math
+
+(defn into-romans [x]
+  (letfn [(num-seq [x] (map #(Integer. (str %)) (str x)))
+          (not-found-fn [k-entry v-entry] (apply str (repeat v-entry k-entry)))
+          (take-by-num [x xs] (reverse (take x (reverse xs))))]
+    (let [roman-map {"M" {1 "M" 2 "MM" 3 "MMM"}
+                     "C" {4 "CD" 5 "D" 6 "DC" 7 "DCC" 8 "DCCC" 9 "CM"}
+                     "X" {1 "X" 4 "XL" 5 "L" 6 "LX" 7 "LXX" 8 "LXXX" 9 "XC"}
+                     "I" {1 "I" 4 "IV" 5 "V" 6 "VI" 7 "VII" 8 "VIII" 9 "IX"}}
+          nums (num-seq x)]
+      (apply str
+        (reverse
+          (map
+             (fn [[k v]]
+               (get-in roman-map [k v] (not-found-fn k v)))
+             (zipmap (take-by-num (count nums) ["M" "C" "X" "I"]) nums)))))))
+
+(into-romans 1233)
+(into-romans 1499)
+(into-romans 827) ;; DCCCXXVII
+
+(zipmap [1 2] ["1" "2"]) {2 "2", 1 "1"}
+
+(reverse (take 3 (reverse ["M" "C" "D" "X"]))) ;; ("C" "D" "X")
+(interpose 3 [1 2 4]) ;; (1 3 2 3 4)
+
+
+;; all true
+(deftest testing-romans-runner
+  (testing "into-romans should return MMMCMXCIX for 3999"
+    (is (= "MMMCMXCIX" (into-romans 3999)))
+    (is (= "I" (into-romans 1)))
+    (is (= "XXX" (into-romans 30)))
+    (is (= "IV" (into-romans 4)))
+    (is (= "CXL" (into-romans 140)))
+    (is (= "DCCCXXVII" (into-romans 827)))
+    (is (= "MMMCMXCIX" (into-romans 3999)))
+    (is (= "XLVIII" (into-romans 48)))
+))
+
+(testing-romans-runner)
