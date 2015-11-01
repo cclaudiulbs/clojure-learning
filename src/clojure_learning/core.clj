@@ -18,14 +18,14 @@
   (fn[someNum]
     (when (< someNum 30)
       (str "Less than thirty...")
-     (if (> someNum 30)
-       (do (str "this person is older than 30...going to print something")
-         println "printing:: this person is older...")
-       (do (str "else...going to return a teenager..."))
+      (if (> someNum 30)
+        (do (str "this person is older than 30...going to print something")
+          println "printing:: this person is older...")
+        (do (str "else...going to return a teenager..."))
+        )
       )
-     )
-   )
-)
+    )
+  )
 
 (transform lessThanThirty 12 31 11)
 
@@ -50,8 +50,8 @@
   "this is the function api doc"
   [[first-arg second-arg & tail-args]]
   (println (str "doing something concretely with only first + second args: " first-arg ", and: " second-arg)
-   println (map (fn[each-tail-arg](str "formatting the tail-arg: " each-tail-arg)) tail-args)
-    ))
+           println (map (fn[each-tail-arg](str "formatting the tail-arg: " each-tail-arg)) tail-args)
+           ))
 (operate-on-collection1 (list "cclaudiu" "cosar" "other1" "other2"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,8 +59,8 @@
 (defn- destruct-map
   [{lat :lat lng :lng}]
   (println (str "Latitude value: " lat))
-   (println (str "Longitude value: " lng))
-)
+  (println (str "Longitude value: " lng))
+  )
 ;; lat + lng are pointing to the values identfied by the map keys :lat :lng
 (destruct-map {:lat 23 :lng 44})
 
@@ -68,16 +68,16 @@
 (defn- destruct-a-map2
   [{:keys [lat lng]}]
   (println (str "Latitude: " lat)
-   println (str "Longitude: " lng)))
+           println (str "Longitude: " lng)))
 (destruct-a-map2 {:lat 30 :lng 10})
 
 ;; take a reference of the map using the ":as" which aliases the map argument for later references
 (defn- use-map-arg-alias
   [{:keys [name, address] :as customer}]
   (println (str "Customer name is: " name)
-   println (str "Customer address is: " address))
+           println (str "Customer address is: " address))
   println (str "invoke the aliased map on some other function: " customer)  ;; !!!!
-)
+  )
 (use-map-arg-alias {:name "cclaudiu" :address "titan nr 6"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,11 +126,11 @@
 (def names ["foo" "bar" "zip"])
 ;      deconstruct the names into head-tail
 (let [ [head-arg & tail-args] names
-;      bind the formatted-names to the result of invoking conj on names
-     formatted-names (conj names (str head-arg "...all names are here"))]
+       ;      bind the formatted-names to the result of invoking conj on names
+       formatted-names (conj names (str head-arg "...all names are here"))]
 
-     ; the last expression is the one evaluated by let
-     formatted-names)
+  ; the last expression is the one evaluated by let
+  formatted-names)
 ;; the output of let evaluation is: ["foo" "bar" "zip" "foo...all names are here"]
 
 ;; (println head-arg) --> runtime error: head-arg is NOW out of scope!!!
@@ -141,10 +141,10 @@
 (defn- recursive-iteration
   [ [head & tail] ]
   (if (> head 10)
-     (do(println "breaking the recursivity on number higher than 10"))
-     (do(
-          println (str "iterating the first 10 numbers...current: " head))
-          (recur (vec tail))
+    (do(println "breaking the recursivity on number higher than 10"))
+    (do(
+        println (str "iterating the first 10 numbers...current: " head))
+      (recur (vec tail))
       )))
 (recursive-iteration (vec (take 20(range))))
 
@@ -157,10 +157,10 @@
 ;; implement the my-reduce in Clojure, which is a minimalist version of standard: "reduce" func
 (defn- my-reduce
   [func initial [head & tail]]
-    (if(= head nil)
-       initial
-       (recur func (func initial head) tail))
- )
+  (if(= head nil)
+    initial
+    (recur func (func initial head) tail))
+  )
 (let [reduce-result (my-reduce str "a" '("b" "c"))] reduce-result)
 (let [sumofnums (reduce + 1 '[2 3])] sumofnums)
 (let [reduce-result (my-reduce + 1 '[2 3 4 5])] reduce-result)
@@ -190,7 +190,7 @@
 [1 2 3]
 
 (pr " this is multiline
- string")
+    string")
 
 (#(+ %1 %2 %3 2) 2 3 4)
 
@@ -260,11 +260,11 @@
 ;; naming the fn allows for recursive calls
 ;; implementing the my-map using variadic functions
 (def my-map (fn map-rec
-                ([func [head & tail]]
-                  (if(nil? head)
-                    []
-                    (cons (func head) (map-rec func tail)))
-                )))
+              ([func [head & tail]]
+               (if(nil? head)
+                 []
+                 (cons (func head) (map-rec func tail)))
+               )))
 
 (def inc-by-one (my-map (fn[x] (+ x 1))  '(1 2 3)))
 (pr-str inc-by-one)
@@ -362,17 +362,17 @@
 
 ;; clojure compares by value using the equality operator; however when comparing
 ;; using "identical" func, diff results appear:
-	;one=> (def a-map {:one "one"})
-	;#'one/a-map
-	;one=> (def another-map {:one "one"})
-	;#'one/another-map
-	;one=> (identical? a-map another-map)
-	;false
-	;one=> (= a-map another-map)
-	;true
+;one=> (def a-map {:one "one"})
+;#'one/a-map
+;one=> (def another-map {:one "one"})
+;#'one/another-map
+;one=> (identical? a-map another-map)
+;false
+;one=> (= a-map another-map)
+;true
 
- ;; Clojure always classifies each composite data-structure in a logical set of 3 diff categories:
- ;; sequnce, map and set. Two data-structures cannot every be equal if they belong to a diff logical category.
+;; Clojure always classifies each composite data-structure in a logical set of 3 diff categories:
+;; sequnce, map and set. Two data-structures cannot every be equal if they belong to a diff logical category.
 ;; beware that if two data-structures(vector & list) have the same content(elements) = func returns true,
 ;; they are evaluated as being in the same logical ds-category by content. But this fails for comparing
 ;; ds from diff categories.
@@ -420,9 +420,9 @@ a-vector
   (loop [acc-coll []                             ; 2) start with an empty accumulator
          current-coll collection]                ; 3) current-coll takes the initial passed collection
     (if (empty? current-coll)
-        acc-coll
-        (recur (conj acc-coll (func (first current-coll))) (rest current-coll))))
-)
+      acc-coll
+      (recur (conj acc-coll (func (first current-coll))) (rest current-coll))))
+  )
 ;; imagine loop as a function that establishes the next point of recursion.
 ;; in order to be "recur" while traversing the collection, the "accumulator", which
 ;; do NOT mutates, will be passed as the loop rebound argument, while the collection

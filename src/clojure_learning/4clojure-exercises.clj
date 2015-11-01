@@ -3947,9 +3947,10 @@
                (get-in roman-map [k v] (not-found-fn k v)))
              (zipmap (take-by-num (count nums) ["M" "C" "X" "I"]) nums)))))))
 
-(into-romans 1233)
-(into-romans 1499)
-(into-romans 827) ;; DCCCXXVII
+(into-romans 1233) ;; "MCCXXXIII"
+(into-romans 1499) ;; "MCDXCIX"
+(into-romans 827)  ;; "DCCCXXVII"
+(into-romans 1980) ;; "MCMLXXX"
 
 (zipmap [1 2] ["1" "2"]) {2 "2", 1 "1"}
 
@@ -3971,3 +3972,113 @@
 ))
 
 (testing-romans-runner)
+
+;;;;;;;;;;;;;;;;;
+;; Prime Sandwich(116)
+;; Difficulty:	Medium
+;; Topics:	math
+;; A balanced prime is a prime number which is also the mean of the primes directly before and after
+;; it in the sequence of valid primes. Create a function which takes an integer n, and returns true if
+;; it is a balanced prime.
+
+(ns balanced-prime
+  (require [clojure.test :refer :all])
+  (use clojure.repl))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; predicate that identifies if a given number is prime or not:: using recursion
+(defn prime?
+  ([x] (prime? x (dec x) []))
+  ([x potential-divisor divisors]
+     (if (or (= 1 x) (= 1 potential-divisor))
+       (empty? divisors)
+       (if (zero? (rem x potential-divisor))
+         (recur x (dec potential-divisor) (conj divisors potential-divisor))
+         (recur x (dec potential-divisor) divisors)))))
+
+;; predicate that identifies if a given number is prime or not:: using HOF
+(defn prime? [x]
+  (when (> x 1)
+    (empty?
+       (filter
+          #((comp not zero? rem) x %)
+          (range (dec x) 1 -1)))))
+
+(range (dec 5) 1 -1) ;; (4 3 2) -> start inclusive + end-exclusive(1)
+
+;; considering prime-numbers are NOT 1
+(deftest test-primes
+  (testing "if prime? returns true for a prime number that has no divisors or falsy otherwise"
+    (is true (prime? 7))   ;; true
+    (is false (prime? 22)) ;; false
+    (is true (prime? 53))  ;; true
+    (is false (prime? 1))  ;; false
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;; normally the func will work as find the primes until the number -> take last but the number itself
+;; find the primes after the number -> take first afger the number itself
+;; -> see if the (Pn-1) + (Pn+1) / num = num
+;; check first if the number itself is indeed prime? -> else -> return immediatelly.
+
+;; to optimize the prime? function -> don't use the HOF, but the improved in performance
+;; recursive prime? function by: start from the number -> and if there's at least one divisor in the
+;; divisors accumulator AFTER the first conj into it -> return truthy :: DO NOT
+;; continue to find all Divisors!
+
+;; OPTIMIZED version!
+(defn prime?
+  ([x] (prime? x (dec x) []))
+  ([x potential-divisor divisors]
+     (if (= 1 x) false
+       (if (< potential-divisor 2)
+         (empty? divisors)
+         (if ((comp not empty?) divisors) false
+           (if (zero? (rem x potential-divisor))
+             (recur x (dec potential-divisor) (conj divisors potential-divisor))
+             (recur x (dec potential-divisor) divisors)))))))
+
+;; cons a function which given a prime number -> finds recursively the first prime-number
+;; by taking the operation(dec or inc) which provides the direction of search.
+(defn first-prime [x op]
+  (if (zero? x) 0
+    (if (prime? x) x
+      (recur (op x) op))))
+
+;; demo::
+(first-prime (dec 5) dec) ;; 3
+(first-prime (inc 5) inc) ;; 5
+
+
+(defn balanced-prime? [x]
+  (if (prime? x)
+    (= x (/ (+ (first-prime (dec x) dec) (first-prime (inc x) inc)) 2))))
+
+(defn balanced-prime? [x]
+  (letfn [(prime?
+          ([x] (prime? x (dec x) []))
+          ([x potential-divisor divisors]
+             (if (= 1 x) false
+               (if (< potential-divisor 2)
+                 (empty? divisors)
+                 (if ((comp not empty?) divisors) false
+                   (if (zero? (rem x potential-divisor))
+                     (recur x (dec potential-divisor) (conj divisors potential-divisor))
+                     (recur x (dec potential-divisor) divisors)))))))
+          (first-prime [x op]
+            (if (zero? x) 0
+              (if (prime? x) x
+                (recur (op x) op))))]
+  (if (prime? x)
+    (= x (/ (+ (first-prime (dec x) dec)
+               (first-prime (inc x) inc))
+            2))
+    false)))
+
+(deftest test-balanced-prime
+  (testing "predicate that takes a number x and returns true if: n = (quot n (+ (n - 1) (n + 1)))"
+    (is (= false (balanced-prime? 4)))
+    (is (= true (balanced-prime? 563)))
+    (= 1103 (nth (filter balanced-prime? (range)) 15))
+  ))
