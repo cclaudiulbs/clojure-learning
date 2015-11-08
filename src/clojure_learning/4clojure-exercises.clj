@@ -1,7 +1,9 @@
 ;; Exercises from 4clojure.com
 ;; @author cclaudiu
 ;; My solutions come first, followed (possibly) by other users solutions(which are explicitly stated)
-(use 'clojure.repl)
+(ns clojure_learning.4clojure-exercises
+  (use clojure.repl)
+  (require [clojure.test :refer :all]))
 
 ;; Write a function which returns the Nth element from a sequence.
 ;; 1. using the collection in place as a function <- standard clojure provides
@@ -4082,3 +4084,43 @@
     (is (= true (balanced-prime? 563)))
     (= 1103 (nth (filter balanced-prime? (range)) 15))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Analyze a Tic Tac Toe board and identify the winner
+;; Dificulty: HARD
+;; Topics: Game
+;; probl: #73
+(defn analyze [table] 
+  (letfn [(winner? [ [head & tail] ]
+            (when (and (not= head :e) (every? #{head} tail)) head))
+          (map-cols-from [[xs ys zs]]
+            (map #(apply vector [% %2 %3]) xs ys zs))
+          (map-diags-from [[[fhead _ ftail]
+                           [_ mid _]
+                           [lhead _ ltail]]]
+            (apply vector [[fhead mid ltail] [lhead mid ftail]]))
+          (combine [table]
+            (reduce conj table (lazy-cat (map-cols-from table)
+                                         (map-diags-from table))))]
+    (when-let [line (seq (filter winner? (combine table)))] 
+      ((comp first last) line))))
+
+(deftest test-analyze-tic-tac-toe
+  (testing "tic-tac-toe func should analyze & return true the winner of the game"
+    (is (= :x (analyze [[:e :o :x] 
+                        [:o :e :o] 
+                        [:x :x :x]]))) ;; true
+
+    (is (= :o (analyze [[:e :o :x] 
+                        [:o :o :o] 
+                        [:x :e :x]]))) ;; true
+
+    (is (= nil (analyze [[:e :o :x] 
+                         [:o :o :e] 
+                         [:x :e :x]]))) ;; true
+
+    (is (= nil (analyze [[:e :e :e] 
+                         [:e :e :e] 
+                         [:e :e :e]]))) ;; true
+  ))
+
