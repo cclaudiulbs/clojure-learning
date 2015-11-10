@@ -264,3 +264,44 @@
 ;; internally macros are imlemented as functions, that take 2 extra arguments: form + env, in addition to the
 ;; macro's signature arguments, when they are invoked by the clojure compiler.
 
+;; building on the idea that macros are used at compilation time, and their arguments are NOT evaluated
+;; by the clojure reader, although they should output valid reader data-structures, implement the
+;; thread-first macro in clojure.
+
+;; how thread-first -> should work?
+;; (thread-first [1 2 3] (conj 4) reverse println)
+;; first define a function which ensures that any given form is interpreted as a sequence, so that
+;; the user should not be enforced to wrap the form in a list.
+(defn ensure-seq [x] (if (sequential? x) x (list x)))
+(ensure-seq 1)      ;; (1)
+(ensure-seq '(1 2)) ;; (1 2)
+
+;; then the thread-first macro should take the first arg and feed it as the second argument in the next form:
+;; (thread-first x (a b)) -> (a x b)
+(defn insert-second [x ys]
+  (let [ys-seq (ensure-seq ys)]
+    (list* (first ys-seq) x (rest ys-seq))))
+
+(insert-second 1 [0 2]) ;; (0 1 2) -> nice 
+
+;; once we have these functions in place we can start adapt the thread-first macro. the macro should 
+;; return the argument if that's the only argument passed, or should apply the insert-sec function
+;; if there's only 2 forms, or should apply the macro recursively for the rest of the forms
+(defmacro thread-first
+  ([x] x)
+  ([x ys] 
+   (insert-second x ys))
+  ([x sec & tail]
+   `(when-not (nil? ~x)
+      (thread-first (thread-first ~x ~sec) ~@tail))))
+
+;; how to read the recursive approach? the result of the first 2 forms is used as the first argument to
+;; inject in the tail rest args
+
+(thread-first [1 2 3] (conj 4) reverse println) ;; (4 3 2 1) --> WHOOOHOOO
+
+
+
+
+
+
