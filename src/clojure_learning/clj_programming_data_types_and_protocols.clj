@@ -237,6 +237,8 @@
 ;; accessor methods: set! or use inside the body by simply referencing them.
 
 ;; to expose some methods on the defrecord animal -> we can create a protocol to mutate-access the Animal defrecord
+
+;; here's a version of augmenting an existing protocol to a new TYpe via inline implementation:
 (defprotocol AnimalMutation
   "A simple protocol to allow access to Animal mutable members"
   (get-specie [this])
@@ -252,8 +254,120 @@
 (set-specie! wolf "cat")
 (get-specie wolf)     ;; "cat"
 
+;; there are ONLY TWO ways to augment a given type with a protocol:
+;;;;;;;;;;
+;; NOTE: these 2 forms are ONLY for public-final fields!!! and not for private mutable fields
+;;;;;;;;;;
+;; 1. augmenting a type when the type is defined, via inline implementation for the protocol
+;; 2. augmenting an already existing type, with a new created protocol via extend-protocol
 
-;; the only way to access the mutation capabilities on clojure deftypes mutable fields is TO EXPOSE 
-;; behavior for such operations, ONLY when the TYPE is declared/defined!!!
+;; let's start from scratch by defining a new type (this should be the existig type in historical time)
+(deftype HumanBeing [^:unsynchronized-mutable who ^:unsynchronized-mutable age])
 
+;; then define a new protocol that we're gonna use to augment the existing mutable type
+(defprotocol HumanMutation
+  (getName [this] (.who this))
+  (setName! [this new-name] (set! (. this who) new-name)))
+
+;; then extend the new-protocol to the existing type
+(extend-protocol HumanMutation
+  HumanBeing
+  (getName [this] (. this who))
+  (setName! [this new-name] (set! (. this who) new-name)))
+
+(def cclaudiu (->HumanBeing "cclaudiu" 34))
+(.getName cclaudiu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(deftype Languages [lang-code paradigm])
+
+(defprotocol LanguageServiceProtocol
+  (get-lang-code [this])
+  (get-lang-paradigm [this]))
+
+(extend-protocol LanguageServiceProtocol
+  Languages
+  (get-lang-code [this] (.lang-code this))
+  (get-lang-paradigm [this] (.paradigm this)))
+
+(def clojure-lang (->Languages "CLJ" "FP"))
+(get-lang-code clojure-lang)   ;; CLJ
+;; ---> WORKS NICEEEEEEE because the fields for deftype are public and can be accessed AFTER THE TYPE is DECLARED.
+
+;; ONE IMPORTANT THING TO NOTE HERE:
+;; defrecord participating in the MAP Collection Abstraction -> it's keys/fields can be used
+;; as accessor-functions to lookup values bound to the fields, 
+;; on the other side deftype is NOT participating in the Map-Collection-Abstraction and therefore
+;; deftype will work ONLY using java interoperabilty, to access values bound to fields.
+(.member DEF-TYPE)
+(:member DEF-RECORD)
+;; this is valid only for public static final members, to be accessible AFTER THE TYPE is declared!
+
+;;;;;;;;;;;;
+;; Types Inline Implementation
+;;;;;;;;;;;;
+;; generally inline implementation provides better performance, since protocol polymorphic methods
+;; can have DIRECT access to fields defined in declared Types + will be as fast as calling
+;; java interfaces methods.
+;; JVM optimizes method calls to extremme!
+;; inline implementation raises the potential for duplicate-method-signature exception to be thrown,
+;; if ONE Type defines implementation for 2 protocols which have methods with the same signatures.
+;; this is true also for any attempt to implement a protocol, for a type, which type already implements
+;; some of the java.util.Map interface.
+
+;; guideliness in clojure:: always use inline implementation for performance optimizations! not as a
+;; first idea!
+;; inline implementation are the only to provide implementation for java interfaces!!! Just as with
+;; protocols there's NOT mandatory to implement all the methods that the interface defines ->
+;; an exception is triggered on the first attempt to use an-unimplemented method!
+
+;; there's YET another way to declare a new type. this is more likely behaving as the anonymous inner classes
+;; that java provides. this is realizable using "REIFY". which has the declaration rules as the deftype
+;; or defrecord, but without the Type NAME. using [reify] one can opt to provide implementation ONLY
+;; for SOME of the methods that protocol defines (and not all).
+
+(def clojure-reified
+      (reify LanguageServiceProtocol
+        (get-lang-code [this] 
+          (.lang-code (->Languages "clojure" nil)))))
+
+(get-lang-code clojure-lang-code)  ;; clojure
+
+;; reify is a powerfull inliner tool, that behaves more like lambda-expressions. We can reify on the fly
+;; a protocol for an anonymous type, providing some "hardcoded/concrete" types in the body of the
+;; protocol/method we implement. This whole thing returns a reified object back. from this on
+;; since our object-reified implemented the protocol, we can apply the functions which were implemented on it.
+
+;; another example/usage of reify::
+(def reified 
+  (reify 
+    LanguageServiceProtocol
+    (get-lang-paradigm [this] (.paradigm (->Languages "clojure" "functional-programming")))))
+
+(get-lang-paradigm reified) ;; functional-programming
+
+;; Clojure drops the support for Type based inheritance in the favour of "programming to interfaces/protocols".
+;; Types can ONLY satisfy protocols or implement interfaces!
+;; theefore clojure enforces the idea to prefer composition over type-based-inheritance reusable entities.
+
+;; [extend] is a function, it takes the context of protocol to implement as func-keys inside a map;
+;; [extend] is a function, while [extend-type] [extend-protocol] are both macros;
+;; [extend] taking the context-implementation in a map, this map can be augmented with other implementations
+;; simulating the mechanism of mixins or traits.
+
+;; to simulate inheritance, this gate is opened by the [extend] function:
+;; 1. declare a abstract-parent-object
+(def abstract-vov
+  {:cols (fn [this] (apply map vector this))
+   :rows (fn [this] (count this))})
+(extend clojure.lang.IPersistentVector
+  Matrix
+  (assoc abstract-vov 
+     :lookup (fn [this i j] (get-in this [i j]))
+     :dims (fn [this] [(count this) (count (first this))])
+     :update (fn [this i j new-val] (update-in this [i j] (fn [old-val] new-val)))))
+
+(dims [[1 2 3] [3 4 5]])
+(update [[1 2] [3 4]] 0 0 24) ;; [[24 2] [3 4]]
+(cols [[1 2] [3 4]]) ;; [[1 3] [2 4]] --> cols in "mixed-in" with the abstraction
 
