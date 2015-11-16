@@ -29,9 +29,14 @@
   [until-num or-div-x or-div-y]
     (letfn [(find-divisibles-from [curr bound step]
               (lazy-seq
-                (when-not (> curr bound)
+                (when (< curr bound)
                   (cons curr (find-divisibles-from (+ curr step) bound step)))))]
-      (find-divisibles-from 0 until-num or-div-x)
-      ))
+      (find-divisibles-from 0 until-num or-div-x)))
 
+(class (find-sum-of-nums-div-with 100000000 3 5))
 (find-sum-of-nums-div-with 100000000 3 5)
+(find-sum-of-nums-div-with 13 3 0)
+
+(letfn [(divisible? [with x] (or (zero? (rem x with)) ))]
+  (filter (partial divisible? 3) (range 0 1000)))
+

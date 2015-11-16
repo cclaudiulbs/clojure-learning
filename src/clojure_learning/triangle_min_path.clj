@@ -49,11 +49,11 @@
               [2 3 4 5])) ;; 7 -> NICE :
 
 (triangle-min-path '([3]
-                [2 4]
-               [1 9 3]
-              [9 9 2 4]
-             [4 6 6 7 8]
-            [5 7 3 5 1 4])) ;; 20:: 3->4->3->2->7->1 
+                    [2 4]
+                   [1 9 3]
+                  [9 9 2 4]
+                 [4 6 6 7 8]
+                [5 7 3 5 1 4])) ;; 20:: 3->4->3->2->7->1 
 
 ;; let's build a function which takes 
 (defn repeat-each-times [vov times]
@@ -121,3 +121,20 @@
                              [4 6 6 7 8]
                             [5 7 3 5 1 4])))) ;; fail: 26 != 20:: 3->4->3->2->7->1 
 ))
+
+;; other user solution:
+(letfn[(minPaths [triangle, row]
+                 (let [currentRow (nth triangle row)]
+                   (if (= (inc row) (count triangle)) currentRow;last row is the always the minimal
+                     (let [nextMinimal (map #(apply min %) (partition 2 1 (minPaths triangle (inc row))))];[2 3 4 5]->((2 3) (3 4) (4 5))->(2 3 4)
+                       (map + currentRow nextMinimal)))))];get the current minimal path
+  (fn [triangle]
+    (first (minPaths triangle 0))));minPaths returns a sequence, but only a single value is needed
+
+;; or:
+(fn [levels]
+    (first (reduce (fn [cheapest level]
+                     (map +
+                          level
+                          (map #(apply min %) (partition 2 1 cheapest))))
+                   (reverse levels))))
