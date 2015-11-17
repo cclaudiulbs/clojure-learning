@@ -7,7 +7,7 @@
 ;; Note: Some test cases have a very large n, so the most obvious solution will exceed the time limit.
 (ns clojure_learning.big-divide
     (use [clojure.repl])
-    (import [clojure.test]))
+    (require [clojure.test :refer :all]))
 
 (defn find-sum-of-nums-div-with 
   [until-num or-div-x or-div-y]
@@ -34,7 +34,11 @@
       (find-divisibles-from 0 until-num or-div-x)))
 
 (class (find-sum-of-nums-div-with 100000000 3 5))
-(find-sum-of-nums-div-with 100000000 3 5)
+(do 
+  (println (str "start: " (java.util.Date.)))
+  (println (find-sum-of-nums-div-with 10000000 3 5))
+  (println (str "start: " (java.util.Date.))))
+
 (find-sum-of-nums-div-with 13 3 0)
 
 (letfn [(divisible? [with x] (or (zero? (rem x with)) ))]
