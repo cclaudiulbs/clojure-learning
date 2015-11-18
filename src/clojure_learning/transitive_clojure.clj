@@ -12,28 +12,32 @@
 ;; iteratively finds the next clojure based on the previous output and based on the input domain args
 
 (defn find-transitive-clojure
-  ([xset] 
-    (if-let [acc-result (seq (find-transitive-clojure xset []))]
-      (into (apply vector xset) acc-result)
-      xset))
-  ([xset acc]
-  (let [xs (apply vector xset)]
-    (reduce
-      (fn [acc [h-tuple l-tuple]]
-        (into acc
-          (for [[h l] xs :when (= l-tuple h)]
-              [h-tuple l])))
-      acc xs))))
+  [xset]
+   (let [xs-vec (apply vector xset)]
+    (letfn [(find-acc-transitives [xs]
+               (if-let [new-transitives (seq (find-new-transitives xs))]      ;; found new transitive-clojures
+                  (into xs (find-new-transitives (into xs new-transitives)))  ;; recur on existing + found-new-transitives
+                  xs))
+           (find-new-transitives [xs]
+              (reduce
+                (fn [acc [h-tuple l-tuple]]
+                  (into acc
+                    (for [[h l] xs :when (= l-tuple h)]
+                      [h-tuple l])))
+                [] xs))]
+      (apply hash-set 
+        (find-acc-transitives xs-vec)))))
 
 (find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
 
 (apply vector #{1 2 3}) ;; [1 3 2]
+(= #{1 2 3} #{2 1 3})   ;; true -> participate in the value sequence abstraction
 
 (deftest test-transitive-clojure
   (testing "transitive-clojure to find all the connections from last->first of a binary relation tuples"
-    (is (= #{["cat" "man"] ["man" "snake"] ["spider" "cat"]}
-
-        (find-transitive-clojure
+    (is (= (find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
            #{["cat" "man"] ["man" "snake"] ["cat" "snake"]
-             ["spider" "cat"] ["spider" "man"] ["spider" "snake"]} )))))
+             ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}))
+))
 
+(seq []) ;; nil
