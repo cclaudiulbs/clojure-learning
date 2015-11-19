@@ -4267,3 +4267,61 @@
 ;; Topics:	set-theory
 ;; Write a function which generates the transitive closure of a binary relation. 
 ;; The relation will be represented as a set of 2 item vectors.
+(ns clojure-learning.transitive-clojure
+  (use [clojure.repl])
+  (require [clojure.test :refer :all]))
+
+;; Note: the transitive clojure as seen -> takes the entries from the initial coll, and 
+;; iteratively finds the next clojure based on the previous output and based on the input domain args
+
+(defn find-transitive-clojure
+  [xset]
+   (let [xs-vec (apply vector xset)]
+    (letfn [(find-acc-transitives [xs]
+               (if-let [new-transitives (seq (find-new-transitives xs))]      ;; found new transitive-clojures
+                  (into xs (find-new-transitives (into xs new-transitives)))  ;; recur on existing + found-new-transitives
+                  xs))
+           (find-new-transitives [xs]
+              (reduce
+                (fn [acc [h-tuple l-tuple]]
+                  (into acc
+                    (for [[h l] xs :when (= l-tuple h)]
+                      [h-tuple l])))
+                [] xs))]
+      (apply hash-set 
+        (find-acc-transitives xs-vec)))))
+
+(find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
+
+(apply vector #{1 2 3}) ;; [1 3 2]
+(= #{1 2 3} #{2 1 3})   ;; true -> participate in the value sequence abstraction
+
+(deftest test-transitive-clojure
+  (testing "transitive-clojure to find all the connections from last->first of a binary relation tuples"
+    (is (= (find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
+           #{["cat" "man"] ["man" "snake"] ["cat" "snake"]
+             ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}))
+))
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; #131:: Sum Some Set Subsets
+;; Difficulty:	Medium
+;; Topics:	math
+;; Given a variable number of sets of integers, create a function which returns true iff all 
+;; of the sets have a non-empty subset with an equivalent summation. 
+;; solved-times: 587
+(defn equiv-summation [& xsets]
+  (reductions + (first xsets)))
+
+(equiv-summation #{1 2 3} #{4 5})
+
+(deftest test-equiv-summation
+  (testing "if applying sum on some items from each subset yields a num which is in all of the sets"
+    (is true (equiv-summation #{1 3 5}
+                              #{9 11 4}
+                              #{-3 12 3}
+                              #{-3 4 -2 10}))
+
+))
+;; -> (= (+ 1 3 5) (9..) (+ -3 12) (-3 4 -2 10))
+
