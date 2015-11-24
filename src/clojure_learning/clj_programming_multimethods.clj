@@ -71,5 +71,86 @@
 (let [{:keys [formatter _]} {:formatter :eu :date "some-date"}]
   (some #{:eu :us :none} [formatter])) ;; :eu
 
+;; Note: defmulti has defonce semantics, in that if we try to redefine an existing defmulti, our changes are silently
+;; ignored, because we should unmap it from the current ns: "removes the mappings for the symbol from the current ns"
+(ns-unmap *ns* 'a-multi-method)
+(a-multi-method {:delegate ::console}) ;; -> unable to resolve symbol...! cool
+
+;; defmulti openes the gate to multiple-inheritance, using "derive" function.
+;; derive ::from ::descendants
+;; for instance we can define a multimethod:
+(defmulti run "Should invoke the corresponding routine based on the class Type" class)
+(defmethod run Runnable
+  ([func] 
+   (do (func)
+       (println "Runnable invoked!"))))
+(defmethod run Callable
+  ([func] 
+   (do 
+      (func) 
+      (println "Callable invoked!"))))
+
+;; note that we defined the Multimethod "run" here for both Runnable + Callable. Since any clojure-functions inherit
+;; from both Runnable and Callable, when the first attempt to call the runnable will yield an exception!
+(run #(println "somethign")) 
+;; -> Exception: multiple matches, and neither is preffered!
+
+;; prefer-method first-favourite sec-favourite
+(prefer-method run Runnable Callable)
+(run #(println "from a function"))  ;; -> runnable invoked!!!
+
+;; What happened?
+;; the function to dispatch in this case is too wide: "class" -> taking the domain arg in this case the 
+;; anonymous literal function, the multimethod dispatcher function yields a Func back.
+;; the thing is, that we created defmethods for broader Types than function, and every function
+;; inherits from both of them. -> in this case multiple-behavioral-inheritance.
+
+;; Using multimethods one can change the behavior of the multimethod on the fly dynamically dependning
+;; on the Type that is used by the dispatching function. in other words, changing the Type of dispathing
+;; function (the domain args) will change the output of the multimethod.
+
+;; on the other hand there's a downside to this:
+;; A multimethod whose behavior is not strictly dependent upon the values provided as arguments is, 
+;; by definition, not idempotent.
+;; but let's implement this dependent example
+
+;; the keys are identifying the actions uniquely; atom is used to maintain a mutable state
+(def priorities (atom {:911-call :high
+                       :evacuation :high
+                       :go-lunch :low
+                       :finish-work :low}))
+
+(defmulti route-message 
+  "will dispatch based on the priority assigned to each task"
+  (fn dispatch-func [domain-args]
+    (@priorities (:type domain-args)))) ;; deref the priorities atom using "@priorities"
+
+;; using the :type which is the :key of the domain-arg-map -> fetch the :key used in the atom-map
+;; using that value of the atom-priorities -> return the dispatched value for the defmethod
+
+(defmethod route-message :high
+  ([{:keys [type]}]
+    (println "alert the authorities, there's a: " (name type))))
+
+;; the domain-arg-map is destructured and we're taking the name for the value bound to :type-key
+(defmethod route-message :low
+  ([{:keys [type]}]
+   (println "oh, there's another...put in the log..." (name type))))
+
+(route-message {:type :911-call})    ;; ...alert...there's a 911-call
+(route-message {:type :evacuation})  ;; ...alert...there's a evacuation
+(route-message {:type :go-lunch})    ;; ...oh...put...log go-lunch
+
+;; then swapping the priorities (mutating them) will yield in a change in the behavior, that the
+;; other dispatched function defmethod is invoked.
+;; what if the message priorities themselves can change dynamically
+(swap! priorities assoc :911-call :low) ;; -> changing the priorities
+(pr  @priorities) ;; -> mutated
+
+(route-message {:type :911-call})    ;; ...of...put...log 911-call
+
+;; Final Thoughts:
+;; whenever you find yourself, having some nested conditional ifs or "cond"s -> think about refactoring
+;; the logic for a defmulti approach
 
 
