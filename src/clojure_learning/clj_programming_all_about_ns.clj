@@ -41,5 +41,65 @@
 
 (s/intersection #{1 2} #{2 4}) ;; #{2}
 
+;; what happens if we want to use clojure.string lib and clojure.set lib. they both have a [join] operation
+;; but we don't have any join func created into our ns, and we want to use more string.joins than set.joins
+;; hence we want to refer to it directly, however it collides with the set.join
+(use '(clojure [set :exclude (join) :as set]
+               [string :only (join) :as str]))
+(eval join) ;; ->str
+(eval clojure.set/join)
 
+;; (use '(clojure string set))
 
+;; While clojure ns are simply mappings of clojure-symbols to vars, those vars can be also java classes
+;; or interfaces. The [import] comes to the rescue. it takes the fully qualified class-name.
+;; after importing the entities can be refferd directly via short-class-name.
+(Date.) ;; -> compiler unable to resolve Date
+
+(import 'java.util.Date 'java.text.SimpleDateFormat)
+(Date.) ;; -> instance of curr date
+
+(defn format-date [date date-pattern]
+  (.format (SimpleDateFormat. date-pattern) date))
+
+(parse-date (Date.) "dd/MM/yyyy") ;; 25/11/2015
+
+;; remember: java.lang entities are automatically imported into each and every ns
+
+(import '(java.util Collections Arrays))
+;; same construct as in [refer] case
+
+;; while [in-ns] is a pure function, [ns] is a macro, hence cleans up some quotes and adds more readability
+;; when defining ns. Always use in prod-code [ns] over [in-ns] which should be more used in REPL env.
+
+(ns some-foo-ns
+  (:use (clojure [test] [core]))
+  (:require (clojure [set :as set]
+                      [string :as str])))
+
+;; --> more readable than [in-ns] construct
+
+;; There are several rules when defining ns:
+;; 1. Use one file per namespace. -> dir-tree should correspond to ns-name
+;; 2. Use underscores in filenames when namespaces contain dashes.
+;; 3. Use declare to enable forward references
+;;    Clojure does NOT support forward-references, hence the use of [declare] might be an option
+;;    to enable fw-references! (they act like proxies)
+;;    in this manner clojure acts as C declaring whatever you might fw-reference at the top of the file
+;;    and then -use defn, or def to define those declared vars
+
+;;;;;;;;;
+;; classpath
+;;;;;;;;;
+;; once we defined the dependencies in project.clj file -> opening a REPL -> they will be automatically loaded
+;; in the REPL classpath.
+
+(defn find-max-consecs [head & tail]
+  (reduce 
+    (fn [v x] 
+      (if (= x (inc ((comp last last) v)))
+        (conj v x)
+        (conj v [x])))
+    [head] tail))
+
+;; 1 2 4 6 7 8 10 12 -> 6 7 8
