@@ -1,0 +1,661 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+clojure-learning	project.clj	/^(defproject clojure-learning "0.1.0-SNAPSHOT"$/;"	f
+new-db-conn	doc/clojure-in-the-large-summary-first-draft.txt	/^(defn new-db-conn [host port]$/;"	f
+notify-user	doc/clojure-in-the-large-summary-first-draft.txt	/^(defn notify-user [users-api username msg]$/;"	f
+new-system	doc/clojure-in-the-large-summary-first-draft.txt	/^(defn new-system [config]$/;"	f
+test-system	doc/clojure-in-the-large-summary-first-draft.txt	/^(defn test-system []$/;"	f
+get-current-date	clojure-questions.txt	/^(def get-current-date (fn[] $/;"	f
+curr-time-1	clojure-questions.txt	/^(def curr-time-1 (get-current-date))$/;"	f
+curr-time-2	clojure-questions.txt	/^(def curr-time-2 (get-current-date))$/;"	f
+rrange	.lein-repl-history	/^(defn rrange [start] (cons start (lazy-seq (rrange (inc start)))))$/;"	f
+a-vector	src/clojure_learning/learning-evolution.clj	/^(def a-vector [1 2 3])$/;"	f
+sum-of-nums	src/clojure_learning/learning-evolution.clj	/^(def sum-of-nums (fn [x] (fn [y] (+ x y))))$/;"	f
+traverse-collection	src/clojure_learning/learning-evolution.clj	/^(defn traverse-collection$/;"	f
+traverse-container	src/clojure_learning/learning-evolution.clj	/^(defn traverse-container$/;"	f
+a-test	src/clojure_learning/learning-evolution.clj	/^(def a-test {:some-test "some-test-val"})$/;"	f
+check-nil	src/clojure_learning/learning-evolution.clj	/^(defn check-nil$/;"	f
+map-rec	src/clojure_learning/learning-evolution.clj	/^(defn map-rec$/;"	f
+mapped-items	src/clojure_learning/learning-evolution.clj	/^(def mapped-items (map-rec #(str "func applied: " %1) ["cclaudiu" "mary"]))$/;"	f
+mapped-items-2	src/clojure_learning/learning-evolution.clj	/^(def mapped-items-2 (map-rec #(* %1 20) (take 20 (range)))); 0 20 40 60 ...$/;"	f
+mapped-items-3	src/clojure_learning/learning-evolution.clj	/^(def mapped-items-3 (map-rec (fn [each] (* each 20)) (take 20 (range))))$/;"	f
+a-sub-vec	src/clojure_learning/learning-evolution.clj	/^(def a-sub-vec (subvec mapped-items 0 1))$/;"	f
+traverse	src/clojure_learning/learning-evolution.clj	/^(defn traverse$/;"	f
+format-token	src/clojure_learning/learning-evolution.clj	/^(def format-token (comp reduce str$/;"	f
+format-token	src/clojure_learning/learning-evolution.clj	/^(def format-token (comp (partial reduce str)$/;"	f
+partial-add	src/clojure_learning/learning-evolution.clj	/^(def partial-add (partial +))$/;"	f
+foo	src/clojure_learning/learning-evolution.clj	/^(defn foo [x]  (* x x))$/;"	f
+squared	src/clojure_learning/learning-evolution.clj	/^(def squared (foo 4))$/;"	f
+a-vec-1	src/clojure_learning/learning-evolution.clj	/^(def a-vec-1 (vec (take 20(range 40 65))))$/;"	f
+nested-vec	src/clojure_learning/learning-evolution.clj	/^(def nested-vec [[1 2 3]$/;"	f
+my-map	src/clojure_learning/learning-evolution.clj	/^(defn my-map$/;"	f
+other-nums	src/clojure_learning/learning-evolution.clj	/^(def other-nums (my-map #(str "prefix: " %1) "cc" "dd"))$/;"	f
+my-queue	src/clojure_learning/learning-evolution.clj	/^(def my-queue (conj clojure.lang.PersistentQueue\/EMPTY "one" "two" "three"))$/;"	f
+new-queue	src/clojure_learning/learning-evolution.clj	/^(def new-queue (conj my-queue "four"))$/;"	f
+init-queue	src/clojure_learning/learning-evolution.clj	/^(def init-queue (pop new-queue))$/;"	f
+my-sorted-set	src/clojure_learning/learning-evolution.clj	/^(def my-sorted-set (sorted-set :c :a :b)); #{:a :b :c}$/;"	f
+my-sorted-set-comp	src/clojure_learning/learning-evolution.clj	/^(def my-sorted-set-comp (sorted-set-by #((comp > str) %1 %2) "ab" "cc" "dd" :d))$/;"	f
+my-hash-map	src/clojure_learning/learning-evolution.clj	/^(def my-hash-map {:a 2$/;"	f
+a-vec-of-lists	src/clojure_learning/learning-evolution.clj	/^(def a-vec-of-lists '[(:a 1) (:b 2)])$/;"	f
+pos	src/clojure_learning/learning-evolution.clj	/^(defn pos$/;"	f
+base-list	src/clojure_learning/learning-evolution.clj	/^(def base-list (list "cclaudiu" "cosar"))$/;"	f
+child-list-1	src/clojure_learning/learning-evolution.clj	/^(def child-list-1 (cons "petra" base-list))$/;"	f
+child-list-2	src/clojure_learning/learning-evolution.clj	/^(def child-list-2 (cons "clojure" base-list))$/;"	f
+tree-conj	src/clojure_learning/learning-evolution.clj	/^(defn tree-conj$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj nil 5)); {:node-val 5, :left-branch nil, :right-branch nil}$/;"	f
+tree-conj	src/clojure_learning/learning-evolution.clj	/^(defn tree-conj$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj tree-node-1 3))$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj tree-node-1 2))$/;"	f
+tree-conj	src/clojure_learning/learning-evolution.clj	/^(defn tree-conj$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj nil 5)); {:node-val 5, :left-branch nil, :right-branch nil}$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj tree-node-1 3))$/;"	f
+tree-node-1	src/clojure_learning/learning-evolution.clj	/^(def tree-node-1 (tree-conj tree-node-1 2))$/;"	f
+tree-node-2	src/clojure_learning/learning-evolution.clj	/^(def tree-node-2 (tree-conj tree-node-1 29))$/;"	f
+step-coll	src/clojure_learning/learning-evolution.clj	/^(defn step-coll [[head-arg & tail-args]]$/;"	f
+lazy-step-coll	src/clojure_learning/learning-evolution.clj	/^(defn lazy-step-coll$/;"	f
+lazy-step-coll-1	src/clojure_learning/learning-evolution.clj	/^(defn lazy-step-coll-1$/;"	f
+lazy-range	src/clojure_learning/learning-evolution.clj	/^(defn lazy-range$/;"	f
+lazy-range	src/clojure_learning/learning-evolution.clj	/^(defn lazy-range$/;"	f
+defer-expensive	src/clojure_learning/learning-evolution.clj	/^(defn defer-expensive$/;"	f
+exp	src/clojure_learning/learning-evolution.clj	/^(def exp (defer-expensive$/;"	f
+build-container-w-range	src/clojure_learning/learning-evolution.clj	/^(defn build-container-w-range$/;"	f
+not-container-yet	src/clojure_learning/learning-evolution.clj	/^(def not-container-yet (build-container-w-range 10))$/;"	f
+now-a-container	src/clojure_learning/learning-evolution.clj	/^(def now-a-container (force not-container-yet))$/;"	f
+a-vec	src/clojure_learning/learning-evolution.clj	/^(def a-vec [4 3 1 5 6 2 8])$/;"	f
+quick-sort-book-ex-not-working	src/clojure_learning/learning-evolution.clj	/^(defn quick-sort-book-ex-not-working$/;"	f
+qsort	src/clojure_learning/learning-evolution.clj	/^(defn qsort$/;"	f
+quick-sorter	src/clojure_learning/learning-evolution.clj	/^(defn quick-sorter$/;"	f
+emulate-lazy-expr	src/clojure_learning/learning-evolution.clj	/^(defn emulate-lazy-expr$/;"	f
+sum-divisibles	src/clojure_learning/learning-evolution.clj	/^(defn sum-divisibles$/;"	f
+gcd	src/clojure_learning/learning-evolution.clj	/^(defn gcd$/;"	f
+person	src/clojure_learning/learning-evolution.clj	/^(defrecord person [name age])$/;"	f
+create-person	src/clojure_learning/learning-evolution.clj	/^(defn create-person$/;"	f
+new-person	src/clojure_learning/learning-evolution.clj	/^(def new-person (create-person nil))$/;"	f
+claudiu	src/clojure_learning/learning-evolution.clj	/^(def claudiu (->person "claudiu" nil))$/;"	f
+v1	src/clojure_learning/learning-evolution.clj	/^(def v1 (apply vector (range 0 4)))$/;"	f
+v2	src/clojure_learning/learning-evolution.clj	/^(def v2 (pop v1))$/;"	f
+v3	src/clojure_learning/learning-evolution.clj	/^(def v3 (pop v1))$/;"	f
+reverse-it	src/clojure_learning/learning-evolution.clj	/^(defmacro reverse-it [form]$/;"	f
+coll	src/clojure_learning/learning-evolution.clj	/^(def coll (list 1 2 3))$/;"	f
+filter-rec	src/clojure_learning/learning-evolution.clj	/^(defn filter-rec [predicate [head & tail]]$/;"	f
+filter-rec	src/clojure_learning/learning-evolution.clj	/^(defn filter-rec$/;"	f
+lazy-filter	src/clojure_learning/learning-evolution.clj	/^(defn lazy-filter$/;"	f
+persistent-queue	src/clojure_learning/learning-evolution.clj	/^(def persistent-queue (clojure.lang.PersistentQueue\/EMPTY))$/;"	f
+ten-items-queue	src/clojure_learning/learning-evolution.clj	/^(def ten-items-queue (reduce conj persitend-queue (range 0 10)))$/;"	f
+nine-items-queue	src/clojure_learning/learning-evolution.clj	/^(def nine-items-queue (pop ten-items-queue))$/;"	f
+to-vec	src/clojure_learning/learning-evolution.clj	/^(defn to-vec [{:keys [foo bar]}]         ;; -> and returns a vector with those values associated to :keys$/;"	f
+to-vec-with-default-fn	src/clojure_learning/learning-evolution.clj	/^(def to-vec-with-default-fn$/;"	f
+nil-fn	src/clojure_learning/learning-evolution.clj	/^(defn nil-fn [] ())$/;"	f
+reverse-rec	src/clojure_learning/learning-evolution.clj	/^(defn reverse-rec [xs]$/;"	f
+foo	src/clojure_learning/tmp5.clj	/^(def foo "foo")$/;"	f
+global-take-while	src/clojure_learning/tmp5.clj	/^(defn global-take-while$/;"	f
+global-take-while	src/clojure_learning/tmp5.clj	/^(defn global-take-while$/;"	f
+find-dups	src/clojure_learning/find_dups.clj	/^(defn find-dups [xs]$/;"	f
+test-find-dups	src/clojure_learning/find_dups.clj	/^(deftest test-find-dups$/;"	f
+date-parser	src/clojure_learning/clj_programming_multimethods.clj	/^(defmulti date-parser $/;"	f
+date-parser	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod date-parser ::eu$/;"	f
+date-parser	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod date-parser ::none$/;"	f
+date-parser	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod date-parser :default$/;"	f
+a-multi-method	src/clojure_learning/clj_programming_multimethods.clj	/^(defmulti a-multi-method (fn dispatcher [caller-context] (:delegate caller-context)))$/;"	f
+a-multi-method	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod a-multi-method ::console $/;"	f
+a-multi-method	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod a-multi-method ::memory$/;"	f
+run	src/clojure_learning/clj_programming_multimethods.clj	/^(defmulti run "Should invoke the corresponding routine based on the class Type" class)$/;"	f
+run	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod run Runnable$/;"	f
+run	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod run Callable$/;"	f
+priorities	src/clojure_learning/clj_programming_multimethods.clj	/^(def priorities (atom {:911-call :high$/;"	f
+route-message	src/clojure_learning/clj_programming_multimethods.clj	/^(defmulti route-message $/;"	f
+route-message	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod route-message :high$/;"	f
+route-message	src/clojure_learning/clj_programming_multimethods.clj	/^(defmethod route-message :low$/;"	f
+writer-strategy	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmulti writer-strategy$/;"	f
+writer-strategy	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmethod writer-strategy :console$/;"	f
+writer-strategy	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmethod writer-strategy :memory$/;"	f
+writer-strategy	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmethod writer-strategy nil$/;"	f
+formatter	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmulti formatter$/;"	f
+formatter	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defmethod formatter java.lang.String$/;"	f
+split-by-protocol	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defprotocol split-by-protocol$/;"	f
+Programmer	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defrecord Programmer [name company favourite-language])$/;"	f
+cc	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(def cc (->Programmer "cclaudiu" "sap" "clojure"))$/;"	f
+cc-with-address	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(def cc-with-address (assoc cc :address "titan"))$/;"	f
+rec-demo-protocol	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defprotocol rec-demo-protocol$/;"	f
+car-rec	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(defrecord car-rec [brand car-type]$/;"	f
+bmw	src/clojure_learning/braveclojure-multimethods-protocols.clj	/^(def bmw (->car-rec "bmw" "sport"))$/;"	f
+into-if-predicate	src/clojure_learning/tmp6.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/tmp6.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/tmp6.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/tmp6.clj	/^(defn into-if-predicate$/;"	f
+pairwise-checker?	src/clojure_learning/pairwise-brackets-checker.clj	/^(defn pairwise-checker?$/;"	f
+pair?	src/clojure_learning/pairwise-brackets-checker.clj	/^(defn pair? [a b]$/;"	f
+pairwise-checker?	src/clojure_learning/pairwise-brackets-checker.clj	/^(defn pairwise-checker?$/;"	f
+pairwise-checker?	src/clojure_learning/pairwise-brackets-checker.clj	/^(defn pairwise-checker?$/;"	f
+books	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def books [:clojure])$/;"	f
+juxt-funcs	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn juxt-funcs [vectorize mk-hash-set] (juxt vectorize mk-hash-set))$/;"	f
+juxt-args	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def juxt-args (juxt-funcs #(vec %) #(apply hash-set %)))$/;"	f
+compile-cmd	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defmulti compile-cmd (juxt :os :compiler))$/;"	f
+compile-cmd	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defmethod compile-cmd ['unix 'gcc]$/;"	f
+compile-cmd	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defmethod compile-cmd ['ios 'gacc]$/;"	f
+present	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn present [name] (str "name is " name))$/;"	f
+ask-question	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn ask-question [question] (str "asking a stupid question: " question))$/;"	f
+TreeNode	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord TreeNode [val l-branch r-branch])$/;"	f
+TreeNode	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord TreeNode [value l-branch r-branch])$/;"	f
+xconj	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn xconj$/;"	f
+num-container	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def num-container (->TreeNode "numeric-aggregations" nil nil))$/;"	f
+nums-categorization	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def nums-categorization (xconj num-container (range 1 6)))$/;"	f
+xseq	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn xseq [tree]$/;"	f
+FIXO	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defprotocol FIXO$/;"	f
+StringOps	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defprotocol StringOps$/;"	f
+rev-mixin	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def rev-mixin {:rev #(clojure.string\/reverse %)})$/;"	f
+upper-mixin	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def upper-mixin {:upper #(.toUpperCase %)})$/;"	f
+fully-mixin	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def fully-mixin (merge rev-mixin upper-mixin))$/;"	f
+tree-node-fixo	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(def tree-node-fixo$/;"	f
+TreeNode	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord TreeNode [value l-branch r-branch]$/;"	f
+TreeNode	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord TreeNode [value l-branch r-branch])$/;"	f
+SomeCustomType	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord SomeCustomType [cust-val]$/;"	f
+SomeCustomType	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(deftype SomeCustomType [cust-val]$/;"	f
+Some	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defrecord Some [some-val]$/;"	f
+lazy-pascal	src/clojure_learning/chap-9-combining-data-and-code.clj	/^(defn lazy-pascal [xs]$/;"	f
+file?	src/clojure_learning/how_many_lines.clj	/^(defn file? [file]$/;"	f
+files-only	src/clojure_learning/how_many_lines.clj	/^(defn files-only [dir]$/;"	f
+lines-counter	src/clojure_learning/how_many_lines.clj	/^(defn lines-counter [file]$/;"	f
+dir-lines-counter	src/clojure_learning/how_many_lines.clj	/^(defn dir-lines-counter [dir]$/;"	f
+decode-alien-input	src/clojure_learning/daily-programmer-intermediate-space-code-breaking.clj	/^(defn decode-alien-input$/;"	f
+english?	src/clojure_learning/daily-programmer-intermediate-space-code-breaking.clj	/^(defn english? [decoded-msg]$/;"	f
+partition-by-pivot	src/clojure_learning/quick-sort.clj	/^(defn partition-by-pivot$/;"	f
+test-partition-by-pivot	src/clojure_learning/quick-sort.clj	/^(deftest test-partition-by-pivot$/;"	f
+quick-sort	src/clojure_learning/quick-sort.clj	/^(defn quick-sort$/;"	f
+test-quick-sort	src/clojure_learning/quick-sort.clj	/^(deftest test-quick-sort$/;"	f
+call-twice	src/clojure_learning/chap-7-FP.clj	/^(defn call-twice$/;"	f
+join	src/clojure_learning/chap-7-FP.clj	/^(defn join$/;"	f
+plays	src/clojure_learning/chap-7-FP.clj	/^(def plays [{:band "Burial", :plays 979, :loved 9}$/;"	f
+sort-by-loved-ratio	src/clojure_learning/chap-7-FP.clj	/^(def sort-by-loved-ratio (partial sort-by #(\/ (:plays %) (:loved %))))$/;"	f
+columns	src/clojure_learning/chap-7-FP.clj	/^(defn columns$/;"	f
+keys-apply	src/clojure_learning/chap-7-FP.clj	/^(defn keys-apply$/;"	f
+manip-map	src/clojure_learning/chap-7-FP.clj	/^(defn manip-map$/;"	f
+learn-clj	src/clojure_learning/chap-7-FP.clj	/^(defn learn-clj$/;"	f
+times-two	src/clojure_learning/chap-7-FP.clj	/^(defn times-two []$/;"	f
+pow	src/clojure_learning/chap-7-FP.clj	/^(defn pow$/;"	f
+pow-rec	src/clojure_learning/chap-7-FP.clj	/^(defn pow-rec$/;"	f
+pow-rec-2	src/clojure_learning/chap-7-FP.clj	/^(defn pow-rec-2$/;"	f
+foo	src/clojure_learning/first-ride.clj	/^(defn foo$/;"	f
+transform	src/clojure_learning/first-ride.clj	/^(defn transform$/;"	f
+lessThanThirty	src/clojure_learning/first-ride.clj	/^(def lessThanThirty$/;"	f
+destructureInAction	src/clojure_learning/first-ride.clj	/^(defn destructureInAction$/;"	f
+alternativeDestructuring	src/clojure_learning/first-ride.clj	/^(defn alternativeDestructuring$/;"	f
+operate-on-collection1	src/clojure_learning/first-ride.clj	/^(defn operate-on-collection1$/;"	f
+destruct-map	src/clojure_learning/first-ride.clj	/^(defn- destruct-map$/;"	f
+destruct-a-map2	src/clojure_learning/first-ride.clj	/^(defn- destruct-a-map2$/;"	f
+use-map-arg-alias	src/clojure_learning/first-ride.clj	/^(defn- use-map-arg-alias$/;"	f
+bound-func-to-name	src/clojure_learning/first-ride.clj	/^(def bound-func-to-name (fn[x](* x 3)))$/;"	f
+inc-maker	src/clojure_learning/first-ride.clj	/^(defn- inc-maker$/;"	f
+inc-seven-by	src/clojure_learning/first-ride.clj	/^(def inc-seven-by (inc-maker 7))  ;; inc-seven-by func still has access to arg passed to inc-maker func$/;"	f
+ten	src/clojure_learning/first-ride.clj	/^(def ten (inc-seven-by 3))$/;"	f
+x	src/clojure_learning/first-ride.clj	/^(def x 3)$/;"	f
+foo	src/clojure_learning/first-ride.clj	/^(def foo 24)$/;"	f
+myMap	src/clojure_learning/first-ride.clj	/^(def myMap {:foo "this is foo" :bar "this bar"})$/;"	f
+names	src/clojure_learning/first-ride.clj	/^(def names ["foo" "bar" "zip"])$/;"	f
+recursive-iteration	src/clojure_learning/first-ride.clj	/^(defn- recursive-iteration$/;"	f
+isMatchingCC	src/clojure_learning/first-ride.clj	/^(defn- isMatchingCC$/;"	f
+my-reduce	src/clojure_learning/first-ride.clj	/^(defn- my-reduce$/;"	f
+foo	src/clojure_learning/first-ride.clj	/^(def foo "some foo")$/;"	f
+foo	src/clojure_learning/first-ride.clj	/^(def foo [12 3 "cc" (re-seq #"a|b|c" "abc")])$/;"	f
+foo	src/clojure_learning/first-ride.clj	/^(def foo [1 2 3 "four" (fn [](quote 5) )])$/;"	f
+aMap	src/clojure_learning/first-ride.clj	/^(def aMap {:a "ei" :b "bi"$/;"	f
+customer	src/clojure_learning/first-ride.clj	/^(def customer {:name "cclaudiu" :age 33 :location "Titan nr 6"})$/;"	f
+user-info	src/clojure_learning/first-ride.clj	/^(def user-info ["cclaudiu" 2015 :email "claudiu.cosar@sap.com" :company "sap"])$/;"	f
+square	src/clojure_learning/first-ride.clj	/^(def square (fn[x] (* x x)))$/;"	f
+minus-1	src/clojure_learning/first-ride.clj	/^(def minus-1 (fn[x y](do (- x y))))$/;"	f
+minus-2	src/clojure_learning/first-ride.clj	/^(def minus-2 (fn[x y] (- x y)))$/;"	f
+make-sum	src/clojure_learning/first-ride.clj	/^(def make-sum (fn sum-nrs$/;"	f
+my-map	src/clojure_learning/first-ride.clj	/^(def my-map (fn map-rec$/;"	f
+inc-by-one	src/clojure_learning/first-ride.clj	/^(def inc-by-one (my-map (fn[x] (+ x 1))  '(1 2 3)))$/;"	f
+append-prefix	src/clojure_learning/first-ride.clj	/^(def append-prefix (my-map (fn[each] (str "prefix: " each)) '("cc" "ll")))$/;"	f
+some-hash	src/clojure_learning/first-ride.clj	/^(def some-hash {[1 2] "value: 3"})$/;"	f
+call-twice	src/clojure_learning/first-ride.clj	/^(def call-twice (fn [f x]$/;"	f
+call-twice	src/clojure_learning/first-ride.clj	/^(defn call-twice [f x] (f x) (f x))$/;"	f
+get-current-date	src/clojure_learning/first-ride.clj	/^(def get-current-date (fn[]$/;"	f
+curr-time-1	src/clojure_learning/first-ride.clj	/^(def curr-time-1 (get-current-date))$/;"	f
+curr-time-2	src/clojure_learning/first-ride.clj	/^(def curr-time-2 (get-current-date))$/;"	f
+only-strings	src/clojure_learning/first-ride.clj	/^(def only-strings (partial filter string?)); here "filter" func accepts the predicate and the collection$/;"	f
+str-negate-sum	src/clojure_learning/first-ride.clj	/^(def str-negate-sum (comp str - +))$/;"	f
+max-num	src/clojure_learning/first-ride.clj	/^(defn max-num$/;"	f
+max-num-1	src/clojure_learning/first-ride.clj	/^(defn max-num-1$/;"	f
+plain-ds	src/clojure_learning/first-ride.clj	/^(def plain-ds (into-array [:first :second :third]))$/;"	f
+clj-ds	src/clojure_learning/first-ride.clj	/^(def clj-ds [:first :second :third])$/;"	f
+clj-ds-1	src/clojure_learning/first-ride.clj	/^(def clj-ds-1 (replace {:second :other} clj-ds))$/;"	f
+a-vector	src/clojure_learning/first-ride.clj	/^(def a-vector (vec (range 1 20)))$/;"	f
+a-matrix	src/clojure_learning/first-ride.clj	/^(def a-matrix [[1 2 3]$/;"	f
+map-rec	src/clojure_learning/first-ride.clj	/^(defn map-rec$/;"	f
+mapped-items	src/clojure_learning/first-ride.clj	/^(def mapped-items (map-rec #(str "func applied: " %1) ["cclaudiu" "mary"]))$/;"	f
+foo	src/clojure_learning/core.clj	/^(defn foo$/;"	f
+transform	src/clojure_learning/core.clj	/^(defn transform$/;"	f
+lessThanThirty	src/clojure_learning/core.clj	/^(def lessThanThirty$/;"	f
+destructureInAction	src/clojure_learning/core.clj	/^(defn destructureInAction$/;"	f
+alternativeDestructuring	src/clojure_learning/core.clj	/^(defn alternativeDestructuring$/;"	f
+operate-on-collection1	src/clojure_learning/core.clj	/^(defn operate-on-collection1$/;"	f
+destruct-map	src/clojure_learning/core.clj	/^(defn- destruct-map$/;"	f
+destruct-a-map2	src/clojure_learning/core.clj	/^(defn- destruct-a-map2$/;"	f
+use-map-arg-alias	src/clojure_learning/core.clj	/^(defn- use-map-arg-alias$/;"	f
+bound-func-to-name	src/clojure_learning/core.clj	/^(def bound-func-to-name (fn[x](* x 3)))$/;"	f
+inc-maker	src/clojure_learning/core.clj	/^(defn- inc-maker$/;"	f
+inc-seven-by	src/clojure_learning/core.clj	/^(def inc-seven-by (inc-maker 7))  ;; inc-seven-by func still has access to arg passed to inc-maker func$/;"	f
+ten	src/clojure_learning/core.clj	/^(def ten (inc-seven-by 3))$/;"	f
+x	src/clojure_learning/core.clj	/^(def x 3)$/;"	f
+foo	src/clojure_learning/core.clj	/^(def foo 24)$/;"	f
+myMap	src/clojure_learning/core.clj	/^(def myMap {:foo "this is foo" :bar "this bar"})$/;"	f
+names	src/clojure_learning/core.clj	/^(def names ["foo" "bar" "zip"])$/;"	f
+recursive-iteration	src/clojure_learning/core.clj	/^(defn- recursive-iteration$/;"	f
+isMatchingCC	src/clojure_learning/core.clj	/^(defn- isMatchingCC$/;"	f
+my-reduce	src/clojure_learning/core.clj	/^(defn- my-reduce$/;"	f
+foo	src/clojure_learning/core.clj	/^(def foo "some foo")$/;"	f
+foo	src/clojure_learning/core.clj	/^(def foo [12 3 "cc" (re-seq #"a|b|c" "abc")])$/;"	f
+foo	src/clojure_learning/core.clj	/^(def foo [1 2 3 "four" (fn [](quote 5) )])$/;"	f
+aMap	src/clojure_learning/core.clj	/^(def aMap {:a "ei" :b "bi"$/;"	f
+customer	src/clojure_learning/core.clj	/^(def customer {:name "cclaudiu" :age 33 :location "Titan nr 6"})$/;"	f
+user-info	src/clojure_learning/core.clj	/^(def user-info ["cclaudiu" 2015 :email "claudiu.cosar@sap.com" :company "sap"])$/;"	f
+square	src/clojure_learning/core.clj	/^(def square (fn[x] (* x x)))$/;"	f
+minus-1	src/clojure_learning/core.clj	/^(def minus-1 (fn[x y](do (- x y))))$/;"	f
+minus-2	src/clojure_learning/core.clj	/^(def minus-2 (fn[x y] (- x y)))$/;"	f
+make-sum	src/clojure_learning/core.clj	/^(def make-sum (fn sum-nrs$/;"	f
+my-map	src/clojure_learning/core.clj	/^(def my-map (fn map-rec$/;"	f
+inc-by-one	src/clojure_learning/core.clj	/^(def inc-by-one (my-map (fn[x] (+ x 1))  '(1 2 3)))$/;"	f
+append-prefix	src/clojure_learning/core.clj	/^(def append-prefix (my-map (fn[each] (str "prefix: " each)) '("cc" "ll")))$/;"	f
+some-hash	src/clojure_learning/core.clj	/^(def some-hash {[1 2] "value: 3"})$/;"	f
+call-twice	src/clojure_learning/core.clj	/^(def call-twice (fn [f x]$/;"	f
+call-twice	src/clojure_learning/core.clj	/^(defn call-twice [f x] (f x) (f x))$/;"	f
+get-current-date	src/clojure_learning/core.clj	/^(def get-current-date (fn[]$/;"	f
+curr-time-1	src/clojure_learning/core.clj	/^(def curr-time-1 (get-current-date))$/;"	f
+curr-time-2	src/clojure_learning/core.clj	/^(def curr-time-2 (get-current-date))$/;"	f
+only-strings	src/clojure_learning/core.clj	/^(def only-strings (partial filter string?)); here "filter" func accepts the predicate and the collection$/;"	f
+str-negate-sum	src/clojure_learning/core.clj	/^(def str-negate-sum (comp str - +))$/;"	f
+max-num	src/clojure_learning/core.clj	/^(defn max-num$/;"	f
+max-num-1	src/clojure_learning/core.clj	/^(defn max-num-1$/;"	f
+plain-ds	src/clojure_learning/core.clj	/^(def plain-ds (into-array [:first :second :third]))$/;"	f
+clj-ds	src/clojure_learning/core.clj	/^(def clj-ds [:first :second :third])$/;"	f
+clj-ds-1	src/clojure_learning/core.clj	/^(def clj-ds-1 (replace {:second :other} clj-ds))$/;"	f
+a-vector	src/clojure_learning/core.clj	/^(def a-vector (vec (range 1 20)))$/;"	f
+a-matrix	src/clojure_learning/core.clj	/^(def a-matrix [[1 2 3]$/;"	f
+map-rec	src/clojure_learning/core.clj	/^(defn map-rec$/;"	f
+mapped-items	src/clojure_learning/core.clj	/^(def mapped-items (map-rec #(str "func applied: " %1) ["cclaudiu" "mary"]))$/;"	f
+triangle-min-path	src/clojure_learning/triangle_min_path.clj	/^(defn triangle-min-path$/;"	f
+repeat-each-times	src/clojure_learning/triangle_min_path.clj	/^(defn repeat-each-times [vov times]$/;"	f
+test-repeat-each-times	src/clojure_learning/triangle_min_path.clj	/^(deftest test-repeat-each-times$/;"	f
+trim-sides	src/clojure_learning/triangle_min_path.clj	/^(defn trim-sides [xs how-many]$/;"	f
+test-trim-sides	src/clojure_learning/triangle_min_path.clj	/^(deftest test-trim-sides$/;"	f
+trim-sides-by-last	src/clojure_learning/triangle_min_path.clj	/^(defn trim-sides-by-last [matrix]$/;"	f
+test-trim-sides-by-last	src/clojure_learning/triangle_min_path.clj	/^(deftest test-trim-sides-by-last$/;"	f
+trim-sides-by-first	src/clojure_learning/triangle_min_path.clj	/^(defn trim-sides-by-first [matrix]$/;"	f
+test-trim-sides-by-first	src/clojure_learning/triangle_min_path.clj	/^(deftest test-trim-sides-by-first$/;"	f
+test-triangle-min-path	src/clojure_learning/triangle_min_path.clj	/^(deftest test-triangle-min-path$/;"	f
+reverse-it	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro reverse-it [form]$/;"	f
+foo	src/clojure_learning/clojure-programming-macros.clj	/^(defn foo [a b] (str a b))$/;"	f
+a	src/clojure_learning/clojure-programming-macros.clj	/^(def a "this")$/;"	f
+b	src/clojure_learning/clojure-programming-macros.clj	/^(def b "that")$/;"	f
+bar	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro bar [a b] (list str a b))$/;"	f
+foreach	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro foreach$/;"	f
+foreach	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro foreach [[each in-coll] & body]$/;"	f
+some-func	src/clojure_learning/clojure-programming-macros.clj	/^(defn some-func [x] (tutankamon x)) ;; -> a runtime-exception is fired -> unable to resolve symbol in this context$/;"	f
+some-macro	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro some-macro [x] `(tutankamon ~x))$/;"	f
+hello	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro hello [name]$/;"	f
+while-do	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro while-do$/;"	f
+say-hi	src/clojure_learning/clojure-programming-macros.clj	/^(defn say-hi [name] (str name))$/;"	f
+say-hi-macro	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro say-hi-macro [name] `(str ~name))$/;"	f
+double-eval-demo	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro double-eval-demo [s-expr]$/;"	f
+double-eval-demo-solved	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro double-eval-demo-solved [sexpr]$/;"	f
+ensure-seq	src/clojure_learning/clojure-programming-macros.clj	/^(defn ensure-seq [x] (if (sequential? x) x (list x)))$/;"	f
+insert-second	src/clojure_learning/clojure-programming-macros.clj	/^(defn insert-second [x ys]$/;"	f
+thread-first	src/clojure_learning/clojure-programming-macros.clj	/^(defmacro thread-first$/;"	f
+thread-fns	src/clojure_learning/clojure-programming-macros.clj	/^(defn thread-fns$/;"	f
+f	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def f (future (Thread\/sleep 5000) (println "Going to print in that future-thread after 5 secs") "some"))$/;"	f
+d	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def d (delay$/;"	f
+my-atom	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def my-atom (atom {:name "claudiu" :age 34}))$/;"	f
+update-my-atom	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(defn update-my-atom$/;"	f
+counter	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def counter (ref 0))$/;"	f
+my-job	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def my-job "clojure-programmer")$/;"	f
+^:dynamic	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def ^:dynamic *some-job* "clojure-programmer")$/;"	f
+^:dynamic	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def ^:dynamic *to-mail* "claudiu.cosar@gmail.com")$/;"	f
+send-mail	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(defn send-mail [message]$/;"	f
+somebody	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def somebody "cclaudiu@gmail.com")$/;"	f
+send-mail	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(defn send-mail [message]$/;"	f
+^:dynamic	src/clojure_learning/chap-10-mutation-and-concurrency.clj	/^(def ^:dynamic *c* "initial root value")$/;"	f
+find-max-consecs	src/clojure_learning/find_consecs.clj	/^(defn find-max-consecs [xs]$/;"	f
+analyze	src/clojure_learning/analyze_tic_tac_toe.clj	/^(defn analyze [table] $/;"	f
+test-analyze-tic-tac-toe	src/clojure_learning/analyze_tic_tac_toe.clj	/^(deftest test-analyze-tic-tac-toe$/;"	f
+analyze	src/clojure_learning/analyze_tic_tac_toe.clj	/^(defn analyze [table] $/;"	f
+palindrome?	src/clojure_learning/tmp4.clj	/^(defn palindrome? [x]$/;"	f
+gen-palindromes	src/clojure_learning/tmp4.clj	/^(defn gen-palindromes$/;"	f
+gen-palindromes	src/clojure_learning/tmp4.clj	/^(defn gen-palindromes$/;"	f
+v1	src/clojure_learning/tmp4.clj	/^(def v1 (apply vector (range 0 10)))$/;"	f
+v2	src/clojure_learning/tmp4.clj	/^(def v2 (pop v1))$/;"	f
+v3	src/clojure_learning/tmp4.clj	/^(def v3 (pop v1))$/;"	f
+addition-list	src/clojure_learning/understanding-clojure-macros.clj	/^(def addition-list (list + 1 2)) ; --> returns a list of: (+ 1 2) -> passed to eval$/;"	f
+ignore-last	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro ignore-last$/;"	f
+read-resource	src/clojure_learning/understanding-clojure-macros.clj	/^(defn read-resource$/;"	f
+infix-notation	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro infix-notation$/;"	f
+unless	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro unless$/;"	f
+prefixed-notation	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro prefixed-notation$/;"	f
+unless	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro unless$/;"	f
+while-not	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro while-not$/;"	f
+foo	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro foo [{:keys [foo bar]}]$/;"	f
+foo	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro foo [{:keys [foo bar]}]$/;"	f
+code-more	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro code-more [{:keys [foo bar]}]$/;"	f
+code-more	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro code-more [{:keys [foo bar]}]$/;"	f
+sum-all	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro sum-all [& nums]$/;"	f
+sum-all	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro sum-all [& nums]$/;"	f
+message	src/clojure_learning/understanding-clojure-macros.clj	/^(def message "some defined message")$/;"	f
+capture-demo	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro capture-demo$/;"	f
+capture-demo	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro capture-demo$/;"	f
+capture-demo	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro capture-demo$/;"	f
+report	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro report$/;"	f
+validate[]	src/clojure_learning/understanding-clojure-macros.clj	/^(defn validate[] ())$/;"	f
+shipping-details	src/clojure_learning/understanding-clojure-macros.clj	/^(def shipping-details {:email "" :address: ""})$/;"	f
+shipping-details-validations	src/clojure_learning/understanding-clojure-macros.clj	/^(def shipping-details-validations {}) ; rules for validator$/;"	f
+simplify	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro simplify [expr]$/;"	f
+langs-map	src/clojure_learning/understanding-clojure-macros.clj	/^(def langs-map {:clojure "coolest programming language" :java "you have to earn something"})$/;"	f
+f	src/clojure_learning/understanding-clojure-macros.clj	/^(defn f [a b c]$/;"	f
+f'	src/clojure_learning/understanding-clojure-macros.clj	/^(defn f' [a b c]$/;"	f
+orr	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro orr$/;"	f
+simplify	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro simplify [form]$/;"	f
+f	src/clojure_learning/understanding-clojure-macros.clj	/^(defn f [a b c]$/;"	f
+f'	src/clojure_learning/understanding-clojure-macros.clj	/^(defn f' [a b c]$/;"	f
+thread-first	src/clojure_learning/understanding-clojure-macros.clj	/^(defmacro thread-first [head & tail]$/;"	f
+find-next-missing-from-consecs	src/clojure_learning/next_missing_from_consecs.clj	/^(defn find-next-missing-from-consecs [char-seq]$/;"	f
+test-find-next-missing-from-consecs	src/clojure_learning/next_missing_from_consecs.clj	/^(deftest test-find-next-missing-from-consecs$/;"	f
+take-until	src/clojure_learning/tmp7.clj	/^(defn take-until$/;"	f
+take-until	src/clojure_learning/tmp7.clj	/^(defn take-until$/;"	f
+wrapper	src/clojure_learning/tmp7.clj	/^(defn wrapper [func]$/;"	f
+add	src/clojure_learning/tmp7.clj	/^(defn add [a b] (+ a b))$/;"	f
+minus	src/clojure_learning/tmp7.clj	/^(defn minus [a b] (- a b))$/;"	f
+add-wrapper	src/clojure_learning/tmp7.clj	/^(defn add-wrapper [a b]$/;"	f
+minus-wrapper	src/clojure_learning/tmp7.clj	/^(defn minus-wrapper [& args]$/;"	f
+unit	src/clojure_learning/tmp7.clj	/^(defn unit [op-result]$/;"	f
+bind	src/clojure_learning/tmp7.clj	/^(defn bind [func]$/;"	f
+add	src/clojure_learning/tmp7.clj	/^(defn add [a b] (+ a b))$/;"	f
+minus	src/clojure_learning/tmp7.clj	/^(defn minus [a b] (- a b))$/;"	f
+lift-add	src/clojure_learning/tmp7.clj	/^(defn lift-add [add & args]$/;"	f
+lift-minus	src/clojure_learning/tmp7.clj	/^(defn lift-minus [minus & args]$/;"	f
+five	src/clojure_learning/tmp7.clj	/^(def five (lift-add add 2 3))$/;"	f
+two	src/clojure_learning/tmp7.clj	/^(def two (lift-minus minus 5 3))$/;"	f
+wrong-input	src/clojure_learning/tmp7.clj	/^(def wrong-input (lift-add "str" 2)) ;; -> compiler exception$/;"	f
+cycle-by	src/clojure_learning/generating-k-combinations-func.clj	/^(defn cycle-by [x xs]$/;"	f
+k-combinations	src/clojure_learning/generating-k-combinations-func.clj	/^(defn k-combinations$/;"	f
+find-transitive-clojure	src/clojure_learning/transitive_clojure.clj	/^(defn find-transitive-clojure$/;"	f
+test-transitive-clojure	src/clojure_learning/transitive_clojure.clj	/^(deftest test-transitive-clojure$/;"	f
+nth-item-fn	src/clojure_learning/4clojure_exercises.clj	/^(defn nth-item-fn$/;"	f
+nth-item-fn-1	src/clojure_learning/4clojure_exercises.clj	/^(defn nth-item-fn-1$/;"	f
+count-items	src/clojure_learning/4clojure_exercises.clj	/^(defn count-items$/;"	f
+countt	src/clojure_learning/4clojure_exercises.clj	/^(def countt (fn[coll] (reduce (fn[c n] (inc c)) 0 coll)))$/;"	f
+palindrome?	src/clojure_learning/4clojure_exercises.clj	/^(defn palindrome? [subject]$/;"	f
+flatten-coll	src/clojure_learning/4clojure_exercises.clj	/^(defn flatten-coll$/;"	f
+discard-dups	src/clojure_learning/4clojure_exercises.clj	/^(defn discard-dups$/;"	f
+find-max	src/clojure_learning/4clojure_exercises.clj	/^(defn find-max$/;"	f
+interpose-in	src/clojure_learning/4clojure_exercises.clj	/^(defn interpose-in$/;"	f
+drop-every	src/clojure_learning/4clojure_exercises.clj	/^(defn drop-every$/;"	f
+drop-every-nth	src/clojure_learning/4clojure_exercises.clj	/^(defn drop-every-nth$/;"	f
+fact	src/clojure_learning/4clojure_exercises.clj	/^(defn fact [x]$/;"	f
+big-fact	src/clojure_learning/4clojure_exercises.clj	/^(defn big-fact [x]$/;"	f
+rev-interleave	src/clojure_learning/4clojure_exercises.clj	/^(defn rev-interleave$/;"	f
+remove-items	src/clojure_learning/4clojure_exercises.clj	/^(defn remove-items$/;"	f
+cyclic-buffer	src/clojure_learning/4clojure_exercises.clj	/^(defn cyclic-buffer$/;"	f
+flip-args	src/clojure_learning/4clojure_exercises.clj	/^(defn flip-args [func]$/;"	f
+split-at-pos	src/clojure_learning/4clojure_exercises.clj	/^(defn split-at-pos$/;"	f
+bubble-sort	src/clojure_learning/4clojure_exercises.clj	/^(defn bubble-sort$/;"	f
+bubble-sort	src/clojure_learning/4clojure_exercises.clj	/^(defn bubble-sort$/;"	f
+best-quick-sort	src/clojure_learning/4clojure_exercises.clj	/^(defn best-quick-sort$/;"	f
+comp->	src/clojure_learning/4clojure_exercises.clj	/^(defn comp->$/;"	f
+comp->	src/clojure_learning/4clojure_exercises.clj	/^(defn comp->$/;"	f
+iterate-recur	src/clojure_learning/4clojure_exercises.clj	/^(defn iterate-recur$/;"	f
+iter-recur	src/clojure_learning/4clojure_exercises.clj	/^(defn iter-recur$/;"	f
+index-coll	src/clojure_learning/4clojure_exercises.clj	/^(defn index-coll$/;"	f
+index-coll	src/clojure_learning/4clojure_exercises.clj	/^(defn index-coll$/;"	f
+index-coll	src/clojure_learning/4clojure_exercises.clj	/^(defn index-coll$/;"	f
+index-coll	src/clojure_learning/4clojure_exercises.clj	/^(defn index-coll$/;"	f
+zipmapp	src/clojure_learning/4clojure_exercises.clj	/^(defn zipmapp$/;"	f
+zipmapp	src/clojure_learning/4clojure_exercises.clj	/^(defn zipmapp$/;"	f
+zipmapp	src/clojure_learning/4clojure_exercises.clj	/^(defn zipmapp$/;"	f
+sum-divisibles	src/clojure_learning/4clojure_exercises.clj	/^(defn sum-divisibles$/;"	f
+sum-divisibles	src/clojure_learning/4clojure_exercises.clj	/^(defn sum-divisibles$/;"	f
+comparison	src/clojure_learning/4clojure_exercises.clj	/^(defn comparison$/;"	f
+comparison	src/clojure_learning/4clojure_exercises.clj	/^(defn comparison$/;"	f
+comparison	src/clojure_learning/4clojure_exercises.clj	/^(defn comparison$/;"	f
+find-half-true	src/clojure_learning/4clojure_exercises.clj	/^(defn find-half-true$/;"	f
+gcd	src/clojure_learning/4clojure_exercises.clj	/^(defn gcd$/;"	f
+gcd	src/clojure_learning/4clojure_exercises.clj	/^(defn gcd$/;"	f
+pow	src/clojure_learning/4clojure_exercises.clj	/^(defn pow$/;"	f
+mult-and-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn mult-and-seq$/;"	f
+mult-and-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn mult-and-seq$/;"	f
+mult-and-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn mult-and-seq$/;"	f
+mult-and-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn mult-and-seq$/;"	f
+group-by-fun	src/clojure_learning/4clojure_exercises.clj	/^(defn group-by-fun$/;"	f
+group-by-fun	src/clojure_learning/4clojure_exercises.clj	/^(defn group-by-fun$/;"	f
+group-by-fun	src/clojure_learning/4clojure_exercises.clj	/^(defn group-by-fun$/;"	f
+group-by-fun	src/clojure_learning/4clojure_exercises.clj	/^(defn group-by-fun$/;"	f
+mmap	src/clojure_learning/4clojure_exercises.clj	/^(defn mmap$/;"	f
+infix	src/clojure_learning/4clojure_exercises.clj	/^(defn infix$/;"	f
+infix	src/clojure_learning/4clojure_exercises.clj	/^(defn infix$/;"	f
+pow	src/clojure_learning/4clojure_exercises.clj	/^(defn pow [x n] (reduce * 1 (repeat n x)))$/;"	f
+pow	src/clojure_learning/4clojure_exercises.clj	/^(defn pow$/;"	f
+binary->int	src/clojure_learning/4clojure_exercises.clj	/^(defn binary->int$/;"	f
+split-num-by-digits	src/clojure_learning/4clojure_exercises.clj	/^(defn split-num-by-digits [x]$/;"	f
+smaller-than-sum-of-squared-digs	src/clojure_learning/4clojure_exercises.clj	/^(defn smaller-than-sum-of-squared-digs$/;"	f
+binary-tree?	src/clojure_learning/4clojure_exercises.clj	/^(defn binary-tree?$/;"	f
+binary-tree?	src/clojure_learning/4clojure_exercises.clj	/^(defn binary-tree? [xs]$/;"	f
+camel->case	src/clojure_learning/4clojure_exercises.clj	/^(defn camel->case$/;"	f
+sort-words	src/clojure_learning/4clojure_exercises.clj	/^(defn sort-words$/;"	f
+pascal-triangle	src/clojure_learning/4clojure_exercises.clj	/^(defn pascal-triangle [x]$/;"	f
+sum-adiacents	src/clojure_learning/4clojure_exercises.clj	/^(defn sum-adiacents$/;"	f
+dot-product	src/clojure_learning/4clojure_exercises.clj	/^(defn dot-product$/;"	f
+dot-product	src/clojure_learning/4clojure_exercises.clj	/^(defn dot-product$/;"	f
+dot-product	src/clojure_learning/4clojure_exercises.clj	/^(defn dot-product$/;"	f
+frequencies-c	src/clojure_learning/4clojure_exercises.clj	/^(defn frequencies-c$/;"	f
+count-occurs	src/clojure_learning/4clojure_exercises.clj	/^(defn count-occurs [xs]$/;"	f
+generate-parans	src/clojure_learning/4clojure_exercises.clj	/^(defn generate-parans$/;"	f
+gen-parentheses	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-parentheses [x]$/;"	f
+drop-leading-pars	src/clojure_learning/4clojure_exercises.clj	/^(defn drop-leading-pars$/;"	f
+append-op	src/clojure_learning/4clojure_exercises.clj	/^(defn append-op [each-exp]$/;"	f
+wrap-op	src/clojure_learning/4clojure_exercises.clj	/^(defn wrap-op [str-token]$/;"	f
+gen-parens	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-parens$/;"	f
+gen-parens	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-parens$/;"	f
+split-by-type	src/clojure_learning/4clojure_exercises.clj	/^(defn split-by-type$/;"	f
+find-distinct	src/clojure_learning/4clojure_exercises.clj	/^(defn find-distinct$/;"	f
+find-distinct	src/clojure_learning/4clojure_exercises.clj	/^(defn find-distinct [xs]$/;"	f
+find-intersect	src/clojure_learning/4clojure_exercises.clj	/^(defn find-intersect$/;"	f
+find-intersect	src/clojure_learning/4clojure_exercises.clj	/^(defn find-intersect$/;"	f
+cartesian-prod	src/clojure_learning/4clojure_exercises.clj	/^(defn cartesian-prod$/;"	f
+imperative-cart-prod	src/clojure_learning/4clojure_exercises.clj	/^(defn imperative-cart-prod$/;"	f
+diff	src/clojure_learning/4clojure_exercises.clj	/^(defn diff$/;"	f
+diff	src/clojure_learning/4clojure_exercises.clj	/^(defn diff$/;"	f
+decode-card	src/clojure_learning/4clojure_exercises.clj	/^(defn decode-card$/;"	f
+not-intersected?	src/clojure_learning/4clojure_exercises.clj	/^(defn not-intersected?$/;"	f
+lcm	src/clojure_learning/4clojure_exercises.clj	/^(defn lcm [& xs]$/;"	f
+lcm	src/clojure_learning/4clojure_exercises.clj	/^(defn lcm [& nums]$/;"	f
+gcd	src/clojure_learning/4clojure_exercises.clj	/^(defn gcd [a b]$/;"	f
+iterate-lazy	src/clojure_learning/4clojure_exercises.clj	/^(defn iterate-lazy [start]$/;"	f
+lazy-pascal	src/clojure_learning/4clojure_exercises.clj	/^(defn lazy-pascal [xs]$/;"	f
+new-row-recur	src/clojure_learning/4clojure_exercises.clj	/^(defn new-row-recur$/;"	f
+new-row	src/clojure_learning/4clojure_exercises.clj	/^(defn new-row [[head secnd & tail]]$/;"	f
+juxt-disguised	src/clojure_learning/4clojure_exercises.clj	/^(defn juxt-disguised$/;"	f
+juxt-disguised	src/clojure_learning/4clojure_exercises.clj	/^(defn juxt-disguised [& funcs]$/;"	f
+partition-disguised	src/clojure_learning/4clojure_exercises.clj	/^(defn partition-disguised$/;"	f
+my-partition-all	src/clojure_learning/4clojure_exercises.clj	/^(defn my-partition-all$/;"	f
+lazy-partition	src/clojure_learning/4clojure_exercises.clj	/^(defn lazy-partition$/;"	f
+find-greater-consecs	src/clojure_learning/4clojure_exercises.clj	/^(defn find-greater-consecs$/;"	f
+reverse-tree-rec	src/clojure_learning/4clojure_exercises.clj	/^(defn reverse-tree-rec$/;"	f
+validate-binary-tree	src/clojure_learning/4clojure_exercises.clj	/^(defn validate-binary-tree$/;"	f
+symetric-bin-tree?	src/clojure_learning/4clojure_exercises.clj	/^(defn symetric-bin-tree?$/;"	f
+prime-nums	src/clojure_learning/4clojure_exercises.clj	/^(defn prime-nums$/;"	f
+first-x-prime-nums	src/clojure_learning/4clojure_exercises.clj	/^(defn first-x-prime-nums$/;"	f
+lazy-pows-start-with	src/clojure_learning/4clojure_exercises.clj	/^(defn lazy-pows-start-with [x]$/;"	f
+to-num-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn to-num-seq [str-seq reg]$/;"	f
+contained-nums	src/clojure_learning/4clojure_exercises.clj	/^(defn contained-nums$/;"	f
+filter-perf-squares	src/clojure_learning/4clojure_exercises.clj	/^(defn filter-perf-squares [seq-str]$/;"	f
+find-divisors	src/clojure_learning/4clojure_exercises.clj	/^(defn find-divisors$/;"	f
+perf-number?	src/clojure_learning/4clojure_exercises.clj	/^(defn perf-number?$/;"	f
+binary-representation	src/clojure_learning/4clojure_exercises.clj	/^(defn binary-representation$/;"	f
+assoc-entries	src/clojure_learning/4clojure_exercises.clj	/^(defn assoc-entries$/;"	f
+filter-maps-by-val	src/clojure_learning/4clojure_exercises.clj	/^(defn filter-maps-by-val$/;"	f
+keys-to-sets	src/clojure_learning/4clojure_exercises.clj	/^(defn keys-to-sets [maps]$/;"	f
+power-sets	src/clojure_learning/4clojure_exercises.clj	/^(defn power-sets$/;"	f
+type-of	src/clojure_learning/4clojure_exercises.clj	/^(defn type-of$/;"	f
+type-of	src/clojure_learning/4clojure_exercises.clj	/^(defn type-of [ds]$/;"	f
+anagram-finder	src/clojure_learning/4clojure_exercises.clj	/^(defn anagram-finder$/;"	f
+anagram-finder	src/clojure_learning/4clojure_exercises.clj	/^(defn anagram-finder$/;"	f
+reduction	src/clojure_learning/4clojure_exercises.clj	/^(defn reduction$/;"	f
+reduction	src/clojure_learning/4clojure_exercises.clj	/^(defn reduction$/;"	f
+happy-number?	src/clojure_learning/4clojure_exercises.clj	/^(defn happy-number?$/;"	f
+trees-to-tables	src/clojure_learning/4clojure_exercises.clj	/^(defn trees-to-tables$/;"	f
+trees-to-tables	src/clojure_learning/4clojure_exercises.clj	/^(defn trees-to-tables$/;"	f
+demo	src/clojure_learning/4clojure_exercises.clj	/^(defn demo []$/;"	f
+merge-maps-with	src/clojure_learning/4clojure_exercises.clj	/^(defn merge-maps-with$/;"	f
+merge-maps-with	src/clojure_learning/4clojure_exercises.clj	/^(defn merge-maps-with$/;"	f
+merge-maps-with	src/clojure_learning/4clojure_exercises.clj	/^(defn merge-maps-with$/;"	f
+palindrom?	src/clojure_learning/4clojure_exercises.clj	/^(defn palindrom? [x]$/;"	f
+gen-lazy-seq	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-lazy-seq [start]$/;"	f
+gen-palindrom-nums	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-palindrom-nums [x]$/;"	f
+palindromic-num?	src/clojure_learning/4clojure_exercises.clj	/^(defn palindromic-num? [xs states]$/;"	f
+palindromic-num?	src/clojure_learning/4clojure_exercises.clj	/^(defn palindromic-num? [x]$/;"	f
+gen-palindrom-nums	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-palindrom-nums$/;"	f
+palindrome?	src/clojure_learning/4clojure_exercises.clj	/^(defn palindrome? [x]$/;"	f
+gen-palindromes	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-palindromes$/;"	f
+gen-palindromes	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-palindromes$/;"	f
+global-take-while	src/clojure_learning/4clojure_exercises.clj	/^(defn global-take-while$/;"	f
+global-take-while	src/clojure_learning/4clojure_exercises.clj	/^(defn global-take-while$/;"	f
+partial-flatten	src/clojure_learning/4clojure_exercises.clj	/^(defn partial-flatten$/;"	f
+nested-more-than-one?	src/clojure_learning/4clojure_exercises.clj	/^(defn nested-more-than-one? [xs]$/;"	f
+gcd	src/clojure_learning/4clojure_exercises.clj	/^(defn gcd [a b]$/;"	f
+euler-totient-fn	src/clojure_learning/4clojure_exercises.clj	/^(defn euler-totient-fn [x]$/;"	f
+cons-map	src/clojure_learning/4clojure_exercises.clj	/^(defn cons-map$/;"	f
+cons-map	src/clojure_learning/4clojure_exercises.clj	/^(defn cons-map$/;"	f
+my-trampoline	src/clojure_learning/4clojure_exercises.clj	/^(defn my-trampoline$/;"	f
+demo-trampoline	src/clojure_learning/4clojure_exercises.clj	/^(defn demo-trampoline$/;"	f
+my-trampoline	src/clojure_learning/4clojure_exercises.clj	/^(defn my-trampoline$/;"	f
+balanced?	src/clojure_learning/4clojure_exercises.clj	/^(defn balanced? [x]$/;"	f
+balanced?	src/clojure_learning/4clojure_exercises.clj	/^(defn balanced? [x]$/;"	f
+lazy-pronunciation	src/clojure_learning/4clojure_exercises.clj	/^(defn lazy-pronunciation$/;"	f
+lazy-pronunciation	src/clojure_learning/4clojure_exercises.clj	/^(defn lazy-pronunciation$/;"	f
+pairwise-checker?	src/clojure_learning/4clojure_exercises.clj	/^(defn pairwise-checker?$/;"	f
+nums-by-base	src/clojure_learning/4clojure_exercises.clj	/^(defn nums-by-base [x base]$/;"	f
+apply-fn-on-dups	src/clojure_learning/4clojure_exercises.clj	/^(defn apply-fn-on-dups$/;"	f
+apply-fn-on-dups	src/clojure_learning/4clojure_exercises.clj	/^(defn apply-fn-on-dups$/;"	f
+into-if-predicate	src/clojure_learning/4clojure_exercises.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/4clojure_exercises.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/4clojure_exercises.clj	/^(defn into-if-predicate$/;"	f
+into-if-predicate	src/clojure_learning/4clojure_exercises.clj	/^(defn into-if-predicate$/;"	f
+take-until	src/clojure_learning/4clojure_exercises.clj	/^(defn take-until$/;"	f
+take-until	src/clojure_learning/4clojure_exercises.clj	/^(defn take-until$/;"	f
+find-consecutives	src/clojure_learning/4clojure_exercises.clj	/^(defn find-consecutives [xs]$/;"	f
+find-intervals	src/clojure_learning/4clojure_exercises.clj	/^(defn find-intervals [xs]$/;"	f
+coll	src/clojure_learning/4clojure_exercises.clj	/^(def coll [1 1 1 1])$/;"	f
+calc	src/clojure_learning/4clojure_exercises.clj	/^(defn calc [forms]$/;"	f
+find-equivalent-classes	src/clojure_learning/4clojure_exercises.clj	/^(defn find-equivalent-classes$/;"	f
+find-equivalent-classes	src/clojure_learning/4clojure_exercises.clj	/^(defn find-equivalent-classes$/;"	f
+cycle-by	src/clojure_learning/4clojure_exercises.clj	/^(defn cycle-by [x xs]$/;"	f
+k-combinations	src/clojure_learning/4clojure_exercises.clj	/^(defn k-combinations$/;"	f
+oscilrate	src/clojure_learning/4clojure_exercises.clj	/^(defn oscilrate$/;"	f
+from-romans	src/clojure_learning/4clojure_exercises.clj	/^(defn from-romans [romans]$/;"	f
+from-romans	src/clojure_learning/4clojure_exercises.clj	/^(defn from-romans [romans]$/;"	f
+into-romans	src/clojure_learning/4clojure_exercises.clj	/^(defn into-romans [x]$/;"	f
+testing-romans-runner	src/clojure_learning/4clojure_exercises.clj	/^(deftest testing-romans-runner$/;"	f
+prime?	src/clojure_learning/4clojure_exercises.clj	/^(defn prime?$/;"	f
+prime?	src/clojure_learning/4clojure_exercises.clj	/^(defn prime? [x]$/;"	f
+test-primes	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-primes$/;"	f
+prime?	src/clojure_learning/4clojure_exercises.clj	/^(defn prime?$/;"	f
+first-prime	src/clojure_learning/4clojure_exercises.clj	/^(defn first-prime [x op]$/;"	f
+balanced-prime?	src/clojure_learning/4clojure_exercises.clj	/^(defn balanced-prime? [x]$/;"	f
+balanced-prime?	src/clojure_learning/4clojure_exercises.clj	/^(defn balanced-prime? [x]$/;"	f
+test-balanced-prime	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-balanced-prime$/;"	f
+analyze	src/clojure_learning/4clojure_exercises.clj	/^(defn analyze [table] $/;"	f
+test-analyze-tic-tac-toe	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-analyze-tic-tac-toe$/;"	f
+merge-seqs	src/clojure_learning/4clojure_exercises.clj	/^(defn merge-seqs $/;"	f
+test-merge-seqs	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-merge-seqs$/;"	f
+triangle-min-path	src/clojure_learning/4clojure_exercises.clj	/^(defn triangle-min-path$/;"	f
+repeat-each-times	src/clojure_learning/4clojure_exercises.clj	/^(defn repeat-each-times [vov times]$/;"	f
+test-repeat-each-times	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-repeat-each-times$/;"	f
+trim-sides	src/clojure_learning/4clojure_exercises.clj	/^(defn trim-sides [xs how-many]$/;"	f
+test-trim-sides	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-trim-sides$/;"	f
+trim-sides-by-last	src/clojure_learning/4clojure_exercises.clj	/^(defn trim-sides-by-last [matrix]$/;"	f
+test-trim-sides-by-last	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-trim-sides-by-last$/;"	f
+trim-sides-by-first	src/clojure_learning/4clojure_exercises.clj	/^(defn trim-sides-by-first [matrix]$/;"	f
+test-trim-sides-by-first	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-trim-sides-by-first$/;"	f
+test-triangle-min-path	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-triangle-min-path$/;"	f
+find-transitive-clojure	src/clojure_learning/4clojure_exercises.clj	/^(defn find-transitive-clojure$/;"	f
+test-transitive-clojure	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-transitive-clojure$/;"	f
+subsets-sum-intersection	src/clojure_learning/4clojure_exercises.clj	/^(defn subsets-sum-intersection [& xsets]$/;"	f
+generate-all-tuple-combs	src/clojure_learning/4clojure_exercises.clj	/^(defn generate-all-tuple-combs $/;"	f
+subsets-sum-intersection	src/clojure_learning/4clojure_exercises.clj	/^(defn subsets-sum-intersection$/;"	f
+map-by-min-and-tail	src/clojure_learning/4clojure_exercises.clj	/^(defn map-by-min-and-tail [xs]$/;"	f
+has-intersections?	src/clojure_learning/4clojure_exercises.clj	/^(defn has-intersections? [xs]$/;"	f
+subsets-sum-intersection	src/clojure_learning/4clojure_exercises.clj	/^(defn subsets-sum-intersection$/;"	f
+test-subsets-sum-intersection	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-subsets-sum-intersection$/;"	f
+gen-infinite-matrix	src/clojure_learning/4clojure_exercises.clj	/^(defn gen-infinite-matrix $/;"	f
+test-gen-infinite-matrix	src/clojure_learning/4clojure_exercises.clj	/^(deftest test-gen-infinite-matrix$/;"	f
+EmailSender	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defprotocol EmailSender$/;"	f
+Matrix	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defprotocol Matrix$/;"	f
+vov	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defn vov [rows cols]$/;"	f
+matrix	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def matrix (vov 3 2))$/;"	f
+marr	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def marr (make-array Integer\/TYPE 3))$/;"	f
+Point	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defrecord Point [x y])$/;"	f
+Point	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(deftype Point [x y])$/;"	f
+Circle	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defrecord Circle [^long x])$/;"	f
+Rectangle	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(deftype Rectangle [x y])$/;"	f
+AnimalMutation	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defprotocol AnimalMutation$/;"	f
+Animal	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(deftype Animal [^:volatile-mutable specie]$/;"	f
+wolf	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def wolf (->Animal "wolf"))$/;"	f
+HumanBeing	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(deftype HumanBeing [^:unsynchronized-mutable who ^:unsynchronized-mutable age])$/;"	f
+HumanMutation	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defprotocol HumanMutation$/;"	f
+cclaudiu	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def cclaudiu (->HumanBeing "cclaudiu" 34))$/;"	f
+Languages	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(deftype Languages [lang-code paradigm])$/;"	f
+LanguageServiceProtocol	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(defprotocol LanguageServiceProtocol$/;"	f
+clojure-lang	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def clojure-lang (->Languages "CLJ" "FP"))$/;"	f
+clojure-reified	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def clojure-reified$/;"	f
+reified	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def reified $/;"	f
+abstract-vov	src/clojure_learning/clj_programming_data_types_and_protocols.clj	/^(def abstract-vov$/;"	f
+happy-digit	src/clojure_learning/tmp3.clj	/^(defn happy-digit$/;"	f
+happy-number?	src/clojure_learning/tmp3.clj	/^(defn happy-number?$/;"	f
+find-sum-of-nums-div-with	src/clojure_learning/big_divide.clj	/^(defn find-sum-of-nums-div-with $/;"	f
+find-sum-of-nums-div-with	src/clojure_learning/big_divide.clj	/^(defn find-sum-of-nums-div-with$/;"	f
+from-romans	src/clojure_learning/roman-numerals.clj	/^(defn from-romans [romans]$/;"	f
+from-romans	src/clojure_learning/roman-numerals.clj	/^(defn from-romans [romans]$/;"	f
+from-romans	src/clojure_learning/roman-numerals.clj	/^(defn from-romans [romans]$/;"	f
+do-until	src/clojure_learning/chap-8-macros.clj	/^(defmacro do-until [& clauses]$/;"	f
+do-until	src/clojure_learning/chap-8-macros.clj	/^(defmacro do-until$/;"	f
+unless	src/clojure_learning/chap-8-macros.clj	/^(defmacro unless$/;"	f
+contract	src/clojure_learning/chap-8-macros.clj	/^(defmacro contract$/;"	f
+not-nil	src/clojure_learning/chap-8-macros.clj	/^(def not-nil (contract not-nil (println "not nil contract")))$/;"	f
+rrange	src/clojure_learning/infinite_matrix.clj	/^(defn rrange $/;"	f
+gen-infinite-rows	src/clojure_learning/infinite_matrix.clj	/^(defn gen-infinite-rows [func col] $/;"	f
+gen-infinite-cols	src/clojure_learning/infinite_matrix.clj	/^(defn gen-infinite-cols [func]$/;"	f
+gen-infinite-matrix	src/clojure_learning/infinite_matrix.clj	/^(defn gen-infinite-matrix [func]$/;"	f
+test-gen-infinite-matrix	src/clojure_learning/infinite_matrix.clj	/^(deftest test-gen-infinite-matrix$/;"	f
+gen-infinite-matrix	src/clojure_learning/infinite_matrix.clj	/^(defn gen-infinite-matrix [func r c]$/;"	f
+gen-infinite-matrix	src/clojure_learning/infinite_matrix.clj	/^(defn gen-infinite-matrix $/;"	f
+test-gen-infinite-matrix	src/clojure_learning/infinite_matrix.clj	/^(deftest test-gen-infinite-matrix$/;"	f
+my-trampoline	src/clojure_learning/trampoline.clj	/^(defn my-trampoline$/;"	f
+demo-trampoline	src/clojure_learning/trampoline.clj	/^(defn demo-trampoline$/;"	f
+my-trampoline	src/clojure_learning/trampoline.clj	/^(defn my-trampoline$/;"	f
+gen-parentheses	src/clojure_learning/tmp.clj	/^(defn gen-parentheses$/;"	f
+generate-parens	src/clojure_learning/tmp.clj	/^(defn generate-parens$/;"	f
+simple-text	src/clojure_learning/tmp.clj	/^(def simple-text "text")$/;"	f
+complex-text	src/clojure_learning/tmp.clj	/^(def complex-text "<b>te<\/b> <i>xt<\/i>")$/;"	f
+composed-text	src/clojure_learning/tmp.clj	/^(def composed-text (str simple-text "\\n" complex-text))$/;"	f
+complex-pattern	src/clojure_learning/tmp.clj	/^(def complex-pattern (re-pattern #"(?i)(?:<\\w>)?[a-zA-Z]+.*[a-zA-Z]*(?:<\/\\w>)?"))$/;"	f
+subsets-sum-intersection	src/clojure_learning/subsets_sum_intersection.clj	/^(defn subsets-sum-intersection [& xsets]$/;"	f
+generate-all-tuple-combs	src/clojure_learning/subsets_sum_intersection.clj	/^(defn generate-all-tuple-combs $/;"	f
+subsets-sum-intersection	src/clojure_learning/subsets_sum_intersection.clj	/^(defn subsets-sum-intersection$/;"	f
+map-by-min-and-tail	src/clojure_learning/subsets_sum_intersection.clj	/^(defn map-by-min-and-tail [xs]$/;"	f
+has-intersections?	src/clojure_learning/subsets_sum_intersection.clj	/^(defn has-intersections? [xs]$/;"	f
+subsets-sum-intersection	src/clojure_learning/subsets_sum_intersection.clj	/^(defn subsets-sum-intersection$/;"	f
+test-subsets-sum-intersection	src/clojure_learning/subsets_sum_intersection.clj	/^(deftest test-subsets-sum-intersection$/;"	f
+format-date	src/clojure_learning/clj_programming_all_about_ns.clj	/^(defn format-date [date date-pattern]$/;"	f
+find-max-consecs	src/clojure_learning/clj_programming_all_about_ns.clj	/^(defn find-max-consecs [head & tail]$/;"	f
+merge-seqs	src/clojure_learning/merge_seqs.clj	/^(defn merge-seqs $/;"	f
+test-merge-seqs	src/clojure_learning/merge_seqs.clj	/^(deftest test-merge-seqs$/;"	f
+gen-parens	src/clojure_learning/generate-parens.clj	/^(defn gen-parens$/;"	f
+nest-node	src/clojure_learning/generate-parens.clj	/^(defn nest-node [node-str] (apply str (conj (vec (conj (list node-str) "(")) ")")))$/;"	f
+l-append	src/clojure_learning/generate-parens.clj	/^(defn l-append [node-str] (apply str (conj (list node-str) ")" "(")))$/;"	f
+r-append	src/clojure_learning/generate-parens.clj	/^(defn r-append [node-str] (reduce str (conj (vec node-str) "(" ")")))$/;"	f
+some	src/clojure_learning/tmp2.clj	/^(def some "some")$/;"	f
+none	src/clojure_learning/tmp2.clj	/^(defn none [] some)/;"	f
+a-test	test/clojure_learning/core_test.clj	/^(deftest a-test$/;"	f
