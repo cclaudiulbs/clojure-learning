@@ -7,7 +7,11 @@
 ;; the [def] constructs will create vars within the current ns, which is ALWAYS bound to *ns* special value
 ;; the clojure.core is bound to the user's default ns, so switching to other ns using [in-ns] will not have loaded the
 ;; clojure.core library
-(in-ns 'clojure-learning.clj-programming-all-about-ns)
+(ns clojure-learning.clj-programming-all-about-ns
+  (use (clojure [repl] test core)))
+
+(in-ns 'clojure-learning.clj-programming-all-about-ns
+  (use '(clojure [repl] [test])))
 (some #{:foo} [:foo]) ;; ->unable to resolve symbol "some"
 (clojure.core/some #{:foo} [:foo :bar]) ;; :foo -> works
 
@@ -94,12 +98,24 @@
 ;; once we defined the dependencies in project.clj file -> opening a REPL -> they will be automatically loaded
 ;; in the REPL classpath.
 
-(defn find-max-consecs [head & tail]
-  (reduce 
-    (fn [v x] 
-      (if (= x (inc ((comp last last) v)))
-        (conj v x)
-        (conj v [x])))
-    [head] tail))
+(use clojure.repl)
 
-;; 1 2 4 6 7 8 10 12 -> 6 7 8
+;; find the first non-consecutive missing element from a sequence
+;; abcdxyzabc -> d
+(defn find-first-misssing [xstring]
+  (letfn [(map-to-ints [char-seq] (map int char-seq))
+          (group-by-freqs [int-seq] (-> frequencies map-to-ints))]
+    (let [[head & tail] (map-to-ints xstring)]
+      (reduce 
+        (fn [{:keys [curr] :as m} each] 
+          (if (:true) :true))
+        {:curr [head] :missing []} tail))
+    (map-to-ints xstring)))
+
+(frequencies (find-first-misssing "abcdxyzabc"))
+;; returns a map indexed by the unique-keys and vals identified by the number of times they occur
+
+(find-first-misssing "abcdxyzabc")
+;; ()
+(reduce (fn [acc each]) [] (find-first-misssing "abcdxyzabc")
+
