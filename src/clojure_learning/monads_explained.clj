@@ -241,3 +241,118 @@
 ;; 3. Associativity
 
 ;; provide:: separation of concerns!
+
+;;;;;;
+;; My Practice:: after watching Brian Beckman on: "don't fear the monads"
+;; Starting with monoids
+;;;;;;
+;; Monoids are defined in terms of a collection of things + an operation on those things.
+;; AND the operation on those things must obey several rules: associativity + identity(unit)
+;; taken a clock as an example, which is a set of 12 numbers and the operation that composes the numbers being +
+;; then: (10 + 7) % 12 -> 5
+;; 10 + 7 = 17(pm is 5)
+;; this operation is defined in terms of identity-rule!
+;; associativity means: (10 + 7) % 12 = 10 + (7 % 12)
+(mod 7 12) ;; -> 7
+
+;; monads are monoids disguised which operate NOT on concrete types, but on monadic-types: Ma, a being a concrete type.
+;; monoids do NOT obey the commutativity rule: a + b != b + a -> this is not required as per the Types DO NOT allign ->
+;; compilation error!
+;; therefore we must be carefull when designing the bind + unit operations as the TYPES MUST ALLIGN!
+;; the "return" function is defined in terms of: a -> Ma
+;; takes a concrete type and returns a monadic-type of a.
+;; the "bind" function: binds an action to a function: Ma -> (fn g: a -> Ma) -> Ma
+;; bind takes an action (can be an action resulted from the unit-func) AND another function, which func takes a concrete
+;; a and MUST return a Ma.
+;; i usually think of monads as they introduced another monadic-type which can be everything, and they all work on the
+;; same monadic-type from now on.
+
+
+;;;;;;;;;;;;;;;
+;; My Implementation for the Error Monad(combined with State monad for persisting error-stacks)
+;;;;;;;;;;;;;;
+;; as a practice exercise we shall implement the Error-Monad. This monad should encapsulate the try-catch mechanism.
+;; it is used in operation that might throw exceptions. a common idiom is to guard the code that might throw exceptions
+;; into a try-catch but this will block us from making computations chainable and will eventually introduce complexity.
+;; The Error monad (also called the Exception monad) embodies the strategy of combining computations that can throw exceptions 
+;; by bypassing bound functions from the point an exception is thrown to the point that it is handled. 
+((-> (return 5)
+     (lift-divide 0)
+      lift-add 10
+     )) 
+
+;; we may want an output that looks like this:
+;; [15 ["caught exception while dividing by 0"]]
+
+;; we might want to by-pass the operation which generates the exception and continue with the execution, and simply
+;; saving the exception message
+(defn return [v]
+  (fn [states-vec] [v states-vec])) ;; takes a v -> Mv;; Mv can be anything, Mv here is the monadic-function-data-type
+
+;; because we defined the monadic type of Mv as being: (func: c -> d), all the lifting functions should use this type
+;; from now on
+
+;; because action is in-fact the monadic type -> it should be defined in terms of the func that takes a -> Ma
+;; same as bind: Ma -> (fn: a -> Ma) -> Ma
+(defn bind [action func]
+  (fn [state-vec]
+    (let [[x errors] (action state-vec)]   ;; action here is represented by the func resulted by return!
+     (try
+       (let [monadic-func (func x)]
+         (monadic-func errors))
+     (catch Exception e
+        [x (conj errors (str "caught exception while performing operation:: " action ", exception is:: " (.getMessage e)))]
+)))))
+
+;; then, defining each lifting functions which MUST return the same monadic-type:: f:a -> Ma
+(defn lift-add [action y]
+  (bind action (fn [x] (return (+ x y)))))
+
+;; using infix notation:
+;; Ma BIND (fn: x -> Ma) -> Ma
+;; (fnc) BIND (fn:x -> fnc) -> fnc
+;; the function passed to bind(2nd arg) is simply a function that takes an arg -> BUT SHOULD RETURN a monadic-type:: the
+;; func-data-type we defined for our [return] monad-operation
+
+((lift-add (return 3) 10) []) ;; [13 []]
+
+((-> (return 3)
+     (lift-add 10)
+     ) []) ;; [13 []] -> cool since there was no error on the way
+
+;; but let's try with division
+(defn lift-divide [action y]
+  (bind action (fn [x] (return (/ x y)))))
+
+((-> (return 3)
+     (lift-add 7)
+     (lift-divide 2)
+     ) []) ;; [5 []]
+
+;; works well, but what about actually dividing by zero? we want to log the error along with the LAST result!
+((-> (return 3)
+     (lift-add 7)
+     (lift-divide 0)) []) ;; [10 ["caught exception:: divide by zero..."]]
+
+;; can we continue??? it would be nice, to log the error and continue...
+((-> (return 3)
+     (lift-add 7)
+     (lift-divide 0)
+     (lift-add 2)) []) ;; [12 ["caught exception:: divide by zero..."]] !!!! now this rocks dude' :)
+
+;; what about two exceptions:
+((-> (return 3)
+     (lift-add 7)
+     (lift-divide 0)
+     (lift-add 2)
+     (lift-divide 0)
+     ) []) 
+;; [12 ["caught exception:: divide by zero...", "caught exception:: divide by zero..."]] 
+;; !!!! now this freakin rocks dude' :) it logs the errors and continue!!!
+
+
+;; a litlle try-catch practice::
+(try 
+  (/ 5 0)
+  (catch ArithmeticException e 
+    (println (.getMessage e))))
