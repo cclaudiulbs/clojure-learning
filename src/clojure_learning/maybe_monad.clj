@@ -76,7 +76,7 @@
     action 
     (fn [l-ops] 
       (if (some #{0} r-ops) 
-        (return nil)
+     4::    (return nil)
         (return (vector (apply / (into l-ops r-ops)) 
  ))))))
 ;; 0 being a special case into a division -> it is handled inside the divide func -> which returns nil for any POSSIBLE
@@ -88,3 +88,8 @@
      (lift-divide [2])
      (lift-add [2])
 )) ;; nil! -> the whole chain of computations will return nil!
+
+(identity [1 2 3]) ;; -> functor
+(map identity [1 2 3]) ;; -> functor
+
+(= (map identity [1 2 3]) (identity [1 2 3])) ;; true

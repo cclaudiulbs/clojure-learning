@@ -1,0 +1,43 @@
+;;;;;;;;;;;;;;;;;;;
+;; This is intended to make vim as the best place for working in clojure
+;; gathered useful plugins + shortcuts by cclaudiu
+;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;
+;; 1:: paredit
+;;;;;;
+LEADER is set to: `
+
+%   go to matching paren
+d%  delete all content till the matching paren
+da(  deletes the innermost s-expr including parens
+
+normal mode:
+(           go to enclosing form until the outer is reached
+<Leader><   includes the left-hand side expr in the current form
+<Leader>>   shring the innermost sexpr to right by removing the on-hovered word
+<Leader>J   if cursor between two symbols -> joins the two sublists
+<Leader>W   Wrap the current symbol in a pair of parentheses.
+<Leader>w[  Wrap the current symbol in a pair of square brackets, similarly to <Leader>W.
+<Leader>w{  Wrap the current symbol in a pair of curly braces, similarly to <Leader>W.
+<Leader>S   Splice the current list into the containing list, i.e. remove the opening and closing parens. Opposite of wrap.
+
+* visual works the same
+;;;;;;;;;;;;;;;;;;;;;;;
+;; 2:: vim-clojure-static
+;;;;;;;;;;
+Eval       takes boundary lines: 1,4 Eval
+cpp         takes the innermost form and: simple eval + print
+cqc         opens the quasi-repl with the current form in it -> further editing(such as a vim buffer)
+cqq         opens the quasi-repl with the innermost form under cursor in it, like 'cpp' but with editing the lines 
+ShiftK      opens clojure documentation
+Source     source for a func-form
+
+;;;;;;;;;;;
+;; 3:: fuzzy-file-finder
+;;;;;;;;;;;
+
+;;;;;;;;;;;
+;; 4:: core vim commands
+;;;;;;;;;;;
