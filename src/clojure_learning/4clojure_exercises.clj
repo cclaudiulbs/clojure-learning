@@ -4540,3 +4540,56 @@
            [6/1 6/2 6/3 6/4]])) ;; -> ok
 ))
 
+;;;;;;;;;;;;;
+;;Word Chains
+;;Difficulty:	Hard
+;;Topics:	seqs
+;;A word chain consists of a set of words ordered so that each word differs by only one letter 
+;;from the words directly before and after it. 
+;;The one letter difference can be either an insertion, a deletion, or a substitution. 
+;;Here is an example word chain:
+;;cat -> cot -> coat -> oat -> hat -> hot -> hog -> dog
+;;
+;;Write a function which takes a sequence of words, and returns true if they can be arranged 
+;;into one continous word chain, and false if they cannot.
+;;test not run	
+(defn all-words-chain? [words-set]
+  (letfn [(linked-words? [source target]
+            (let [[smaller greater] (sort-by count [source target])
+                  greater-indexed (map-indexed (fn [idx c] [idx c]) greater)
+                  smaller-indexed (map-indexed (fn [idx c] [idx c]) smaller)]
+              (letfn [(combine-matches-or-nil [greater-tuple smaller-tuple]
+                        (map (fn [[out-idx out-ch]] 
+                                (some (fn [[in-idx in-ch]] 
+                                        (when (and (= out-ch in-ch) 
+                                                   (or (= out-idx in-idx)
+                                                   (= out-idx (inc in-idx))
+                                                   (= out-idx (dec in-idx)))) out-ch)) 
+                                smaller-tuple)) 
+                          greater-tuple))]
+                (when (<= (- (count greater) (count smaller)) 1)
+                  (when-let [greater-combined-matches (combine-matches-or-nil greater-indexed smaller-indexed)]
+                    (when-let [smaller-combined-matches (combine-matches-or-nil smaller-indexed greater-indexed)]
+                      (let [greater-matches-indexed (map-indexed (fn [idx x] [idx x]) greater-combined-matches)
+                            smaller-matches-indexed (map-indexed (fn [idx x] [idx x]) smaller-combined-matches)]
+                        (>= 1
+                          (count
+                              (filter (fn [matched-indexed] (nil? (last matched-indexed)))
+                                  (apply hash-set 
+                                      (apply conj 
+                                          greater-matches-indexed smaller-matches-indexed))))))))))))
+          (find-links-foreach-word [words]
+            (map (fn [word]
+                    (reduce (fn [acc compared-word]
+                              (if (= word compared-word) acc
+                                (if (linked-words? word compared-word)
+                                  (inc acc)
+                                  acc)))
+                            0 words)) 
+                 words))]
+    (->> words-set
+        find-links-foreach-word
+        (filter #(= 1 %))
+        count
+        (>= 2))))
+
