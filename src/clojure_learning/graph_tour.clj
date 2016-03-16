@@ -1,14 +1,25 @@
-;; Graph Tour
+;; Graph Tour:: #89
 ;; Difficulty:	Hard
 ;; Topics:	graph-theory
-;; Starting with a graph you must write a function that returns true if it is possible to make a tour of the graph in which every edge is visited exactly once.
+;; Starting with a graph you must write a function that returns true if it is possible to 
+;; make a tour of the graph in which every edge is visited exactly once.
 ;; The graph is represented by a vector of tuples, where each tuple represents a single edge.
 ;; The rules are:
-;;  - You can start at any node.
-;;  - You must visit each edge ex
-;;  - All edges are undirected
+;;   - You can start at any node.
+;;   - You must visit each edge exactly once.
+;;   - All edges are undirected.
 
-;; solution:: eulerian path -> is the correct definition for this type of graph
+(ns clojure-learning.graph-tour
+  (use (clojure repl test)))
+
+(= false (__ [ [:a :b] [:a :b] [:a :c] [:c :a]
+               [:a :d] [:b :d] [:c :d]]))
+
+(= true (__ [ [:a :b] [:a :c] [:c :b] [:a :e]
+              [:b :e] [:a :d] [:b :d] [:c :e]
+              [:d :e] [:c :f] [:d :f]]))
+
+;; solution:: EULERIAN PATH
 ;; the intermediate nodes should all have even degrees: enter&leave degrees
 ;; the beggining and end nodes: must have odd degrees
 ;; the graph should be connected
