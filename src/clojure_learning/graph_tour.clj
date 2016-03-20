@@ -21,9 +21,27 @@
 
 ;; if duplicate-vertexes -> false
   ;; if connected-graph
-    ;; if every edge has even-degree -> eulerian
+    ;; if every edge has even-degree -> (zero? (rem (count adjacents) 2)) -> eulerian
       ;; if there's more than 2 edges with odd-degree -> false
         ;; eulerian
+
+;; eulerian::
+;; 1 --- 2
+;; |   / |
+;; |  /  |
+;; | /   |
+;; 3     4 --- 5
+;;
+;; -> 1 {2}, 2 {3}, 4 {2}, 5 {1} --> <= 2 odd edges! OK
+
+;; not eulerian:
+;; 1 --- 2
+;;    / |
+;;   /  |
+;;  /   |
+;; 3    4 --- 5
+
+;; -> 1 {1}, 2 {3}, 3 {1}, 4 {2}, 5 {1} -> odd edges > 2 (is 4)
 
 (ns clojure-learning.graph-tour
   (use (clojure repl test)))
