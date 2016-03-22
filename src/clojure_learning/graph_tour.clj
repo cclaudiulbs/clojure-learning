@@ -101,17 +101,51 @@
 
 (find-adjacents :a [[:a :b] [:a :c]])   ;; {:a #{:c :b}}
 (find-adjacents :a [[:a :b] [:a :b]])   ;; {:a #{:b}}
+(find-adjacents :a [[:b :c] [:d :e]])   ;; {}
+(empty?  (find-adjacents :a [[:b :c] [:d :e]]))   ;; {}
 
 ;; 4
 (defn graph-connected? [tuples]
   (letfn [(find-nodes-with-adjacents [tuples]
             (reduce (fn [nodes-with-adjancents-map node] 
                       (conj nodes-with-adjancents-map (find-adjacents node tuples))) 
-                    {} (find-edges tuples)))]
+                    {} (find-edges tuples)))
+          (composite-edge? [edge])
+          ]
   (let [nodes-with-adjacents-map (find-nodes-with-adjacents tuples)
         root-node-with-adjacents (first nodes-with-adjacents-map)]
     nodes-with-adjacents-map)))
 
 
 (graph-connected? [[:a :b] [:a :b] [:a :c] [:c :a]
-                   [:a :d] [:b :d] [:c :d]])  ;; {:a #{:c :b :d}, :d #{:c :b :a}, :b #{:d :a}, :c #{:d :a}}
+                   [:a :d] [:b :d] [:c :d]])  
+;; {:a #{:c :b :d}, :d #{:c :b :a}, :b #{:d :a}, :c #{:d :a}}
+
+(first {:a [1 2] :b [3 4]})
+(contains? {:a :b} :c)
+
+(defn depth-first-connected? [node tuples visited-map]
+  (cond (contains? visited-map node) 
+      visited-map
+  :else
+      (reduce (fn [visited-nodes adjacent]
+                (if ((comp not empty?) (find-adjacents adjacent tuples))
+                  (depth-first-connected? adjacent tuples visited-nodes)
+                  (assoc visited-nodes adjacent :visited)
+                )
+              )
+             (assoc visited-map node :visited) (last (vals (find-adjacents node tuples))))))
+
+(def connected-edges-1 [[:a :b] [:a :c] [:c :b] [:a :e]
+                      [:b :e] [:a :d] [:b :d] [:c :e]
+                      [:d :e] [:c :f] [:d :f]])  
+
+(def connected-edges-2 [[:a :b] [:a :b] [:a :c] [:c :a]
+                          [:a :d] [:b :d] [:c :d]])
+
+(def not-connected-edges [[:a :b] [:b :d] [:b :c] [:e :f]])
+
+(depth-first-connected? :a connected-edges-1 {})
+(depth-first-connected? :a connected-edges-2 {})
+(depth-first-connected? :a not-connected-edges {})
+
