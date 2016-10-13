@@ -1,6 +1,7 @@
 (ns clojure-learning.game-of-life)
 (require '[clojure.string :as str])
 
+;http://www.4clojure.com/problem/94
 ;Each cell interacts with its eight neighbours (horizontal, vertical, diagonal)
 ;1) Any live cell with fewer than two live neighbours dies, as if caused by under-population.
 ;2) Any live cell with two or three live neighbours lives on to the next generation.
@@ -13,26 +14,27 @@
            "     "
            "     "])
 
+;; function outer
 (defn replace-ws-with-char [strings replacer] 
   (map #(str/replace % #"\s" replacer) strings))
 
 (def r (replace-ws-with-char life "0"))
 
+;; function outer
 (defn table->matrix [table]
   (map #(str/split % #"") table))
 
 (def matrix (table->matrix r))
 matrix
 
-;[row col]
-;[0 0]:: [0 1] [1 0] [1 1]
-;
 ;[1 1]:: [0 0] [0 1] [0 2]
 ;        [1 0]       [1 2]
 ;        [2 0] [2 1] [2 2]
 
-
+;; function inner
 (defn gen-neighbours-by-row [[row col] row-func]
+  "function that generates neighbours for given coordinate by applying the row-func
+   which can be any of: inc(neighbours-for-next-row), dec(neighbours-for-previous-row)"
   (letfn [(clean-alien-cels [cels-coordinates]
             (filter (fn [cell-coordinate]
                       (= 2 (count (remove neg? cell-coordinate))))
@@ -44,11 +46,15 @@ matrix
     (clean-alien-cels
       (gen-raw-neighbours-by-row [row col] row-func))))
   
+;; test
 (gen-neighbours-by-row [0 1] dec) ;; ()
 (gen-neighbours-by-row [0 1] inc) ;; ((1 0) (1 1) (1 2))
 (gen-neighbours-by-row [1 1] dec) ;; ((0 0) (0 1) (0 2))
 
+;; function inner
 (defn gen-neighbours-for [[row col :as cell-coordinates]]
+  "given a pair of coordinates on the table, generate all possible adjacent coordinates
+   that serve as neighbours for the given cell"
   (letfn [(clean-alien-cels [cels-coordinates]
                       (filter (fn [cell-coordinate]
                                 (= 2 (count (remove neg? cell-coordinate))))
@@ -72,12 +78,15 @@ matrix
       (map vec (gen-neighbours-by-row [row col] next-row-func))
     )))
     
+;; testing
 (gen-neighbours-for [0 1]) 
 ;; ((0 0)   ..   (0 2)
 ;;  (1 0) (1 1)  (1 2))
 
-matrix
+;; function outer
 (defn transpose-table->positions 
+  "given a matrix of cells(0 1) this function will map each dump-cell with it's corresponding
+   coordinates on the table"
   [[head-row-with-cols & tail-rows] row-counter transposed-table-acc]
     (letfn [(generate-row-with-cols-tuple [row-counter cols-counter]
               (map vec 
@@ -100,74 +109,120 @@ matrix
                      (structure-cells head-row-with-cols row-counter)
 )))))
         
-(take 3 (iterate inc 0))
-(transpose-table->positions [["0" "0" "0" "#" "0"] ["0" "0" "0" "0" "0"]] 0 [])
+;; test
+(def transposed->positions
+  (-> matrix
+    (transpose-table->positions 0 [])))
+transposed->positions
+;[... [["0" [4 0]] ["0" [4 1]] ["0" [4 2]] ["0" [4 3]] ["0" [4 4]]]]
 
-(def transposed (transpose-table->positions [["0" "0" "0" "#" "0"] ["0" "0" "0" "0" "0"]] 1 []))
-transposed
+;; function inner
+(defn transpose-table-w-positions->map [table-cells-w-positions]
+  "function that will flatten and normalize the cells-with-positions to a map for 
+   faster/easier-to-understand/constant-time lookups"
+  (let [flatten-cell->pos-pairs #(partition 3 (flatten %))]
+    (reduce 
+      (fn [mapped-cells [cell-primitive-state & cell-position]]
+        (assoc mapped-cells (vec cell-position) cell-primitive-state))
+      {}
+      (flatten-cell->pos-pairs table-cells-w-positions))))
 
-(get-in [[0 1 2 3] [4 5 6 7]] [0 2])
-(get-in [
-         [{:alive false :adj [[1 0] [1 1] [0 1]]}, {:alive false :adj [[0 0] [0 2] [1 0] [1 1] [1 2]]}]
-         [{:alive false :adj [[3 4] [5 6]]}, {:alive true :adj [[1 2] [1 4] [0 1]]}] ]
-        [1 0]) ;; this is the data-structure i expect!!!
-(if (:alive {:alive true}) (str "OK") (str "NOK")) ;; OK!
+;; test
+(def transposed->mapped-positions (transpose-table-w-positions->map transposed->positions))
+transposed->mapped-positions
+;{...[2 1] "#", [4 4] "0", [1 2] "0", ... }
 
-(defn structure-cells-with-neighours 
-  [[head-row-cols-with-positions & tail-rows] mapped-cells-with-neighbours]
-  (if (nil? head-row-cols-with-positions) 
-    mapped-cells-with-neighbours
-    (recur tail-rows
-       (conj mapped-cells-with-neighbours
-             (vec (map (fn [cell-with-position]
-                                     {:alive (= "#" (first cell-with-position))
-                                      :neighbours-pos (gen-neighbours-for (second cell-with-position))})
-                             head-row-cols-with-positions))))
-))
+;; function inner
+(defn get-alive-neighbours [neighbours table-of-cells-w-positions]
+  "function that takes some neighbours and returns the ones for which cells are alive"
+  (let [map-of-cells-w-positions (transpose-table-w-positions->map table-of-cells-w-positions)
+        alive? #(= "#" %1)]
+  (reduce (fn [alive-neighbours-acc neighbour]
+            (if (alive? (get map-of-cells-w-positions neighbour))
+              (conj alive-neighbours-acc neighbour)
+              alive-neighbours-acc))
+    [] neighbours)))
 
-(defn map-cells-status-with-neighbours [matrix]
-  (let [starting-row 0
-        transposed-cells-with-positions (transpose-table->positions matrix starting-row [])]
-    (structure-cells-with-neighours transposed-cells-with-positions [])
-    ;; iterate
-))
 
-matrix
-(map-cells-status-with-neighbours matrix)
+;; function outer-highest
+(defn one-generation->map-cells
+  "function that takes a table-of-cells and maps each cell to the INITIAL SEED given.
+   Each cell will have it's own view of the initial-seed hence might be updated simultaneously"
+  [table-of-cells-w-positions-view]
+  (letfn [(convert-cell [cell] (if (= "#" cell) {:alive true} {:alive false}))
+          (identify-cell-state [cell] (if (true? (:alive cell)) :alive :dead))
+          
+          (cell-should-born? [cell identified-alive-neighbours] 
+            (and (false? (:alive cell)) (= 3 (count identified-alive-neighbours))))
 
-;; once we mapped one cell "0" as::
-; { :alive false,
-;   :neighbours-pos ((3 3) (3 4) (3 5) (4 3) (4 5) (5 3) (5 4) (5 5))}
+          (cell-should-die? [cell identified-alive-neighbours] 
+            (and (:alive cell) (or (> (count identified-alive-neighbours) 3) ;; overpopulation
+                                   (< (count identified-alive-neighbours) 2)))) ;; underpopulation
 
-;; next thing is to iterate each cell's neighbour and find in the 
-;; transposed cells for each neighbour its liveness state
+          (cell-should-live? [cell identified-alive-neighbours] 
+            (and (:alive cell) (or (<= (count identified-alive-neighbours) 3)
+                                   (>= (count identified-alive-neighbours) 2))))
+          
+          (bless-cell [cell alive-neighbours]
+            (cond (cell-should-born? cell alive-neighbours)
+                  :alive
+                  (cell-should-die? cell alive-neighbours)
+                  :dead
+                  (cell-should-live? cell alive-neighbours)
+                  :alive
+                  :else (identify-cell-state cell)))]
 
-(defn map-cells-with-alive-neighbours 
-  [[head-mapped-cols-with-neighbours & tail-rows]
-   mapped-cells
-   cells-table-with-alive-neighbours]
-  (if (nil? head-mapped-cols-with-neighbours) 
-    cells-table-with-alive-neighbours
-    (recur 
-      tail-rows
-      mapped-cells
-      (conj cells-table-with-alive-neighbours
-            (map
-              (fn [cell-with-neighbours-positions]
-                (reduce 
-                  (fn [alive-neighbours-acc neighbour-position]
-                    (let [neighbour (get-in mapped-cells neighbour-position)]
-                      (if (:alive neighbour)
-                        (conj alive-neighbours-acc neighbour-position)
-                        alive-neighbours-acc
-                        )))
-                  [] (:neighbours-pos cell-with-neighbours-positions))
-                )
-              head-mapped-cols-with-neighbours)
-      ))
-  ))
+    (map (fn [row-cells-with-position]
+        (map (fn [cell-with-position]
+               (let [[cell-primitive-state cell-position] cell-with-position
+                     converted-cell (convert-cell cell-primitive-state)
+                     alive-neighbours (get-alive-neighbours 
+                                                  (gen-neighbours-for cell-position) table-of-cells-w-positions-view)]
+                 (bless-cell converted-cell alive-neighbours)
+             ))
+             row-cells-with-position
+        ))
+        table-of-cells-w-positions-view
+)))
 
-(def neighs (map-cells-status-with-neighbours matrix))
-neighs
-(get-in neighs [4 4])
-(map-cells-with-alive-neighbours neighs neighs [])
+;;test
+(def transposed
+  (-> matrix
+    (transpose-table->positions 0 [])))
+
+;; DONE! game of life!!!!
+(one-generation->map-cells transposed)
+;((:dead :dead :dead :dead :dead)
+; (:dead :dead :alive :dead :dead)
+; (:dead :dead :alive :dead :dead)
+; (:dead :dead :alive :dead :dead)
+; (:dead :dead :dead :dead :dead))
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;; another test-case:: => try beating clojure at structuring the code into pipelined-chaining-computations
+(->
+  ["      "  
+   " ##   "
+   " ##   "
+   "   ## "
+   "   ## "
+   "      "]
+  (replace-ws-with-char "0")
+  table->matrix
+  (transpose-table->positions 0 [])
+  one-generation->map-cells)
+
+;; comparing outputs::
+;["      "  
+; " ##   "
+; " #    "
+; "    # "
+; "   ## "
+; "      "]
+;((:dead :dead :dead :dead :dead :dead)
+; (:dead :alive :alive :dead :dead :dead)
+; (:dead :alive :dead :dead :dead :dead)
+; (:dead :dead :dead :dead :alive :dead)
+; (:dead :dead :dead :alive :alive :dead)
+; (:dead :dead :dead :dead :dead :dead))
+;; WHOOOOOOHOOOOOO :)
