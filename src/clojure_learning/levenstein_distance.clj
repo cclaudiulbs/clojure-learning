@@ -124,7 +124,7 @@
             (apply - (map count (reverse (structure-asc this that)))))
           (pad-> [this that position]
             (let [[smaller bigger] (structure-asc this that)
-                  paddings (repeat (identify-necessary-padding this that) :missing)]
+                  paddings (repeat (identify-necessary-padding this that) nil)]
              (if (:to-head position)
                 (conj []
                   (vec (concat paddings smaller))
@@ -137,10 +137,12 @@
          (if (and (matching-heads? this-coll that-coll)
                   (matching-tails? this-coll that-coll)
                   (diff-sizes? this-coll that-coll))
-             (concat [(first this-coll)]
+             ;; this is the place to return the same consistent data-structure and not only the vector!
+             (vec
+               (concat [(first this-coll)]
                      (first (pad-minimized->to (vec (butlast (rest this-coll)))
                                                (vec (butlast (rest that-coll)))))
-                     [(last this-coll)])
+                     [(last this-coll)]))
           (if (and (matching-heads? this-coll that-coll)
                    (diff-sizes? this-coll that-coll))
               (pad-> this-coll that-coll {:to-head false})
@@ -151,31 +153,40 @@
                     (pad-> this-coll that-coll {:to-head false})
                     [this-coll that-coll])))))))
 
-(pad-minimized->to (map str "cosar") (map str "claudiu"))
+(pad-minimized->to "cosar" "claudiu")
+;; [["c" "o" "s" "a" "r" :missing :missing] ["c" "l" "a" "u" "d" "i" "u"]]
+
 (pad-minimized->to "bmw" "claudiu")
+; [["b" "m" "w" :missing :missing :missing :missing] ["c" "l" "a" "u" "d" "i" "u"]]
+
 (pad-minimized->to "acel" "lacel")
 ;; [[:missing "a" "c" "e" "l"]  ["l" "a" "c" "e" "l"]]
 
-(vec (map str (vec (butlast (rest ["x" "y" "x"])))))
-(vec (butlast (rest ["x" "y" "y" "y" "x"])))
-(pad-minimized->to "kitten" "sitting")
-;; [["k" "i" "t" "t" "e" "n" :missing] ["s" "i" "t" "t" "i" "n" "g"]]
-
 (pad-minimized->to "xyx" "xyyyx")
+;; ["x" "y" null null "x"]
+
 (pad-minimized->to "y" "yyy")
+;; [["y" nil nil] ["y" "y" "y"]]
 
-(def with-pads (pad-minimized->to "kitten" "sitting"))
-(eval with-pads)
-
+;; and the function :D
 (defn levenstein-distance [from to]
-  ; (filter
-        ; (fn [[each-from each-to]]
-        ;   (not= each-from each-to))
+  (filter
+        (fn [[each-from each-to]]
+          (not= each-from each-to))
         (partition 2 (apply interleave
-                        (pad-minimized->to from to))))
+                        (pad-minimized->to from to)))))
 
-["x" ["y" [[:missing] ["y"]] "y"] "x"]
-
+(levenstein-distance "closure" "clojure") ;; ["j"] => 1 OK
+(levenstein-distance "xyx" "xyyyx")      ;; 2 NOK-3
+(levenstein-distance "kitten" "sitting") ;; 3 OK
+(levenstein-distance "" "123456")        ;; 6 OK
+(levenstein-distance "Clojure" "Clojure") ;; 0 OK
+(levenstein-distance [1 2 3 4] [0 2 3 4 5]) ;; 2 OK
+(levenstein-distance "ttttattttctg"
+                     "tcaaccctaccat") ;; 10 OK
+(levenstein-distance "gaattctaatctc"
+                     "caaacaaaaaattt") ;; 9 OK
+(levenstein-distance "abcd" "ad")   ;; 2 NOK-3
 
 (defn structure-asc [this that]
         (if (> (count this) (count that)) [that this] [this that]))
