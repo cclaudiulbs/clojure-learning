@@ -1,6 +1,7 @@
 (ns clojure-learning.java-interoperability
   (use (clojure test repl)))
 
+
 ;; Clojure being a hosted language simply reuses all of the work that is available from JVM 
 ;; Clojure is never interpreted! rather it is ALWAYS compiled down to efficient JVM bytecode, prior being run,
 ;; even in interactive settings such as the REPL! -> hence clojure is as java in terms of compilation and
