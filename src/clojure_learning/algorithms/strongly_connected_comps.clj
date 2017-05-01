@@ -2,27 +2,39 @@
 (use 'clojure.test)
 (require '[clojure.string :as str])
 
+;; Algorithm:: DirectedGraphs ONLY!
+;; 1) G is a directed graph and S is a stack.
+;; 2) While S does not contain all vertices perform step 3.
+;; 3)choose a random vertex v and perform depth first search on it. Each time DFS finishes expanding vertex v, push v on to the stack S. (This guarantees that the vertex with maximum finish time will more closer to the top of the stack).
+;; 4) Obtain a transpose of the G by reversing the direction of the edge.
+;; 5)While S is not empty perform step 6.
+;; 6) Remove v=top of S and again perform DFS on it The set of all visited vertices will give the strongly connected components containing v. Remove all visited vertices from stack.
+
 (defn read-file [file-path]
   (slurp file-path))
 
-(read-file "src/clojure_learning/algorithms/scc-week4-algos-input-file.txt")
+(read-file "src/clojure_learning/algorithms/graph-1234.txt");
 
-(defn listify [file-content]
+;;;;;;;;;;;
+(defn to->edges [file-content]
   "primitive function that builds a list-of-list representing directed-edges"
   (map (fn [from-to-str] 
          (map #(Integer/parseInt %) 
               (str/split from-to-str #"\s"))) 
        (str/split file-content #"\n")))
 
-(defn rev-listify [file-content]
+(defn to->rev-edges [file-content]
   "primitive function that reverses the graph paired-vertices directions"
   (->> file-content
-    listify
+    to->edges
     (map reverse)))
+;;;;;;;;;;;
 
-(def f-path "src/clojure_learning/algorithms/scc-week4-algos-input-file.txt")
-(-> f-path read-file rev-listify) ;; OK
+(-> "src/clojure_learning/algorithms/graph-1234.txt"
+    read-file 
+    to->rev-edges)
 
+;;;;;;;;;;;
 (defn build-graph-from-edges [edges]
   "primitive function that takes the paired-edges and builds a map with vertices as keys and
    directed-adjacents as vals"
@@ -33,23 +45,7 @@
           (assoc graph-map from-vertex [to-vertex]))) 
       {} edges)) ;; OK
 
-(deftest assert-built-graph "testing"
-  (is (= [1 2 5 6 7 3 8 4]
-         (get (-> f-path read-file listify build-graph-from-edges) 1)))
-)
-
-(for [x (range 1 10) :when (not (< x 5))] x) ;; (5..9)
-
-(defn all-vertices-visited? [visited vertices]
-  "primitive function that checks if vertices has a single-remained-vertex and was or not visited"
-  (and (empty? (rest vertices))
-      (empty? (remove visited vertices))))
-
-(deftest testing-all-vertices-visited? "should test whether all vertices are visited"
-  (is (= true (all-vertices-visited? #{1 2 3} [1])))
-  (is (= false (all-vertices-visited? #{1 2} [3])))
-)
-
+;;;;;;;;;;;
 (defn adjacents-of [vertex graph-map]
   (remove nil? (get graph-map vertex)))
 
@@ -59,227 +55,195 @@
   (is (empty? (adjacents-of :two {:one [1]})))
   (is (= '() (adjacents-of :one {:one [nil]})))
 )
-
-;; depth-first in clojure is a litlle bit more trickier since there's no mutation only recursions
-(defn depth-first [[head-vertex & tail-vertices] visited graph]
-  "base-depth-first function that returnes the visited-nodes"
+;;;;;;;;;;;
+(defn depth-first-search [[head-vertex & tail-vertices] visited graph]
+  "depth-first-func that returnes the visited-nodes by finishing-time:: 
+   top of stack is the most connected vertex"
     (if (nil? head-vertex) visited
-      (if (visited head-vertex)
+      (if ((set visited) head-vertex)
         (recur tail-vertices visited graph)
-        (let [visited-adjacents (depth-first ;; mark the recursion return point for adjacents(don't loose context) 
-                                  (remove visited (adjacents-of head-vertex graph)) 
-                                  (conj visited head-vertex) 
-                                  graph)]
-          (recur tail-vertices (concat visited visited-adjacents)) graph)
-)))
+          (let [visited-adjacents (depth-first-search ;; mark the recursion return point for adjacents(don't loose context) 
+                                    (adjacents-of head-vertex graph)
+                                    (cons head-vertex visited)
+                                    graph)]
+            (recur tail-vertices visited-adjacents graph)))))
 
-(def small-snippet-path-1 "src/clojure_learning/algorithms/small-snippet.txt")
-(def g-small-1 (-> small-snippet-path-1 read-file listify build-graph-from-edges))
-g-small-1
-(depth-first (keys g-small-1) #{} g-small-1)
+(defn directed-graph->depth-first [[head-vertex & tail-vertices] visited graph]
+  "depth-first-func that returnes the visited-nodes by finishing-time:: 
+   top of stack is the most connected vertex
+   Note that this function STOPS if the unlucky starting vertex does not have directed
+   connections with the all/rest of vertices..."
+    (if (nil? head-vertex) visited
+      (if ((set visited) head-vertex)
+        (recur tail-vertices visited graph)
+        (if (empty? (adjacents-of head-vertex graph))
+          (conj visited head-vertex)
+          (let [visited-adjacents (directed-graph->depth-first ;; mark the recursion return point for adjacents(don't loose context) 
+                                    (adjacents-of head-vertex graph)
+                                    (conj visited head-vertex)
+                                    graph)]
+            (recur tail-vertices visited-adjacents graph))))))
+(directed-graph->depth-first (shuffle (keys graph-01234)) [] graph-01234)
+;; [4]
+;; [2 1 0 3 4]
 
-(def g-small-2 (-> small-snippet-path-1 
-                 read-file 
-                 rev-listify 
-                 build-graph-from-edges))
-g-small-2
-
-(defn get-by-last-finishing-time [paired-vertices] 
-  "primitive func that takes the accumulated paired-vertices from the top of the stack and returns the finishing-time"
-  ((comp last last) paired-vertices))
-
-;;;;;;;;;;
-(defn depth-first-iterative-with-finishing-times
-  "mutually recursive function with its counterpart the tree-expansion-recursion
-   Note:: every state should be persisted across recursions!!!"
- [[head-vertex & tail-vertices] visited graph vertices-labeled finishing-time]
- (letfn [(visited? [vertex vertices-labeled] 
-           ((set (map first vertices-labeled)) vertex))
-         (visited-vertices [vertices-labeled] (set (map first vertices-labeled)))
-         (join-colls [col1 col2] (vec (concat col1 col2)))]
- (if (nil? head-vertex) ;; base-case for exit-recursivity(non domain) 
-   vertices-labeled
-   (if (visited? head-vertex vertices-labeled)
-     (recur tail-vertices visited graph vertices-labeled finishing-time)
-     (let [acc-verts (depth-first-expansive-adjacents-of 
-                       head-vertex 
-                       (conj visited head-vertex)
-                       graph
-                       vertices-labeled
-                       finishing-time)]
-      (recur tail-vertices
-              (conj visited head-vertex) 
-              graph
-              (vec (concat vertices-labeled acc-verts)) ;; accumulate the entire result -> there might be dups because a vertex is reachable from many adjacents!
-              (get-by-last-finishing-time acc-verts)))
-))))
-(defn depth-first-expansive-adjacents-of
-  "mutually recursive function that goes in expansion that is: back-tracking-recursion"
-  [current-vertex visited graph vertices-labeled finishing-time]
-    ;; base-case predicate that returns last vertex from which the back-tracking begins
-    (if (all-vertices-visited? visited (adjacents-of current-vertex graph))
-      ;; types should allign -> both mut-recur-functions return the same type!
-      [[current-vertex (inc finishing-time)]]
-      (let [adjacents-verts-with-times-rec 
-                             (depth-first-iterative-with-finishing-times 
-                                   (adjacents-of current-vertex graph)
-                                   visited
-                                   graph
-                                   vertices-labeled
-                                   finishing-time)]
-        ;; dups appear since the recursivity builds from the top of the recur-stack
-        (conj adjacents-verts-with-times-rec
-             [current-vertex (inc (get-by-last-finishing-time adjacents-verts-with-times-rec))])
-)))
-
-(defn keys-in-desc [graph] 
-  "primitive func that sequence the keys of graph and returns them in reversed order"
-  (-> graph keys sort reverse))
-
-(deftest func-keys-in-desc "should return the keys of the graph-map sorted in reverse order"
-  (is (= '(3 2 1) (keys-in-desc {1 1, 2 2, 3 3})))
-)
-
-(defn backtrack-vertices->map [graph-map]
-  "high-order function which glues together the mutual recursive functions and outputs the
-   vertices-backtracked in a map structure"
-  (letfn [(edges->map [edges]
-              "primitive func which takes the labeled vertices with finishing times and builds a
-               map with only the relevant/unique vertices discarding any dups"
-            (reduce (fn [acc-labeled-verts [vertex finishing-time :as edge]]
-                      (if (get acc-labeled-verts vertex)
-                        acc-labeled-verts
-                        (conj acc-labeled-verts edge))) 
-                    {} edges))
-          (keys-in-desc [graph] (-> graph keys sort reverse))]
-    (edges->map
-      (depth-first-iterative-with-finishing-times 
-           (keys-in-desc graph-map)
-           #{} 
-           graph-map 
-           [] 
-           0)
-)))
-
-(defn edges->map [edges]
-  "primitive func which takes the labeled vertices with finishing times and builds a
-   map with only the relevant/unique vertices discarding any dups, if present -> discard semantic"
-  (reduce (fn [acc-labeled-verts [vertex finishing-time]]
-            (if (get acc-labeled-verts vertex) acc-labeled-verts
-              (assoc acc-labeled-verts vertex finishing-time))) 
-          {} edges))
-
-(deftest func-edges->map "should take a list of edges(pairs of points) and translate them to a map"
-  (is (= {:one 1 :two 2} (edges->map [[:one 1] [:two 2]])))
- )
-
-(backtrack-vertices->map g-small-1)
-;; OK!
-(backtrack-vertices->map g-small-2)
-;; OK!
-
-(defn map->desc-sorted-tups [vertices-with-finishing-times]
-  (reverse (sort-by second (map identity vertices-with-finishing-times))))
-
-(deftest func-map->desc-sorted-tups 
-  "primitive func that should take a map with key-val, and output a seq of tuples in reversed order based on descendent values"
-  (is (= '([1 8] [4 7] [7 1]) 
-         (map->desc-sorted-tups {7 1, 4 7, 1 8}))) ;; true
-)
-(defn map->keys-by-desc-val [vertices-with-finishing-times]
-  (letfn [(map->desc-sorted-tups [vertices-with-finishing-times]
-              (reverse (sort-by second (map identity vertices-with-finishing-times))))]
-  (map first (map->desc-sorted-tups vertices-with-finishing-times))))
-
-(deftest func-map->keys-by-desc-val "should return a sequence with only the nodes sorted in reversed order"
-  (is (= '(1 4 7) (map->keys-by-desc-val {7 1, 4 7, 1 8}))) ;; true
-)  
-
-(defn main-dfs [graph [head-vertex & tail-vertices] visited acc]
-  (if (nil? head-vertex) acc
-    (if (visited head-vertex)
-    (recur graph tail-vertices visited acc)
-    (recur graph tail-vertices 
-           (conj visited head-vertex)
-           (conj acc
-             (main-dfs 
-               graph
-               (adjacents-of head-vertex graph) 
-               (conj visited head-vertex) 
-               [head-vertex]))
+;; used by SCS component
+(defn dfs->stacked-vertices-by-finishing-times [[head-vertex & tail-vertices] visited seeds graph]
+  "primitive func for building the vertices-stack considering the last vertex found
+   will have the LOWER finishing-time -> increasing the finishing-time when returning from
+   recursivity:: defined when there's no more adjacents OR the vertices are visited"
+  (if (nil? head-vertex) 
+    visited;; finishing-time-acc
+    (if (or ((set seeds) head-vertex) 
+            ((set visited) head-vertex))
+      (recur tail-vertices visited seeds graph)
+      (recur tail-vertices 
+             (conj
+               (dfs->stacked-vertices-by-finishing-times (adjacents-of head-vertex graph) 
+                                      visited
+                                      (conj seeds head-vertex)
+                                      graph)
+               head-vertex)
+             seeds
+             graph
 ))))
 
-;; demo::
-(let [vertices-with-finishing-times (backtrack-vertices->map g-small-2)
-      vertices-in-desc (map->keys-by-desc-val vertices-with-finishing-times)]
-  (map flatten (main-dfs g-small-1 vertices-in-desc #{} []))
-)
+graph-01234
 
-(defn find-SCCs [graph]
-  (letfn [(main-dfs [graph [head-vertex & tail-vertices] visited acc]
-            (if (nil? head-vertex) acc
-              (if (visited head-vertex)
-              (recur graph tail-vertices visited acc)
-              (recur graph tail-vertices 
-                     (conj visited head-vertex)
-                     (conj acc
-                       (main-dfs 
-                         graph
-                         (adjacents-of head-vertex graph) 
-                         (conj visited head-vertex) 
-                         [head-vertex]))))))
-          (backtrack-vertices->map [graph-map]
-            "high-order function which glues together the mutual recursive functions and outputs the
-             vertices-backtracked in a map structure"
-            (letfn [(edges->map [edges]
-                        "primitive func which takes the labeled vertices with finishing times and builds a
-               map with only the relevant/unique vertices discarding any dups"
-                        (reduce (fn [acc-labeled-verts [vertex finishing-time :as edge]]
-                                  (if (get acc-labeled-verts vertex)
-                                    acc-labeled-verts
-                                    (conj acc-labeled-verts edge))) 
-                                {} edges))
-                    (keys-in-desc [graph] (-> graph keys sort reverse))]
-              (edges->map
-                (depth-first-iterative-with-finishing-times 
-                     (keys-in-desc graph-map)
-                     #{} 
-                     graph-map 
-                     [] 
-                     0))))]
-    
-    (let [vertices-with-finishing-times (backtrack-vertices->map g-small-2)
-      vertices-in-desc (map->keys-by-desc-val vertices-with-finishing-times)]
-  (map flatten (main-dfs g-small-1 vertices-in-desc #{} []))
-)
-    )
-  )
+(dfs->stacked-vertices-by-finishing-times
+  (shuffle (keys graph-01234)) [] [] graph-01234)
+;; some samples::
+;; [2 4 3 0 1]
+;; [1 2 4 3 0]
+;; [4 3 2 0 1]
+;; [1 2 4 3 0]
+;; [4 2 3 0 1]
+;; [2 4 3 0 1]
+;; [2 4 3 0 1]
+;; [4 2 3 0 1]
 
-;; Answer: 3,3,3,0,0
+;; In stack, 3 always appears after 4, and 0 appear after both 3 and 4.
+(depth-first-search (shuffle (keys graph-01234)) '() graph-01234) ;; [4 3 2 1 0]
 
-(def simplest-file "src/clojure_learning/algorithms/simplest-scc.txt")
-(def simplest-graph (-> simplest-file read-file listify build-graph-from-edges))
-(def simplest-graph-rev (-> simplest-file read-file rev-listify build-graph-from-edges))
-simplest-graph
-simplest-graph-rev
-(let [vertices-with-finishing-times (backtrack-vertices->map simplest-graph-rev)
-      vertices-in-desc (map->keys-by-desc-val vertices-with-finishing-times)]
- (dfs simplest-graph vertices-in-desc #{} [])
-  ;;vertices-with-finishing-times
-  ;;vertices-in-desc
-)
+(directed-graph->depth-first (shuffle (keys graph-01234)) [] graph-01234) ;; [3 0 1 2]
+;; pushing on the stack(vector) ensures the most connected vertex is always on TOP of the stack
+;; can be considered the HIGHEST finishing time
+;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; build a master map from submaps
-(defn build-master-map [& maps]
-  (reduce (partial conj {}) (concat maps)))
+(def graph-01234 (-> "src/clojure_learning/algorithms/graph-1234.txt"
+                   read-file 
+                   to->edges
+                   build-graph-from-edges))
+graph-01234
 
-(deftest build-master-map "should build a master map from various submaps"
-  (is (= {:one 1 :two 2 :three 3}
-         (build-master-map {:one 1} {:two 2} {:three 3})))
-  (is (= {:one 1 :two 1}
-         (build-master-map {:one 2} {:one 1} {:two 2} {:two 1}))) ;; order counts!!!
-)
+(def rev-graph-01234 (-> "src/clojure_learning/algorithms/graph-1234.txt"
+                       read-file 
+                       to->rev-edges
+                       build-graph-from-edges))
+rev-graph-01234
 
-(build-master-map {:one 1} {:two 2} {:three 3})
-(reduce (partial conj {}) (concat {"one" 1} {"two" 2}))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; final function that finds the strongly-connected-components(SCC) using Kosaraju Algorithm
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn scs [graph-file-path]
+  (letfn [(read-file [file-path]
+            (slurp file-path))
+
+          (to->rev-edges [file-content]
+            "primitive function that reverses the graph paired-vertices directions"
+            (->> file-content
+              to->edges
+              (map reverse)))
+
+          (build-graph-from-edges [edges]
+            "primitive function that takes the paired-edges and builds a map with vertices as keys and
+             directed-adjacents as vals"
+              (reduce
+                (fn [graph-map[from-vertex to-vertex]]
+                  (if-let [adjacents (get graph-map from-vertex)]
+                    (assoc graph-map from-vertex (conj adjacents to-vertex))
+                    (assoc graph-map from-vertex [to-vertex]))) 
+                {} edges))
+
+          (dfs->stacked-vertices-by-finishing-times [[head-vertex & tail-vertices] visited seeds graph]
+            (if (nil? head-vertex) 
+              visited;; finishing-time-acc
+              (if (or ((set seeds) head-vertex) 
+                      ((set (flatten visited)) head-vertex))
+                (recur tail-vertices visited seeds graph)
+                (recur tail-vertices (conj (dfs->stacked-vertices-by-finishing-times
+                                              (adjacents-of head-vertex graph) 
+                                              visited
+                                              (conj seeds head-vertex)
+                                              graph) 
+                                           head-vertex)
+                       seeds
+                       graph))))
+
+          (dfs-vertices->connected-components [finishing-time-vertices graph]
+            (for [v finishing-time-vertices]
+              (dfs->stacked-vertices-by-finishing-times [v] [] [] graph)))
+          
+          (connected->strongly-connected [[first-connected-component & tail-ccs]]
+            "function that takes the output of:: [dfs-vertices->connected-components]"
+            (reduce (fn [scc-m next-cc]
+                      ;; if there's already a SCC => avoid adding a CC as a SCC(add only the last-vertex)
+                      (if (clojure.set/intersection (set next-cc) (set (:prev-comp scc-m)))
+                        (assoc
+                          (assoc scc-m :sccs 
+                                 ;; put only the difference vertex => since the SCC is already there
+                                 (conj (:sccs scc-m) (clojure.set/difference (set next-cc)
+                                                                             (set (:prev-comp scc-m)))))
+                          :prev-comp next-cc)
+                        ;; a new SCC => add it to our scc-map, preserving the previous-SCC
+                        (assoc 
+                          (assoc scc-m :sccs 
+                                 ;; put only the difference vertex => since the SCC is already there
+                                 (conj (:sccs scc-m) next-cc))
+                          :prev-comp next-cc)))
+                    ;; assume the first occurence in the connected-components is a SCC(might be ONE vertex)
+                    {:prev-comp first-connected-component 
+                     :sccs [(set first-connected-component)]}
+                    ;; there might be multiple occurences of the same SCC(reachable from multiple vertices)
+                    (sort tail-ccs)
+             ))]
+          
+    (let [normal-graph (-> graph-file-path
+                           read-file
+                           to->edges
+                           build-graph-from-edges)
+          reversed-graph (-> graph-file-path
+                   read-file
+                   to->rev-edges
+                   build-graph-from-edges)
+
+          ;; randomize the choosing-start-vertex from graph => compute the finishing-times
+          shuffled-vertices (shuffle (keys normal-graph))
+          
+          ;; performing dfs using a stack/vec as this will ensure the HIGHEST finishing time is always the most-in-depth
+          ;; (that is the last vertex is the most connected)
+          vertices-by-finishing-time-desc-order (reverse 
+                                                  (dfs->stacked-vertices-by-finishing-times
+                                                    shuffled-vertices [] [] normal-graph))
+
+          ;; identify connected-components by doing the 2nd DFS by using the prev-computed finishing-times
+          connected-components (dfs-vertices->connected-components
+                                 vertices-by-finishing-time-desc-order
+                                 reversed-graph)]
+
+      ;; identify which are the SCC from the connected-components
+      (-> connected-components
+        connected->strongly-connected)
+)))
+
+(scs "src/clojure_learning/algorithms/graph-1234.txt")
+
+(scs "src/clojure_learning/algorithms/another-graph.txt")
+
+(scs "src/clojure_learning/algorithms/simplest-scc.txt")
+
+(scs "src/clojure_learning/algorithms/small-snippet.txt")
+
+(scs "src/clojure_learning/algorithms/sample-1.txt")
+
+(scs "src/clojure_learning/algorithms/sample-2.txt")
