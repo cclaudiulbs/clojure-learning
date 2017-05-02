@@ -28,12 +28,10 @@
   (->> file-content
     to->edges
     (map reverse)))
-;;;;;;;;;;;
 
 (-> "src/clojure_learning/algorithms/graph-1234.txt"
     read-file 
     to->rev-edges)
-
 ;;;;;;;;;;;
 (defn build-graph-from-edges [edges]
   "primitive function that takes the paired-edges and builds a map with vertices as keys and
@@ -149,6 +147,13 @@ rev-graph-01234
   (letfn [(read-file [file-path]
             (slurp file-path))
 
+          (to->edges [file-content]
+            "primitive function that builds a list-of-list representing directed-edges"
+            (map (fn [from-to-str] 
+                   (map #(Integer/parseInt %) 
+                        (str/split from-to-str #"\s"))) 
+                 (str/split file-content #"\n")))
+
           (to->rev-edges [file-content]
             "primitive function that reverses the graph paired-vertices directions"
             (->> file-content
@@ -164,6 +169,9 @@ rev-graph-01234
                     (assoc graph-map from-vertex (conj adjacents to-vertex))
                     (assoc graph-map from-vertex [to-vertex]))) 
                 {} edges))
+          
+          (adjacents-of [vertex graph-map]
+            (remove nil? (get graph-map vertex)))
 
           (dfs->stacked-vertices-by-finishing-times [[head-vertex & tail-vertices] visited seeds graph]
             (if (nil? head-vertex) 
