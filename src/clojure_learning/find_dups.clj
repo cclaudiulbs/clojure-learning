@@ -1,4 +1,4 @@
-(ns dups
+(ns clojure-learning.find-dups
   (use clojure.repl)
   (require [clojure.test :refer :all]
            [clojure.core :refer :all]))
@@ -21,8 +21,8 @@
 
 
 (some #(= % "foo") ["foo" "bar"]) ;; true
-(get ["foo" "bar"] "foo")
-(get ["foo" "bar"] 0)
+(get ["foo" "bar"] "foo")  ;; nil
+(get ["foo" "bar"] 0)      ;; foo
 
 (contains? {:foo ":foo"} :foo);; true
 (contains? [:foo :bar] :foo)  ;; false

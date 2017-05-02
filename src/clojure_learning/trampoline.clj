@@ -16,12 +16,14 @@
 (defn demo-trampoline
   [x stop]
   (letfn [(take-until [x stop]
-            #(if (< x stop)
+            #(if (< x stop) ;; function returned
               (increment-until (partial < stop) x)
-              x))
+              x
+           ))
           (increment-until [predicate x]
-              (if (predicate x) x
-                (recur predicate (inc x))))]
+            (if (predicate x) 
+              x
+              (recur predicate (inc x))))]
     (my-trampoline take-until x stop)))
 
 (demo-trampoline 10 30)

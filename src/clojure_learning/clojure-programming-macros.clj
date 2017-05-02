@@ -300,8 +300,27 @@
 
 (thread-first [1 2 3] (conj 4) reverse println) ;; (4 3 2 1) --> WHOOOHOOO
 
+;; lets build a function representation of the above thread-first macro
+(defn thread-fns
+  ([x] x)
+  ([x form] (form x))
+  ([x form & tail]
+   (apply thread-fns (thread-fns x form) tail)))
 
+(thread-fns [1 2 3] #(conj % 4) reverse println) ;; (4 3 2 1)
 
+;; the function version, needs partial functions to be wrapped as lambda-inline-functions-calls
+;; being more verbose than the macro-version.
+;; additionally the function-thread-first version will NOT work with bare-java-methods, as 
+;; being a method it needs the context on which to execute the method
 
+(thread-fns [1 2 3] .toString seq)  ;; EXCEPTION:: unable to resolve .toString in tis context
 
-
+;; As with any other Lisp, macros are essential to Clojure’s expressive power. A little
+;; macrology goes a long way in eliminating eyesores and abstracting away common patterns
+;; in your code. 
+;; You can go a very long way with Clojure without creating a single macro.
+;; Functional programming and data modeling already yield tremendous expressive
+;; power and allow us to abstract away most repeating patterns in our code. Macros are
+;; the final step, simplifying patterns of control flow and adding syntactic sugar to minimize
+;; or eliminate code awkwardness.

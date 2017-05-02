@@ -1,4 +1,4 @@
-(in-ns 'braveclojure)
+(ns 'braveclojure-multimethods-protocols)
 (use '[clojure.core])
 (use 'clojure.repl)
 

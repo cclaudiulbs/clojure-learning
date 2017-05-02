@@ -4149,3 +4149,447 @@
     (is (= [1 2 3 4 5 6 7 8] (merge-seqs [1 4 7] [2 3 5 6 8]))) ;; true
 ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; Triangle Minimal Path
+;; Difficulty:	Hard
+;; Topics:	graph-theory
+;; Write a function which calculates the sum of the minimal path through a triangle. 
+;; The triangle is represented as a collection of vectors. 
+;; The path should start at the top of the triangle and move to an adjacent number on the next row 
+;; until the bottom of the triangle is reached.
+(ns clojure_learning.triangle-min-path
+    (use [clojure.repl])
+    (require [clojure.test :refer :all]))
+
+(defn triangle-min-path
+  [points] 
+  (letfn [(repeat-each-times [vov times]
+            (letfn [(-repeat-each-times 
+                      [[head & tail] curr times repeated]
+                      (if (or (zero? times) (nil? head)) repeated
+                        (if (zero? curr)
+                          (recur tail times times (conj repeated head))
+                          (recur (cons head tail) (dec curr) times (conj repeated head)))))]
+                (-repeat-each-times vov (dec times) (dec times) [])))
+          (repeat-matrix [[head-xs & tail-xs] times matrix-repeated]
+            (if (nil? head-xs) matrix-repeated
+              (recur tail-xs (dec times) (conj matrix-repeated (repeat-each-times head-xs times)))))
+          (trim-sides [xs how-many]
+            (reverse 
+              (drop how-many 
+                    (reverse 
+                        (drop how-many xs)))))
+         (trim-sides-by-first [matrix]
+            (reduce 
+              (fn [acc xs]
+                (let [half-diff (quot (- (count xs) (count (last acc))) 2)]
+                  (conj acc (trim-sides xs half-diff))))
+              [(first matrix)] (rest matrix)))]
+
+      (->>
+          (-> (repeat-matrix points ((comp inc inc count) points) [])
+              trim-sides-by-first)
+        (apply map vector)  ;; transpose to cols: map can take as many colls: will map as vector x1 y1... x2 y2...
+        (map #(reduce + %)) ;; build sum list
+        (apply min))
+))
+
+;; let's build a function which takes 
+(defn repeat-each-times [vov times]
+  "func that: sequential number-of-times -> sequential of each element duplicated the number-of-times"
+  (letfn [(-repeat-each-times [[head & tail] curr times repeated]
+            (if (or (zero? times) (nil? head)) repeated
+              (if (zero? curr)
+                (recur tail times times (conj repeated head))
+                (recur (cons head tail) (dec curr) times (conj repeated head)))))]
+    (-repeat-each-times vov (dec times) (dec times) [])))
+
+(deftest test-repeat-each-times
+  (testing "func should duplicate the elements of a sequential the number-of-times"
+    (is 
+      (= [1 1 3 3] (repeat-each-times [1 3] 2)) ;; true
+      (= [2 2 2 4 4 4] (repeat-each-times [2 4] 3)) ;; true
+      (= [1 1 1] (repeat-each-times [1] 3)) ;; true
+  )))
+
+(defn trim-sides [xs how-many]
+  "function that takes a coll and trims the l-side and r-side with the number of items"
+  (reverse (drop how-many (reverse (drop how-many (vec xs))))))
+
+(deftest test-trim-sides
+  (testing "trim-sides func which drops the leading + trailing num of elements from a sequence"
+    (is (= (list 3) (trim-sides [1 2 3 4 5] 2)))  ;; true
+))
+
+(defn trim-sides-by-last [matrix]
+  (reduce 
+    (fn [acc xs]
+      (let [half-diff (quot (- (count xs) (count (last acc))) 2)]
+      (conj acc (trim-sides xs half-diff))))
+    [(last matrix)] (butlast matrix)))
+
+(deftest test-trim-sides-by-last
+  (testing "should trim the sides of each row from matrix by last matrix-row num of elements"
+    (is (= [[1 2 3 4 5 6 7 8] [3 4 5 6 7 8 9 10]] (trim-sides-by-last [[1 2 3 4 5 6 7 8 9 10 11 12] [1 2 3 4 5 6 7 8]])))
+)) ;; true
+
+(defn trim-sides-by-first [matrix]
+  (reduce 
+    (fn [acc xs]
+      (let [half-diff (quot (- (count xs) (count (last acc))) 2)]
+      (conj acc (trim-sides xs half-diff))))
+    [(first matrix)] (rest matrix)))
+
+(deftest test-trim-sides-by-first
+  (testing "should trim the sides of each row from matrix by first matrix-row num of elements"
+    (is (= [[1 2 3 4 5 6 7 8] [3 4 5 6 7 8 9 10]] (trim-sides-by-first [[1 2 3 4 5 6 7 8] [1 2 3 4 5 6 7 8 9 10 11 12]])))
+)) ;; true
+
+;; ultimate abs test :)
+(deftest test-triangle-min-path
+  (testing "triangle-min-path to find the min path and reduce it using add func"
+      (is (= 7 (triangle-min-path '([1]
+                               [2 4]
+                              [5 1 4]
+                             [2 3 4 5])))) ;; true:: 1->2->1->3
+
+      (is (= 20 (triangle-min-path '([3]
+                                [2 4]
+                               [1 9 3]
+                              [9 9 2 4]
+                             [4 6 6 7 8]
+                            [5 7 3 5 1 4])))) ;; 20:: 3->4->3->2->7->1 
+))
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Transitive Closure
+;; Difficulty:	Hard
+;; Topics:	set-theory
+;; Write a function which generates the transitive closure of a binary relation. 
+;; The relation will be represented as a set of 2 item vectors.
+(ns clojure-learning.transitive-clojure
+  (use [clojure.repl])
+  (require [clojure.test :refer :all]))
+
+;; Note: the transitive clojure as seen -> takes the entries from the initial coll, and 
+;; iteratively finds the next clojure based on the previous output and based on the input domain args
+
+(defn find-transitive-clojure
+  [xset]
+   (let [xs-vec (apply vector xset)]
+    (letfn [(find-acc-transitives [xs]
+               (if-let [new-transitives (seq (find-new-transitives xs))]      ;; found new transitive-clojures
+                  (into xs (find-new-transitives (into xs new-transitives)))  ;; recur on existing + found-new-transitives
+                  xs))
+           (find-new-transitives [xs]
+              (reduce
+                (fn [acc [h-tuple l-tuple]]
+                  (into acc
+                    (for [[h l] xs :when (= l-tuple h)]
+                      [h-tuple l])))
+                [] xs))]
+      (apply hash-set 
+        (find-acc-transitives xs-vec)))))
+
+(find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
+
+(apply vector #{1 2 3}) ;; [1 3 2]
+(= #{1 2 3} #{2 1 3})   ;; true -> participate in the value sequence abstraction
+
+(deftest test-transitive-clojure
+  (testing "transitive-clojure to find all the connections from last->first of a binary relation tuples"
+    (is (= (find-transitive-clojure #{["cat" "man"] ["man" "snake"] ["spider" "cat"]})
+           #{["cat" "man"] ["man" "snake"] ["cat" "snake"]
+             ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}))
+))
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; #131:: Sum Some Set Subsets
+;; Difficulty:	Medium
+;; Topics:	math
+;; Given a variable number of sets of integers, create a function which returns true iff all 
+;; of the sets have a non-empty subset with an equivalent summation. 
+;; solved-times: 587
+;; in practical terms: the problem is that applying an operation(say +) on a domain of sets elements, would result some combinations of
+;; of numbers yielded by the application of that operation. find if the resulted subsets share some intersected elements.
+(ns clojure-learning.subsets-sum-intersection
+  (use [clojure.repl])
+  (require [clojure.test :refer :all]))
+
+;; first draft is not covering all the corner cases, as it uses the core [reductions] func and will rely on the order from Left->Right
+;; of each elements, hence not covering the first..and...last elements for example.
+(defn subsets-sum-intersection [& xsets]
+  (letfn [(reducted-sum-results [xsets]
+            (map #(reductions + %) xsets))]
+    (map (fn [& reducted-and-xset-tuple]
+           (apply concat reducted-and-xset-tuple)) 
+         (reducted-sum-results xsets) (map sort xsets))))
+
+(subsets-sum-intersection #{1 3 5} #{9 11 4} #{-3 12 3} #{-3 4 -2 10})
+;; --> NOT GOOD ENOUGH, because 1 + 5 is not covered, and neither 3 + 5, because using reductions: 1 + 0 -> 1 -> 1 + 3 -> 4 -> 4 + 5 -> 9
+
+;; moving on -> i need to create a function which finds if there's one intersection between all the sequences
+(for [x [1 2 3] y [1 2 3] z [1 2 3] :while (not= x y z)] [x y z])
+;; would result in all the possible combinations of 1 2 3 elements <-- using [for] comprehension
+
+;; for instance there might be a chance using partition, and a step of 1, but still will not compute all the possible combinations of elements!
+(partition 2 1 [-1 3 -5 7 -9 11 -13 15]) ;; (-1 3), (3 -5), (-5 7) ...
+
+;; this function takes a set -> reduces over this domain arg each element, and while reducing over each one -> will apply a for-comprehension
+;; of itself AND the initial set-reduced to find all the combinations, while the element is NOT equal to itself!
+(defn generate-all-tuple-combs 
+  [xset]
+    (reduce 
+      (fn [acc x]
+            (conj acc (for [y xset :when (not= x y)] [x y])))
+      [] xset))
+
+(generate-all-tuple-combs #{-1 3 -5 7 -9 11 -13 15}) ;; -> yields a lot of tuples, with the combinations of nums
+
+;; last attempt is finally the function which handles all the combinations of applying an operation to each set-elements
+(defn subsets-sum-intersection
+  [& xsets]
+  (letfn [(pair-and-add [x ys]
+            (for [y ys :when (not= x y)] (+ x y)))
+          (generate-sum-of-each [xs]
+            (loop [[head & tail :as init] (vec xs)
+                   [h s & tail-init] init
+                   acc []]
+              (if (nil? head)
+                (recur (cons (+ h s) tail-init) (cons (+ h s) tail-init) acc)
+                (if (nil? s) acc
+                  (recur tail (list* h s tail-init) (conj acc (pair-and-add head tail))))))) ;; keep head as well as sum
+          (generate-sum-recur [xs-vecs]
+            (map (comp flatten generate-sum-of-each) xs-vecs))]
+    (->> xsets 
+         generate-sum-recur)
+))
+
+(subsets-sum-intersection #{1 3 5}) ;; (4 6 8 9)...you got the point :)
+(subsets-sum-intersection #{-1 3 -5 7 -9 11 -13 15}) ;; long sequence of ALL combinations
+(subsets-sum-intersection #{1 3 5}
+                          #{9 11 4}
+                          #{-3 12 3}
+                          #{-3 4 -2 10});; (4 6 8 9), (15 13 20 24), (0 9 15 12), (2 -5 8 1 14 7 -1 12 7 9)
+;; as we see -> there's a single element which might form a subset -> 9 -> that is found across the three subsets
+
+;; the last step in solving the problem, because we found all the combinations, but the problem should build a predicate-func which
+;; returns true of there's a intersection of subsets in the set-domain-of-args. i can use the core: clojure.set/intersection for this
+(clojure.set/intersection #{1 2} #{2 3}) ;; #{2} --> EXACTLY WHAT I WANT :) but this is too trivial :) therefore 
+
+;; NEXT: i'll build a recursive solution of finding the intersection
+(defn map-by-min-and-tail [xs]
+  (let [mapped-and-sorted (sort-by first (map #(apply vector [(count %) %]) xs))
+        smallest          ((comp last first) mapped-and-sorted)
+        tail              (map last (rest mapped-and-sorted))]
+      [smallest tail]))
+
+;; my func of grouping min-xs-and-rest in action:
+(map-by-min-and-tail [[1 2 3] [1 2] [1 2 3 4]])  ;; [[1 2] ([1 2 3] [1 2 3 4])]
+
+;; Once i found and grouped the min and rest 
+;; -> i'm ensuring that i will take the smallest collection in order to find correspoding intersection in other colls
+
+;; now i'm building the recursive function to check for intersections into a unnormalized-matrix
+(defn has-intersections? [xs]
+  (letfn [(vec-contains? [xs subject]
+            (some #{subject} xs))]
+    (loop [[smaller-head & smaller-tails] (first (map-by-min-and-tail xs))
+           reseted-next-colls (second (map-by-min-and-tail xs))  ;; keep the state and reset when every rest-coll is exhausted
+           [next-coll & tail-colls] reseted-next-colls
+           intersections []]
+    (if (or (nil? smaller-head) (nil? next-coll))
+      ((comp not empty?) intersections)   ;; we're done -> as the smallest collection is exhausted :) -> check for non-emptyness!
+      (if (and (nil? tail-colls) (vec-contains? next-coll smaller-head)) ;; we reached the last collection -> push into intersections
+        (recur smaller-tails reseted-next-colls reseted-next-colls (conj intersections smaller-head))
+        (if (vec-contains? next-coll smaller-head)  ;; one intermediate coll contains the smaller-head el -> recur/check in next-colls
+          (recur (cons smaller-head smaller-tails) reseted-next-colls tail-colls intersections)
+          (recur smaller-tails reseted-next-colls (cons next-coll tail-colls) intersections) ;; no match -> step to next el from smaller-coll
+    ))))))
+;; that was quite an effort :) ... now in action:
+(has-intersections? [[1 2] [3 4 2]]) ;; true -->>> WHOOOOOHOOOO true! it contains 2
+(has-intersections? [[1 2] [3 4]])   ;; false
+(has-intersections? [[]])            ;; false -->>> NICE bravo dude'
+
+;; some play-around...
+(for [x [1 2 3]] (+ 1 x)) ;; (2 3 4)
+
+(let [subject 3
+      coll [1 2 3]]
+  (some #{subject} coll)) ;; 3 -> NICE
+
+;; Implementing the final version of the function, by augmenting it with the map-by-min-and-tail + has-intersections?
+;; yeah...making things harder i implemented the intersection-func using TCO myself(i could have just use the: clojure.set/intersection)
+(defn subsets-sum-intersection
+  [& xsets]
+  (letfn [(generate-sum-recur [xs-vecs]
+            (map (comp flatten generate-sum-of-each) xs-vecs))
+          (generate-sum-of-each [xs]
+            (loop [[head & tail :as init] (vec xs)
+                   [h s & tail-init] init
+                   acc []]
+              (if (nil? head)
+                (recur (cons (+ h s) tail-init) (cons (+ h s) tail-init) acc)
+                (if (nil? s) acc
+                  (recur tail (list* h s tail-init) (conj acc (pair-and-add head tail))))))) ;; keep head as well as sum
+          (pair-and-add [x ys]
+            (for [y ys :when (not= x y)] (+ x y)))
+          (map-by-min-and-tail [xs]
+            (let [mapped-and-sorted (sort-by first (map #(apply vector [(count %) %]) xs))
+                  smallest          ((comp last first) mapped-and-sorted)
+                  tail              (map last (rest mapped-and-sorted))]
+              [smallest tail]))
+          (has-intersections? [xs]
+            (letfn [(vec-contains? [xs subject] 
+                      (some #{subject} xs))]
+              (loop [[smaller-head & smaller-tails] (first (map-by-min-and-tail xs))
+                     reseted-next-colls (second (map-by-min-and-tail xs))  ;; keep the state and reset when every rest-coll is exhausted
+                     [next-coll & tail-colls] reseted-next-colls
+                     intersections []]
+                (if (or (nil? smaller-head) (nil? next-coll))
+                  ((comp not empty?) intersections)   ;; we're done -> as the smallest collection is exhausted :) -> check for non-emptyness!
+                  (if (and (nil? tail-colls) (vec-contains? next-coll smaller-head)) ;; we reached the last collection -> push into intersections
+                    (recur smaller-tails reseted-next-colls reseted-next-colls (conj intersections smaller-head))
+                    (if (vec-contains? next-coll smaller-head)  ;; one intermediate coll contains the smaller-head el -> recur/check in next-colls
+                      (recur (cons smaller-head smaller-tails) reseted-next-colls tail-colls intersections)
+                      (recur smaller-tails reseted-next-colls (cons next-coll tail-colls) intersections) ;; no match -> step to next el from smaller-coll
+                ))))))
+          (add-init-entries-to-combinations [init-entries all-combs]
+            (map 
+              (fn [each-combs-coll each-init-entries]
+                (into each-combs-coll each-init-entries)) all-combs init-entries))]
+    (->> xsets 
+         generate-sum-recur
+         (add-init-entries-to-combinations xsets)
+         has-intersections?)))
+
+(deftest test-subsets-sum-intersection
+(testing "if applying sum on some items from each subset yields a num which is in all of the sets"
+  (is (= true (subsets-sum-intersection #{1 3 5}
+                                        #{9 11 4}
+                                        #{-3 12 3}
+                                        #{-3 4 -2 10}))) ;; true -> NICE dude'
+
+  (is (= true (subsets-sum-intersection #{-1 3 -5 7 -9 11 -13 15}
+                                        #{1 -3 5 -7 9 -11 13 -15}
+                                        #{1 -1 2 -2 4 -4 8 -8} ))) ;; true
+
+  (is (= false (subsets-sum-intersection #{-1 -2 -3 -4 -5 -6}
+                                         #{1 2 3 4 5 6 7 8 9}))) ;; true -> normally it returns false
+
+  (is (= true (subsets-sum-intersection #{1})))
+
+  (is (= true (subsets-sum-intersection #{-1 1 99} 
+                                        #{-2 2 888}
+                                        #{-3 3 7777})))
+
+))
+
+;; #168: Infinite Matrix ;; Difficulty:	Medium
+;; Topics:	seqs recursion math
+;; Solved: 418 times
+;; Special restriction:for, range, iterate, repeat, cycle, drop ;; in short: build a infinite matrix: infinite rows + infinite cols with some additional logic on generated items 
+
+;; 3rd step is to limit the matrix to by taking only x-rows and y-cols(establish boundaries)
+(defn gen-infinite-matrix 
+  ([func] 
+   (gen-infinite-matrix func 0 0))
+  ([func from-row from-col] 
+    (letfn [(gen-range [from]
+            (lazy-seq
+              (cons from (gen-range (inc from)))))
+          (gen-infinite-cols [func each-col from-col]
+            (map (partial func each-col) (gen-range from-col)))
+          (gen-infinite-rows [func from-row from-col]
+            (map #(gen-infinite-cols func % from-col) (gen-range from-row)))]
+      (gen-infinite-rows func from-row from-col)))
+  ([func from-row from-col until-row until-col]
+     (take until-row 
+       (map #(take until-col %) (gen-infinite-matrix func from-row from-col)))))
+
+;; absolute tests
+(deftest test-gen-infinite-matrix
+  (testing "should generate an infinite matrix of: infinite rows of combined 0, 1, 2...for 1, 2, 3..."
+    (is (= (take 5 (map #(take 6 %) (gen-infinite-matrix str)))
+         [["00" "01" "02" "03" "04" "05"]
+          ["10" "11" "12" "13" "14" "15"]
+          ["20" "21" "22" "23" "24" "25"]
+          ["30" "31" "32" "33" "34" "35"]
+          ["40" "41" "42" "43" "44" "45"]])) ;; -> ok
+
+    (is (= (gen-infinite-matrix * 3 5 5 7)
+         [[15 18 21 24 27 30 33]
+          [20 24 28 32 36 40 44]
+          [25 30 35 40 45 50 55]
+          [30 36 42 48 54 60 66]
+          [35 42 49 56 63 70 77]])) ;; -> ok
+
+    (is (= (gen-infinite-matrix * 3 5 5 7)
+         [[15 18 21 24 27 30 33]
+          [20 24 28 32 36 40 44]
+          [25 30 35 40 45 50 55]
+          [30 36 42 48 54 60 66]
+          [35 42 49 56 63 70 77]]))
+
+    (is (= (gen-infinite-matrix #(/ % (inc %2)) 1 0 6 4)
+          [[1/1 1/2 1/3 1/4]
+           [2/1 2/2 2/3 1/2]
+           [3/1 3/2 3/3 3/4]
+           [4/1 4/2 4/3 4/4]
+           [5/1 5/2 5/3 5/4]
+           [6/1 6/2 6/3 6/4]])) ;; -> ok
+))
+
+;;;;;;;;;;;;;
+;;Word Chains
+;;Difficulty:	Hard
+;;Topics:	seqs
+;;A word chain consists of a set of words ordered so that each word differs by only one letter 
+;;from the words directly before and after it. 
+;;The one letter difference can be either an insertion, a deletion, or a substitution. 
+;;Here is an example word chain:
+;;cat -> cot -> coat -> oat -> hat -> hot -> hog -> dog
+;;
+;;Write a function which takes a sequence of words, and returns true if they can be arranged 
+;;into one continous word chain, and false if they cannot.
+;;test not run	
+(defn all-words-chain? [words-set]
+  (letfn [(linked-words? [source target]
+            (let [[smaller greater] (sort-by count [source target])
+                  greater-indexed (map-indexed (fn [idx c] [idx c]) greater)
+                  smaller-indexed (map-indexed (fn [idx c] [idx c]) smaller)]
+              (letfn [(combine-matches-or-nil [greater-tuple smaller-tuple]
+                        (map (fn [[out-idx out-ch]] 
+                                (some (fn [[in-idx in-ch]] 
+                                        (when (and (= out-ch in-ch) 
+                                                   (or (= out-idx in-idx)
+                                                   (= out-idx (inc in-idx))
+                                                   (= out-idx (dec in-idx)))) out-ch)) 
+                                smaller-tuple)) 
+                          greater-tuple))]
+                (when (<= (- (count greater) (count smaller)) 1)
+                  (when-let [greater-combined-matches (combine-matches-or-nil greater-indexed smaller-indexed)]
+                    (when-let [smaller-combined-matches (combine-matches-or-nil smaller-indexed greater-indexed)]
+                      (let [greater-matches-indexed (map-indexed (fn [idx x] [idx x]) greater-combined-matches)
+                            smaller-matches-indexed (map-indexed (fn [idx x] [idx x]) smaller-combined-matches)]
+                        (>= 1
+                          (count
+                              (filter (fn [matched-indexed] (nil? (last matched-indexed)))
+                                  (apply hash-set 
+                                      (apply conj 
+                                          greater-matches-indexed smaller-matches-indexed))))))))))))
+          (find-links-foreach-word [words]
+            (map (fn [word]
+                    (reduce (fn [acc compared-word]
+                              (if (= word compared-word) acc
+                                (if (linked-words? word compared-word)
+                                  (inc acc)
+                                  acc)))
+                            0 words)) 
+                 words))]
+    (->> words-set
+        find-links-foreach-word
+        (filter #(= 1 %))
+        count
+        (>= 2))))
+

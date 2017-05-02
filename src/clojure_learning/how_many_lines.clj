@@ -1,4 +1,4 @@
-(ns lines-counter
+(ns clojure_learning.how-many-lines
   (:import [java.io.File])
   (:require [clojure.java.io :as io]))
 
