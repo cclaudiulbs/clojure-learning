@@ -1,5 +1,3 @@
-(ns clojure-learning.algorithms.strongly-connected-comps)
-
 (ns clojure-learning.algorithms.tmp-scc)
 
 (require '[clojure.string :as str])
