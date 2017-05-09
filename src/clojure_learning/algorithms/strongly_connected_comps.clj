@@ -1,6 +1,6 @@
 (ns clojure-learning.algorithms.strongly-connected-comps)
 
-(ns clojure-learning.algorithms.tmp-scc)
+(set! *warn-on-reflection* true)
 
 (require '[clojure.string :as str])
 (require '[clojure.test :as t])
@@ -53,7 +53,7 @@
 )
 
 ;;;;;;;;;;;
-(defn dfs->adj-finishings
+(defn dfs->adj-finishings-expansive
   [[head-vertex & tail-vertices] finishings visited graph]
   (if (nil? head-vertex) 
     finishings;; finishing-time-acc
@@ -62,7 +62,8 @@
       (recur tail-vertices finishings visited graph)
       (recur tail-vertices 
              (conj
-               (dfs->adj-finishings (adjacents-of head-vertex graph) 
+               (dfs->adj-finishings-expansive
+                 (adjacents-of head-vertex graph) 
                     finishings
                     (conj visited head-vertex)
                     graph)
@@ -71,14 +72,51 @@
              graph
 ))))
 
+(defn non-visited [vertices visited-by-now]
+  (seq (remove visited-by-now vertices)))
+
+;; exercising
+(non-visited [1 2] #{1}) ;; (2)
+(non-visited [1 2] #{1 2}) ;; nil
+(non-visited [8] #{7 8}) ;; nil
+(non-visited (adjacents-of 8 a-graph) (clojure.set/union #{6 7} (set '(7 8))))
+(non-visited '(6 8) (set '(8)))
+(reduce (fn [rems rem] (cons rem rems)) '(8) [7])
+
+(defn dfs->adj-finishings-iterative
+  [[head-vertex & tail-vertices :as vertices] remainings finishings visited graph]
+  (if (and (nil? head-vertex) (empty? remainings))
+    finishings;; finishing-time-acc
+    (if (nil? head-vertex)
+      (recur [(first remainings)] (rest remainings) finishings visited graph)
+      (if (visited head-vertex)
+        (recur tail-vertices remainings finishings visited graph)
+        (if-let [not-visited (non-visited 
+                               (adjacents-of head-vertex graph)
+                               (clojure.set/union visited (set remainings)))]
+          (recur not-visited 
+             (reduce #(cons %2 %1) remainings (reverse vertices)) ;; cons -> 1st
+             finishings
+             visited
+             graph)
+          (recur tail-vertices 
+                 remainings 
+                 (conj finishings head-vertex)
+                 (conj visited head-vertex)
+                 graph))))))
+
+
 (def a-graph
   (-> "src/clojure_learning/algorithms/sample-1.txt"
       read-file 
-      to->edges
+      to->rev-edges
       build-graph-from-edges))
+a-graph
 
-(dfs->adj-finishings 
-  (reverse (sort (keys a-graph))) [] #{} a-graph) ;; [4 3 0 1 2]
+(dfs->adj-finishings-iterative [8] '() [] #{} a-graph)
+
+(dfs->adj-finishings-expansive [8] [] #{} a-graph)
+
 ;;;;;;;;;;;;;
 (defn dfs->by-func-type [leader-vertices graph dfs-func-type]
   "parameterized function by type:: if flatten -> finishing-times, if identity -> SCCs"
@@ -90,8 +128,12 @@
                             (->> (adjacents-of leader-vertex graph)
                                  (reduce
                                    (fn [adjacents-ctx each-adjacent] 
-                                     (let [adjacent-finishings (dfs->adj-finishings 
-                                                                      [each-adjacent] [] (:adjacents-visited adjacents-ctx) graph)]
+                                     (let [adjacent-finishings (dfs->adj-finishings-iterative
+                                                                      [each-adjacent] 
+                                                                      '()
+                                                                      []
+                                                                      (:adjacents-visited adjacents-ctx) 
+                                                                      graph)]
                                        (assoc  ;; preserve visited across adjacents
                                          (assoc adjacents-ctx :adjacents-connected ;; stack the founded component of adjacents
                                                 (conj (:adjacents-connected adjacents-ctx) ;; preserve previous
@@ -108,7 +150,7 @@
                         ;; the need to use: reduce conj => because i'm reducing a nested-vec-of-vecs
                         ;; !!! && make sure preserving the previous finishing-times!!!
                         leader->adjacents-finishing-times (conj (:finishing-times ctx)
-                                                                  ((comp vec flatten)
+                                                                  (flatten
                                                                     (conj (:adjacents-connected adjacents-traversal-m)
                                                                           leader-vertex)))
 
@@ -139,11 +181,11 @@
       to->rev-edges
       build-graph-from-edges))
 
-(dfs->by-func-type (reverse (sort (keys rev-ts1))) rev-ts1 flatten)
 ;; will result in finishing-times:: (6 7 8 1 2 3 5 4)
+(dfs->by-func-type (reverse (sort (keys rev-ts1))) rev-ts1 flatten)
   
-(dfs->by-func-type (reverse '(6 7 8 1 2 3 5 4)) ts1 identity)
 ;; will result in StronglyConnectedComponents:: [[4] [5] [2 1 3] [7 6 8]]
+(dfs->by-func-type (reverse '(6 7 8 1 2 3 5 4)) ts1 identity)
 
 ;;;;;;;;;;;;;
 ;; Final func that computes the SCCs via Kosaraju-Algo of a given graph
@@ -176,23 +218,29 @@
           (adjacents-of [vertex graph-map]
             (remove nil? (get graph-map vertex)))
 
-          (dfs->adj-finishings
-            [[head-vertex & tail-vertices] finishings visited graph]
-            (if (nil? head-vertex) 
-              finishings;; finishing-time-acc
-              (if (or (visited head-vertex)  ;; seeds used here only to avoid polluting the visited(and corrupting the finishing-times)
-                      ((set finishings) head-vertex))
-                (recur tail-vertices finishings visited graph)
-                (recur tail-vertices 
-                       (conj
-                         (dfs (adjacents-of head-vertex graph) 
-                              finishings
-                              (conj visited head-vertex)
-                              graph)
-                         head-vertex)
-                       visited
-                       graph
-            )))) 
+        (dfs->adj-finishings-iterative
+          [[head-vertex & tail-vertices :as vertices] 
+           [head-rem & tail-rems :as remainings] finishings visited graph]
+          (if (and (nil? head-vertex) (empty? remainings))
+            finishings;; finishing-time-acc
+            (if (nil? head-vertex)
+              (recur [head-rem] tail-rems finishings visited graph)
+              (if (visited head-vertex)
+                (recur tail-vertices remainings finishings visited graph)
+                (if-let [not-visited (non-visited 
+                                       (adjacents-of head-vertex graph)
+                                       (clojure.set/union visited (set remainings)))]
+                  (recur not-visited 
+                     (reduce #(cons %2 %1) remainings (reverse vertices)) ;; cons -> 1st
+                     finishings
+                     visited
+                     graph)
+                  (recur tail-vertices 
+                         remainings 
+                         (conj finishings head-vertex)
+                         (conj visited head-vertex)
+                         graph)
+          )))))
 
           (dfs->by-func-type [leader-vertices graph dfs-func-type]
             "parameterized-by-type func that can be used to compute finishing-times or 
@@ -202,28 +250,32 @@
                 (reduce (fn [ctx leader-vertex]
                           (if ((:visited ctx) leader-vertex) ctx
                             (let [adjacents-traversal-m
-                                      (->> (adjacents-of leader-vertex graph)
-                                           (reduce
-                                             (fn [adjacents-ctx each-adjacent] 
-                                               (let [adjacent-finishings (dfs->adj-finishings 
-                                                                                [each-adjacent] [] (:adjacents-visited adjacents-ctx) graph)]
-                                                 (assoc  ;; preserve visited across adjacents
-                                                   (assoc adjacents-ctx :adjacents-connected ;; stack the founded component of adjacents
-                                                          (conj (:adjacents-connected adjacents-ctx) ;; preserve previous
-                                                                adjacent-finishings)) ;; add new
-                                                   :adjacents-visited
-                                                   ;; preserve each visited vertex by taking the stacked-vertices from finishing-times
-                                                   (reduce conj (:adjacents-visited adjacents-ctx) adjacent-finishings)
-                                             )))
-                                             ;; preserve already acummulated visiteds
-                                             {:adjacents-connected [] :adjacents-visited (conj (:visited ctx) leader-vertex)}
-                                             ;; [[4 1 7] [6 3]]
-                                      ))
+                                  (->> (adjacents-of leader-vertex graph)
+                                    (reduce
+                                      (fn [adjacents-ctx each-adjacent] 
+                                        (let [adjacent-finishings (dfs->adj-finishings-iterative
+                                                                    [each-adjacent] 
+                                                                    '() ;; remainings
+                                                                    [] ;; finishing-times
+                                                                    (:adjacents-visited adjacents-ctx) ;;visited
+                                                                    graph)]
+                                          (assoc  ;; preserve visited across adjacents
+                                            (assoc adjacents-ctx :adjacents-connected ;; stack the founded component of adjacents
+                                                   (conj (:adjacents-connected adjacents-ctx) ;; preserve previous
+                                                         adjacent-finishings)) ;; add new
+                                            :adjacents-visited
+                                            ;; preserve each visited vertex by taking the stacked-vertices from finishing-times
+                                            (reduce conj (:adjacents-visited adjacents-ctx) adjacent-finishings)
+                                          )))
+                                      ;; preserve already acummulated visiteds
+                                      {:adjacents-connected [] :adjacents-visited (conj (:visited ctx) leader-vertex)}
+                                      ;; [[4 1 7] [6 3]]
+                              ))
                   
                                   ;; the need to use: reduce conj => because i'm reducing a nested-vec-of-vecs
                                   ;; !!! && make sure preserving the previous finishing-times!!!
                                   leader->adjacents-finishing-times (conj (:finishing-times ctx)
-                                                                            ((comp vec flatten)
+                                                                            (flatten
                                                                               (conj (:adjacents-connected adjacents-traversal-m)
                                                                                     leader-vertex)))
 
@@ -266,27 +318,33 @@
 ;; find-scc by sorting the finishing-times in descendent-order on the NORMAL-GRAPH
 ;; 
 ;; exercising...
-(find-strongly-connected "src/clojure_learning/algorithms/sample-1.txt")
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/sample-1.txt"))
 ;; [[4] [5] [2 1 3] [7 6 8]] -> OK
 
 (time
   (find-strongly-connected "src/clojure_learning/algorithms/sample-2.txt"))
 ;; [[1 0 3 4] [2]] -> OK
 
-(find-strongly-connected "src/clojure_learning/algorithms/test-sample-1.txt")
-;; Answer: 3,3,3,0,0 -> OK
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/test-sample-1.txt"))
+;; Answer: 3,3,3,0,0 -> OK:: [(4 1 7) (6 3 9) (2 5 8)]
 
-(find-strongly-connected "src/clojure_learning/algorithms/test-sample-2.txt")
-;; Answer: 3,3,2,0,0 -> OK
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/test-sample-2.txt"))
+;; Answer: 3,3,2,0,0 -> OK:: [(4 5) (6 7 8) (1 3 2)]
 
-(find-strongly-connected "src/clojure_learning/algorithms/test-sample-3.txt")
-;; Answer: 3,3,1,1,0 -> OK
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/test-sample-3.txt"))
+;; Answer: 3,3,1,1,0 -> OK:: [(4) (5) (2 1 3) (7 6 8)]
 
-(find-strongly-connected "src/clojure_learning/algorithms/test-sample-4.txt")
-;; Answer: 7,1,0,0,0 -> OK
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/test-sample-4.txt"))
+;; Answer: 7,1,0,0,0 -> OK:: [(2 1 3 4 7 6 8) (5)]
 
-(find-strongly-connected "src/clojure_learning/algorithms/test-sample-5.txt")
-;; Answer: 6,3,2,1,0 -> OK
+(time
+  (find-strongly-connected "src/clojure_learning/algorithms/test-sample-5.txt"))
+;; Answer: 6,3,2,1,0 -> OK:: [(8 7 9 11 10 12) (3 6) (4 2 5) (1)]
 
 ;; and the last one...assignment test-case...
 ;; which are the five last bigger SCC(number); e.g  ...8 5 4 2 1
@@ -297,3 +355,5 @@
          (map count
              (find-strongly-connected 
                "src/clojure_learning/algorithms/kosaraju-course-file.txt"))))))
+;; "Elapsed time: 51337.885541 msecs":: (152 126 114 108 97)
+
