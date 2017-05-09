@@ -217,10 +217,16 @@ a-graph
 
           (adjacents-of [vertex graph-map]
             (remove nil? (get graph-map vertex)))
+          
+          (non-visited [vertices visited-by-now]
+            (seq (remove visited-by-now vertices)))
 
         (dfs->adj-finishings-iterative
           [[head-vertex & tail-vertices :as vertices] 
-           [head-rem & tail-rems :as remainings] finishings visited graph]
+           [head-rem & tail-rems :as remainings] 
+           finishings 
+           visited 
+           graph]
           (if (and (nil? head-vertex) (empty? remainings))
             finishings;; finishing-time-acc
             (if (nil? head-vertex)
@@ -232,6 +238,7 @@ a-graph
                                        (clojure.set/union visited (set remainings)))]
                   (recur not-visited 
                      (reduce #(cons %2 %1) remainings (reverse vertices)) ;; cons -> 1st
+                     ;; (lazy-cat vertices remainings)
                      finishings
                      visited
                      graph)
@@ -357,3 +364,5 @@ a-graph
                "src/clojure_learning/algorithms/kosaraju-course-file.txt"))))))
 ;; "Elapsed time: 51337.885541 msecs":: (152 126 114 108 97)
 
+(clojure.set/union #{1 2} [3])
+(remove (clojure.set/union #{1 2} (cons 3 nil)) [1 2])
