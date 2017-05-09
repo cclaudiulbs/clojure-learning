@@ -79,32 +79,34 @@
 (non-visited [1 2] #{1}) ;; (2)
 (non-visited [1 2] #{1 2}) ;; nil
 (non-visited [8] #{7 8}) ;; nil
-(non-visited (adjacents-of 8 a-graph) (clojure.set/union #{6 7} (set '(7 8))))
-(non-visited '(6 8) (set '(8)))
-(reduce (fn [rems rem] (cons rem rems)) '(8) [7])
 
 (defn dfs->adj-finishings-iterative
-  [[head-vertex & tail-vertices :as vertices] remainings finishings visited graph]
-  (if (and (nil? head-vertex) (empty? remainings))
-    finishings;; finishing-time-acc
-    (if (nil? head-vertex)
-      (recur [(first remainings)] (rest remainings) finishings visited graph)
-      (if (visited head-vertex)
-        (recur tail-vertices remainings finishings visited graph)
-        (if-let [not-visited (non-visited 
-                               (adjacents-of head-vertex graph)
-                               (clojure.set/union visited (set remainings)))]
-          (recur not-visited 
-             (reduce #(cons %2 %1) remainings (reverse vertices)) ;; cons -> 1st
-             finishings
-             visited
-             graph)
-          (recur tail-vertices 
-                 remainings 
-                 (conj finishings head-vertex)
-                 (conj visited head-vertex)
-                 graph))))))
-
+   [[head-vertex & tail-vertices :as vertices] 
+    [head-rem & tail-rems :as remainings] 
+    finishings 
+    visited 
+    graph]
+   (if (and (nil? head-vertex) (empty? remainings))
+     finishings;; finishing-time-acc
+     (if (nil? head-vertex)
+       (recur [head-rem] tail-rems finishings visited graph)
+       (if (visited head-vertex)
+         (recur tail-vertices remainings finishings visited graph)
+         (if-let [not-visited (non-visited 
+                                (adjacents-of head-vertex graph)
+                                (clojure.set/union visited (set remainings)))]
+           (recur not-visited 
+              (reduce #(cons %2 %1) remainings (reverse vertices)) ;; cons -> 1st
+              ;; (lazy-cat vertices remainings)
+              finishings
+              visited
+              graph)
+           (recur tail-vertices 
+                  remainings 
+                  (conj finishings head-vertex)
+                  (conj visited head-vertex)
+                  graph)
+   )))))
 
 (def a-graph
   (-> "src/clojure_learning/algorithms/sample-1.txt"
@@ -363,6 +365,3 @@ a-graph
              (find-strongly-connected 
                "src/clojure_learning/algorithms/kosaraju-course-file.txt"))))))
 ;; "Elapsed time: 51337.885541 msecs":: (152 126 114 108 97)
-
-(clojure.set/union #{1 2} [3])
-(remove (clojure.set/union #{1 2} (cons 3 nil)) [1 2])
