@@ -1,3 +1,5 @@
+(ns clojure-learning.algorithms.week1.my-inversions)
+
 (defn my-inversions [xs]
    (letfn [(merge-fn [xs ys inversions]
              (letfn [(reached-bound [idx xs]   "verify if index is reached the upper bound"

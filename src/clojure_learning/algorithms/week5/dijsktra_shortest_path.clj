@@ -1,5 +1,6 @@
 (ns clojure-learning.algorithms.week5.dijsktra-shortest-path)
 (require '[clojure.string :as str])
+(import '[java.util HashMap HashSet])
 
 ;; The file contains an adjacency list representation of an undirected weighted 
 ;; graph with 200 vertices labeled 1 to 200. Each row consists of the node 
@@ -35,18 +36,15 @@
 ;; update the costs-map {to1 [tail1 cost1], to2 [tail2 cost2]}
 ;; the cost1/2 updated should SUM the looked-up:: tail1 from the same costs-map
 ;; take min(to1) + mark From as visited and recur with to1
-
 ;; {from [[to1 cost1], 
 ;;        [to2 cost2]}
 
 (defn build-graph [file-path]
   (letfn [(longify [s] (Long/valueOf s))
-
           (file->lines [file-path]
             (with-open [rdr (clojure.java.io/reader file-path)]
              (let [lines (doall (line-seq rdr))]
                lines)))
-
           (build-graph-entry [line]
             (let [[from-vertex & to-adjacents] (str/split line #"\s+")
                   adjacents-with-costs (map 
@@ -54,146 +52,122 @@
                                                           (str/split csv-pair #",")))
                                          to-adjacents)]
               [(longify from-vertex) adjacents-with-costs]))
-
           (entries->graph [graph-entries]
             (reduce conj {} graph-entries))]
     
     (->> file-path 
          file->lines
          (map build-graph-entry)
-         entries->graph)
-))
+         entries->graph)))
 
 ;; exercising
 (build-graph "src/clojure_learning/algorithms/week5/dijkstra-1.txt")
 ;; {4 ((5 4)), 3 ((4 2)), 2 ((4 3)), 1 ((2 7) (3 1))}
 ;; :key 1, :val ((to-vertex cost), (to-vertex cost))
 
-(defn non-visited-adjacents [adjacents-with-costs visited-by-now]
-  (seq ;; ensures nil instead of empty-list
-    (remove
-      (fn [[adjacent cost]] (.contains visited-by-now adjacent)) 
-      adjacents-with-costs)))
+(defn sort-by-min-vertex [adjacents-with-costs]
+   "second is the actual cost:: need the vertex with smaller cost to be extracted"
+   (map first (sort-by second adjacents-with-costs)))
 
-(non-visited-adjacents [[1 2] [3 4]] #{1}) ;; ([3 4])
-(non-visited-adjacents [[1 2] [3 4]] #{1 3}) ;; nil
-
-(defn extract-min-vertex [adjacents-with-costs]
-  "second is the actual cost:: need the vertex with smaller cost to be extracted"
-  (first (sort-by second adjacents-with-costs)))
-
-;; exercising
-(extract-min-vertex [[5 2] [3 1] [7 5]]) ;; [3 1] ;; tuple:: [3 vertex, 1 cost]
-
-(defn nil->zero [n] (if (nil? n) 0 n))
-(nil->zero nil) ;; 0
-(apply + (map nil->zero [nil 0 1 nil 3])) ;; 4
-
-;; one of the most important func that keeps the costs in sync updated to the latest value
 (defn update-vertices-costs [vertices-costs-m adjacent-costs from-vert]
-  (let [[_ accumulated-cost] (get vertices-costs-m from-vert)]
-    (reduce 
-      (fn [verts-costs-map [adjacent adj-cost]] ;; destructuring
-        (if-let [[old-from-vert old-cost] (get verts-costs-map adjacent)]
-          (if (> (nil->zero old-cost)
-                 (apply + (map nil->zero [adj-cost accumulated-cost])))
-            (assoc verts-costs-map adjacent
-              [from-vert (apply + (map nil->zero [adj-cost accumulated-cost]))])
-            verts-costs-map) ;; else old cost is still smaller
-          (assoc verts-costs-map adjacent 
-            [from-vert (apply + (map nil->zero [adj-cost accumulated-cost]))])
-      ))
-      vertices-costs-m 
-      adjacent-costs
-)))
+  (letfn [(sum-costs [& costs] (apply + (map nil->zero costs)))
+          (nil->zero [n] (if (nil? n) 0 n))]
+    (let [[_ from-acc-cost] (.get vertices-costs-m from-vert)]
+      (doseq [[adjacent adjacent-cost] adjacent-costs]
+        (let [[_ old-cost] (.get vertices-costs-m adjacent)]
+          (if (or (nil? old-cost) 
+                  (> (nil->zero old-cost)
+                     (sum-costs from-acc-cost adjacent-cost)))
+            (.put vertices-costs-m adjacent
+              [from-vert (sum-costs from-acc-cost adjacent-cost)]))
+)))))
 
-;; exercising
-(update-vertices-costs 
-  {2 [1 7]}     ;; costs-map:: should be kept in sync
-  [[2 3] [3 1]] ;; adjacency lists
-  1             ;; from-vertex => is a tail for vertex 2:: 1->2 cost 7
-)
-;; output::
-;; {3 [1 1]    ;; (=> new tail-with-cost)
-;;  2 [1 3]}   ;; (=> update the cost for vertex 2 with new cost:3 and the new tail 1)
+(defn shortest-path-dfs [vertices graph vertices-costs-map visited]
+  "func will traverse only the connected vertices from the starting vertex!"
+  (letfn [(adjacents-of [v graph] (get graph v))
+          (all-visited? [graph visited]
+            (= (count visited) (count (keys graph))))]
+    (if-not (all-visited? graph visited)
+      (doseq [v vertices :when (not (.contains visited v))]
+        (let [adjacents (adjacents-of v graph)
+              sorted-by-min-cost-verts (sort-by-min-vertex adjacents)]
+          (do
+            (update-vertices-costs vertices-costs-map adjacents v)
+            (.add visited v)
+            (shortest-path-dfs 
+              sorted-by-min-cost-verts graph vertices-costs-map visited)
+))))))
 
-(defn adjacents-of [vert graph]
-  (get graph vert))
+(defn dijkstra-shortest-path [from-vertex graph]
+  "Final dijkstra function that calculates the distances from starting-vertex
+   of a given graph. It will also include the unreachable vertices putting a
+   big distance for them"
+  (let [visited (HashSet.)
+        vertices-costs (HashMap.)]
+    (do
+      (.put vertices-costs from-vertex [0 0])
+      (shortest-path-dfs [from-vertex] graph vertices-costs visited))
+    (let [calculated-vertices (keys vertices-costs)
+          all-vertices (keys graph)
+          unreachable-vertices (clojure.set/difference 
+                                 (set all-vertices)
+                                 (set calculated-vertices))]
+      (doseq [unreachable-vert unreachable-vertices]
+        (.put vertices-costs unreachable-vert 1000000))
+      vertices-costs)))
 
-;; exercising
-(def d1
-  (build-graph "src/clojure_learning/algorithms/week5/dijkstra-1.txt"))
-(adjacents-of 1 d1) ;; ((2 7) (3 1))
-
-(defn all-visited? [graph visited]
-  (= (count (keys graph)) 
-     (count visited)))
-
-;; exercising
-(all-visited? d1 #{1 2}) ;; false
-(all-visited? d1 #{1 2 3 4}) ;; true
-
-;; dropping the tail-vertices:: ensure that everytime the from-vert will NOT have a tail
-(defn dijkstra-shortest-path
-  [from-vert [head-rem & tail-rems :as remainder-verts] graph tail-verts-costs-m visited]
-  (if (all-visited? graph visited)
-    tail-verts-costs-m
-    (if (or (nil? from-vert) 
-            (visited from-vert))
-      (recur head-rem tail-rems graph tail-verts-costs-m visited)
-      (let [non-visited-adjacents (non-visited-adjacents 
-                                     (adjacents-of from-vert graph) visited)
-            calculated-vertices-costs (update-vertices-costs
-                                         tail-verts-costs-m ;; preserve previous costs
-                                         non-visited-adjacents
-                                         from-vert)    ;; from vertex( = tail-vertex in costs-map)
-            [next-vertex _] (extract-min-vertex non-visited-adjacents)]
-        (recur next-vertex
-               remainder-verts 
-               graph 
-               calculated-vertices-costs
-               (conj visited from-vert))
-))))
-
-;; exercising
-(dijkstra-shortest-path 1 (keys d1) d1 {} #{})
-;; {5 [4 7], 4 [3 3], 3 [1 1], 2 [1 7]}
+(dijkstra-shortest-path 1 d1)
+;; {1 [0 0], 2 [1 7], 3 [1 1], 4 [3 3], 5 [4 7]}
 
 (def sample
   (build-graph "src/clojure_learning/algorithms/week5/sample-1.txt"))
-(dijkstra-shortest-path 1 (keys sample) sample {} #{})
-;; 1->3:: 5, 1->4:: 6, 1->5:: 12, 1->6:: 7
-;; out:: {7 [8 5], 5 [4 12], 6 [3 7], 4 [3 6], 3 [2 5], 2 [1 2]}
+sample
+(dijkstra-shortest-path 1 sample)
+;; {1 [0 0], 2 [1 2], 3 [2 5], 4 [3 6], 5 [4 12], 6 [3 7], 7 1000000, 8 1000000}
+
+(def sample-2
+  (build-graph "src/clojure_learning/algorithms/week5/sample-2.txt"))
+(time
+  (dijkstra-shortest-path 1 sample-2))
+;; {1 [0 0], 2 [4 6], 3 [1 2], 4 [5 4], 5 [3 3], 6 [2 10], 7 [6 11], 8 [5 9], 9 [7 12]}
+
+(def tim1
+  (-> "src/clojure_learning/algorithms/week5/tim-1.txt"
+    build-graph))
+tim1
+(dijkstra-shortest-path 1 tim1)
+;; {1 [0 0], 2 [1 1], 3 [7 4], 4 [3 5], 5 [1 3], 6 [5 4], 7 [2 3], 8 [2 2], 9 [8 3], 10 [9 6], 11 [9 5]}
+
+(def sample-3
+  (-> "src/clojure_learning/algorithms/week5/sample-3.txt"
+    build-graph))
+sample-3
+(dijkstra-shortest-path 1 sample-3)
+;; {1 [0 0], 2 [1 3], 3 [1 2], 4 [3 4], 5 [3 5], 6 [4 5]}
+
+(def sample-4
+  (-> "src/clojure_learning/algorithms/week5/sample-4.txt"
+    build-graph))
+sample-4
+(dijkstra-shortest-path 1 sample-4)
+;; {1 [0 0], 2 [1 1], 3 [2 2], 4 [3 3], 5 [3 5]}
+
+(def sample-5
+  (-> "src/clojure_learning/algorithms/week5/sample-5.txt"
+    build-graph))
+sample-5
+(dijkstra-shortest-path 1 sample-5)
+;; {1 [0 0], 2 [1 1], 3 [2 3], 4 [1 2], 5 [4 5]}
 
 (def r
   (build-graph "src/clojure_learning/algorithms/week5/dijkstra-real.txt"))
 (time
-  (def shortest-paths
-    (dijkstra-shortest-path 1 (keys r) r {} #{})))
+  (def shortest-paths (dijkstra-shortest-path 1 r)))
+shortest-paths
 
-;; homework output:: taking into consideration the requested vertices
-(def req-vertices #{7,37,59,82,99,115,133,165,188,197})
+(defn req-vertices-costs [calculated-paths req-vertices]
+  (str/join "," 
+    (map #(second (.get calculated-paths %)) req-vertices)))
 
-;; output::
-(def req-vertices-costs
-  (sort-by first 
-    (filter 
-      (fn [[key [tail cost :as weight]]] (req-vertices key)) 
-      shortest-paths)))
-req-vertices-costs
-#_([7 [27 6110]]
-   [37 [107 3684]]
-   [59 [162 2947]]
-   [82 [135 2052]]
-   [99 [1 2367]]
-   [115 [80 2399]]
-   [133 [85 2029]]
-   [165 [153 5543]]
-   [188 [125 3139]]
-   [197 [54 5592]])
-
-(str/join ","
-  (map 
-    (comp #(* 1000 (quot % 1000)) second second) 
-    req-vertices-costs))
-;; 6000,3000,2000,2000,2000,2000,2000,5000,3000,5000
+(req-vertices-costs shortest-paths [7,37,59,82,99,115,133,165,188,197])
+;; 2599,3684,2947,2052,2367,2399,2029,2442,3139,5592

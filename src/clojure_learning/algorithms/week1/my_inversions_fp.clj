@@ -1,4 +1,4 @@
-(ns clojure-learning.algorithms.my-inversions-fp)
+(ns clojure-learning.algorithms.week1.my-inversions-fp)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Count inversions in an array
 
@@ -13,7 +13,7 @@
 (defn inversions [file-path]
   (letfn [(load-file-list [abs-path]
             (letfn [(parse-int [s] (int (Integer. s)))]
-              (with-open [line (reader abs-path)]
+              (with-open [line (clojure.java.io/reader abs-path)]
                 (doall (map parse-int (line-seq line))))))
           (find-inversions [xs ys inversions]
             (loop [[head-x & tail-xs] xs
@@ -55,6 +55,6 @@
 
 ;; benchmarking + result
 (time
-  (let [invs (inversions "src/clojure_learning/algorithms/IntegerArray.txt")]
+  (let [invs (inversions "src/clojure_learning/algorithms/week1/IntegerArray.txt")]
     invs))
-;; "Elapsed time: 155947.25851 msecs":: 2407905288
+;; "Elapsed time: 155947.25851 msecs":: 2407905288 => OK!

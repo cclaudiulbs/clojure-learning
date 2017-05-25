@@ -1,4 +1,4 @@
-(ns clj-monads.min-cut
+(ns clojure-learning.algorithms.week3.min-cut
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
@@ -71,6 +71,7 @@
         )))
 
 (update-converged-node {1 [1 2 3] 2 [4 5 1], 3 [2 10]} 2 1)
+;; {1 [4 5 3], 3 [2 10]}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn update-adjacents [adjacents contracted-node converged-node]
@@ -88,7 +89,7 @@
 ;; OK!
   
 (nodes-but :one {:one "one" :two "two"}) ;; '(:two)
-(nodes-but 1 {1 [1, 2] 3 [3 4] 4 [4 5]})
+(nodes-but 1 {1 [1, 2] 3 [3 4] 4 [4 5]}) ;; '(4 3)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn update-graph-nodes [graph-nodes-map contracted-node converged-node]
@@ -124,13 +125,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exercise.....
-(def file "resources/courser-week-3-karger-graph-nodes.txt")
+(def file "src/clojure_learning/algorithms/week3/karger.txt")
 ;(def file "resources/simple_graph_0.txt")
 ;(def file "resources/simple_graph_2.txt")
 (def nodes-graph (structure-nodes-from (stringify-file-in-lines file)))
 nodes-graph
 (min-cuts nodes-graph) 
-;; yields randomly a number...not ok! should run many times the algorithm: nodes^2
+;; yields randomly a result => being a randomized type of algorithm we should
+;; run it many times
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; randomly....
@@ -139,4 +141,4 @@ nodes-graph
          cuts []]
     (if (> x 400) (take 1 (sort (set cuts)))
       (recur (inc x) (conj cuts (min-cuts nodes-graph))))))
-;; "Elapsed time: 90960.02621 msecs":: 17
+;; "Elapsed time: 90960.02621 msecs":: 17 => OK(correct)

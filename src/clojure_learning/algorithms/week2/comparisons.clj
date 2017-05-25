@@ -1,4 +1,4 @@
-(ns clojure-learning.algorithms.week2
+(ns clojure-learning.algorithms.week2.comparisons
   (:require [clojure.java.io :as io]))
 
 ;;; Week 2 - Programming Assignment
@@ -82,10 +82,11 @@
               arr))
 
           (calculate-pivot-index [start-pos end-pos]
-            (let [subarr-counted (- end-pos start-pos)]
-              (if (even? subarr-counted)
-                (+ (dec (quot subarr-counted 2)) start-pos)
-                (+ (quot subarr-counted 2) start-pos))))
+            start-pos
+            #_(let [subarr-counted (- end-pos start-pos)]
+               (if (even? subarr-counted)
+                 (+ (dec (quot subarr-counted 2)) start-pos)
+                 (+ (quot subarr-counted 2) start-pos))))
 
           (quick-sort-by [arr from-index to-index]
             (letfn [(reorder-by-index [arr from-idx to-idx]
@@ -122,7 +123,7 @@
                            into-array)]
         (quick-sort-by arr-unsorted 0 (count arr-unsorted))))))
 
-;; run...
+;; run...=> NOK...
 (time
   (let [result (quick-sort-comparisons-from-file)]
     (:comparisons result)))
