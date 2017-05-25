@@ -76,7 +76,7 @@
       (doseq [[adjacent adjacent-cost] adjacent-costs]
         (let [[_ old-cost] (.get vertices-costs-m adjacent)]
           (if (or (nil? old-cost) 
-                  (> (nil->zero old-cost)
+                  (>= (nil->zero old-cost)
                      (sum-costs from-acc-cost adjacent-cost)))
             (.put vertices-costs-m adjacent
               [from-vert (sum-costs from-acc-cost adjacent-cost)]))
@@ -87,13 +87,13 @@
   (letfn [(adjacents-of [v graph] (get graph v))
           (all-visited? [graph visited]
             (= (count visited) (count (keys graph))))]
-    (if-not (all-visited? graph visited)
-      (doseq [v vertices :when (not (.contains visited v))]
-        (let [adjacents (adjacents-of v graph)
-              sorted-by-min-cost-verts (sort-by-min-vertex adjacents)]
-          (do
-            (update-vertices-costs vertices-costs-map adjacents v)
-            (.add visited v)
+    (doseq [v vertices]
+      (let [adjacents (adjacents-of v graph)
+            sorted-by-min-cost-verts (sort-by-min-vertex adjacents)]
+        (update-vertices-costs vertices-costs-map adjacents v)
+        (when-not (.contains visited v) ;; mandatory after improving costs!!!
+          (do ;; there might be a better distance 
+            (.add visited v)              
             (shortest-path-dfs 
               sorted-by-min-cost-verts graph vertices-costs-map visited)
 ))))))
@@ -159,6 +159,20 @@ sample-5
 (dijkstra-shortest-path 1 sample-5)
 ;; {1 [0 0], 2 [1 1], 3 [2 3], 4 [1 2], 5 [4 5]}
 
+(def sample-6
+  (-> "src/clojure_learning/algorithms/week5/sample-6.txt"
+    build-graph))
+sample-6
+(dijkstra-shortest-path 1 sample-6)
+;; {1 [0 0], 2 [3 3], 3 [1 2], 4 [6 6], 5 [6 9], 6 [2 4], 7 [2 4], 8 [7 6], 9 [3 8], 10 [3 4]}
+
+(def sample-7
+  (-> "src/clojure_learning/algorithms/week5/sample-7.txt"
+    build-graph))
+sample-7
+(dijkstra-shortest-path 1 sample-7)
+;; {1 [0 0], 2 [1 1], 3 [2 2], 4 [3 3], 5 [4 4], 6 [7 4], 7 [8 3], 8 [1 2]}
+
 (def r
   (build-graph "src/clojure_learning/algorithms/week5/dijkstra-real.txt"))
 (time
@@ -170,4 +184,4 @@ shortest-paths
     (map #(second (.get calculated-paths %)) req-vertices)))
 
 (req-vertices-costs shortest-paths [7,37,59,82,99,115,133,165,188,197])
-;; 2599,3684,2947,2052,2367,2399,2029,2442,3139,5592
+;; OK!!! :: 2599,2610,2947,2052,2367,2399,2029,2442,2505,3068
