@@ -49,6 +49,7 @@
 (merge-sort [1 3 4 5 3 2 1 9]) ;; [1 1 2 3 3 4 5 9]
 
 (def rand-100k-nums (repeatedly 100000 (partial rand-int 100000)))
+(def rand-100k-nums (shuffle (range 0 100000)))
 (def rand-1mil-nums (repeatedly 1000000 (partial rand-int 1000000)))
 
 (def s-100k

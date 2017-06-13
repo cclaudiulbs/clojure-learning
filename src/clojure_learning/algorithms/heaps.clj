@@ -223,43 +223,45 @@ h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapif
 
           (cas-bubble-down! [start-idx [lidx lval] [ridx rval] h]
             (let [startval (.get h start-idx)]
-              (cond 
-                (and (> startval lval) (> startval rval) (> lval rval)) ;; take min children
+              (cond
+                (and (< 0 lidx) (< 0 ridx)
+                     (> startval lval) (> startval rval) 
+                     (> lval rval)) ;; take min children
                   ;; swap with rval -> as it's the smallest
                   (do
                     (.set h start-idx rval)
                     (.set h ridx startval)
                     ridx) ;; new start-idx
-                (and (> startval lval) (> startval rval) (> rval lval))
+                (and (< 0 lidx) (< 0 ridx)
+                     (> startval lval) (> startval rval) (> rval lval))
                   ;; swap with lval -> as it's the smallest
                   (do
                     (.set h start-idx lval)
                     (.set h lidx startval)
                     lidx)
-                (> startval rval)
+                (and (< 0 ridx) (> startval rval))
                   ;; swap with rval -> as it's the smallest
                   (do
                     (.set h start-idx rval)
                     (.set h ridx startval)
                     ridx) ;; new start-idx
 
-                (> startval lval)
+                (and (< 0 lidx) (> startval lval))
                   ;; swap with lval -> as it's the smallest
                   (do
                     (.set h start-idx lval)
                     (.set h lidx startval)
                     lidx)
                 
-                :else start-idx
+                :else (inc start-idx)
           )))
           
           (restructure-heap-recur! [h start-idx]
-            (when-not (> start-idx (dec (.size h)))
+            (when (< start-idx (dec (.size h)))
               (let [[l-idx l :as lnode] (left-child-of h start-idx)
                     [r-idx r :as rnode] (right-child-of h start-idx)]
-                (when-not (or (< l-idx 0) (< r-idx 0))
-                  (let [bubbled-down-idx (cas-bubble-down! start-idx lnode rnode h)]
-                    (recur h bubbled-down-idx))))))]
+                (let [bubbled-down-idx (cas-bubble-down! start-idx lnode rnode h)]
+                  (recur h bubbled-down-idx)))))]
     
     (cond (.isEmpty heapified-list) 
       heapified-list
@@ -270,6 +272,7 @@ h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapif
         min-node)) ;; return min-node
 ))
 
+;; exercising::
 (def h (ArrayList.))
 (doseq [x [12 8 7 6 5 11 4 2 3 1 10]] 
   (heap-insert h x))
@@ -281,3 +284,53 @@ h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapif
 ;; hence the .remove(by idx) is NEVER CALLED, the .remove(Object) overloaded method being called!!!
 (defn arraylist-remove [#^ArrayList list idx]
   (.remove list (int idx)))
+
+;;;;;;;;
+;; with this HEAP-SORT becomes a pie @implementation
+;;;;;;;;
+(set! *warn-on-reflection* true)
+(def nums (shuffle (range 0 10000)))
+nums
+
+(time
+  (def core-sorted (sort nums)))
+;; core sorting:: "Elapsed time: 50.575168 msecs"
+
+;; an example of heap-sort, however the running time is not quite good...
+(time
+  (def s
+    (let [heapified (ArrayList.)
+          sorted (ArrayList.)] ;; mutable auto-shrinkable list
+      (doseq [x nums] (heap-insert heapified x)) ;; O(n) however i initially thought of:: O(nlogn)
+      (loop []
+        (let [min (heap-extract-min heapified)]
+          (when (number? min)
+            (do 
+              (.add sorted min)
+              (recur)))))
+  sorted
+))) ;; for 10.000 nums:: "Elapsed time: 91,800.966877 msecs"
+
+;; my merge-sort from previous implementation-studies computed
+;; shuffled 100K nums in:: "Elapsed time: 1785.201451 msecs"
+;; no way the heap-sort will compute faster than merge-sort...
+;; "Elapsed time: 92,053.150033 msecs" for heap-sort
+
+;; an example of heap-sort
+(time
+  (def s
+    (let [heapified (reduce 
+                      (fn [acc x] (.add acc x) acc) (ArrayList.) (heapify nums))
+          sorted (ArrayList.)] ;; mutable auto-shrinkable list
+      (loop []
+        (let [extracted-min (heap-extract-min heapified)]
+          (when (number? extracted-min)
+            (do 
+              (.add sorted extracted-min)
+              (recur)))))
+  sorted
+)))
+s
+
+(type (java.util.Arrays/asList (to-array [1 2])))
+(type (reduce (fn [lst x] (.add lst x) lst) (ArrayList.) (to-array [1 2 3])))
