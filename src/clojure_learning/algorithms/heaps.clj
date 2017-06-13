@@ -167,6 +167,117 @@ h ;; [1 2 3 4 6 9 5 7 8]
 h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapify when it comes to but-minium root val)
 
 ;;;;;;;;;;;;
-;; core Heap operation:: extract-min
+;; core Heap operation:: extract-min:: performs in O(logn) running time/worst case of course... :)
 ;;;;;;;;;;;;
-(defn heap-extract-min [heapified-list])
+(defn heap-extract-min [heapified-list]
+  "extract-min should perform in O(logn) time complexity
+   the steps required are::
+   1. assuming the root is the min -> heap sorted by min-nodes(root is always the min)
+      extract it, by removing it from the heap-structure
+   2. eventually the heap(logical binary searched tree will remain inconsistent without a root)
+      so pick the LAST leaf node from the heap structure and PROMOTE it as ROOT.
+      because being the last node(in a sorted heap) will 'FORCE' the mechanics to
+      downgrade it to a valid heap-level, this operation is called the:: bubble-down operation
+   3. as in the heapify operation:: compare new-promoted-root with both left-right logical children
+      and (because the root is the min) choose the smaller between those children.
+   4. perform the swap with new-promoted-root hence bubbling-down the promoted-root, and bubbling-up
+      the child node. Recursivelly bubble down until (here's the base-case) there's NO more children!"
+  (letfn [(arraylist-remove [#^ArrayList list idx]
+            "FIX for clojure<=>java .remove ArrayList by index!!! instead of Object"
+            (.remove list (int idx)))
+          
+          (promote-as-root! [h] 
+            "side effectful operation:: will return old min root and perform the promotion of last leaf-node to new root"
+            (cond
+              (.isEmpty h) 
+                nil
+              (= (.size h) 1)
+                (let [x (.get h 0)]
+                  (arraylist-remove h 0)
+                  x)
+              :else
+                (let [last-node-idx (dec (.size h))
+                      last-node (.get h last-node-idx)
+                      root-min-node (.get h 0)]
+                  (arraylist-remove h last-node-idx)
+                  (.set h 0 last-node)
+                  root-min-node)))
+          
+          (left-child-of [h idx]
+            "primitive func that takes an array and an index and retrieves the logical
+             representation for the passed-index left-child"
+            (let [left-idx (dec (* 2 (inc idx)))]
+              (if (> left-idx (dec (.size h)))
+                [-1 nil] ;; reached the upper bound
+                [left-idx (.get h left-idx)]
+          )))
+
+          (right-child-of [h idx]
+            "primitive func that takes an array and an index and retrieves the logical
+             representation for the passed-index right-child"
+            (let [right-idx (dec (inc (* 2 (inc idx))))]
+              (if (> right-idx (dec (.size h)))
+                [-1 nil]
+                [right-idx (.get h right-idx)]
+          )))
+
+          (cas-bubble-down! [start-idx [lidx lval] [ridx rval] h]
+            (let [startval (.get h start-idx)]
+              (cond 
+                (and (> startval lval) (> startval rval) (> lval rval)) ;; take min children
+                  ;; swap with rval -> as it's the smallest
+                  (do
+                    (.set h start-idx rval)
+                    (.set h ridx startval)
+                    ridx) ;; new start-idx
+                (and (> startval lval) (> startval rval) (> rval lval))
+                  ;; swap with lval -> as it's the smallest
+                  (do
+                    (.set h start-idx lval)
+                    (.set h lidx startval)
+                    lidx)
+                (> startval rval)
+                  ;; swap with rval -> as it's the smallest
+                  (do
+                    (.set h start-idx rval)
+                    (.set h ridx startval)
+                    ridx) ;; new start-idx
+
+                (> startval lval)
+                  ;; swap with lval -> as it's the smallest
+                  (do
+                    (.set h start-idx lval)
+                    (.set h lidx startval)
+                    lidx)
+                
+                :else start-idx
+          )))
+          
+          (restructure-heap-recur! [h start-idx]
+            (when-not (> start-idx (dec (.size h)))
+              (let [[l-idx l :as lnode] (left-child-of h start-idx)
+                    [r-idx r :as rnode] (right-child-of h start-idx)]
+                (when-not (or (< l-idx 0) (< r-idx 0))
+                  (let [bubbled-down-idx (cas-bubble-down! start-idx lnode rnode h)]
+                    (recur h bubbled-down-idx))))))]
+    
+    (cond (.isEmpty heapified-list) 
+      heapified-list
+    :else
+      (let [min-node (promote-as-root! heapified-list)
+            start-node 0]
+        (restructure-heap-recur! heapified-list start-node)
+        min-node)) ;; return min-node
+))
+
+(def h (ArrayList.))
+(doseq [x [12 8 7 6 5 11 4 2 3 1 10]] 
+  (heap-insert h x))
+h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapify when it comes to but-minium root val)
+(heap-extract-min h) ;; 1..12..[] -> eventually an empty list
+
+;; this fixes the BUG in clojure while intercommunicating with java's ArrayList
+;; .remove(by idx) -> in clojure all number instances being promoted as primitive wrappers
+;; hence the .remove(by idx) is NEVER CALLED, the .remove(Object) overloaded method being called!!!
+(defn arraylist-remove [#^ArrayList list idx]
+  (.remove list (int idx)))
