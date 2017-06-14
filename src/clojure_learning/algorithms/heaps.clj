@@ -66,7 +66,7 @@
   "heapify takes a vector and transforms it into a heapified data-structure
    the operations performs in O(nlogn) just like any sorting operation
    Note:: there's no better sorting operation that performs faster than
-          worst case running time of O(nlogn)"
+          worst case running time of O(nlogn) VIA value-comparison!!!"
  (let [heapified-arr (into-array xs)
        last-idx (dec (alength heapified-arr))
        reverse-indexing #(take (inc %) (iterate dec %))]
@@ -317,20 +317,102 @@ nums
 ;; "Elapsed time: 92,053.150033 msecs" for heap-sort
 
 ;; an example of heap-sort
+(defn heap-sort-by-heapify [xs]
+  (let [heapified (ArrayList.)
+        sorted (ArrayList.)]
+    (doseq [x (heapify xs)] (.add heapified x))
+    (loop []
+      (let [extracted-min (heap-extract-min heapified)]
+        (when (number? extracted-min)
+          (do 
+            (.add sorted extracted-min)
+            (recur)))))
+    sorted
+    ))
 (time
-  (def s
-    (let [heapified (reduce 
-                      (fn [acc x] (.add acc x) acc) (ArrayList.) (heapify nums))
-          sorted (ArrayList.)] ;; mutable auto-shrinkable list
-      (loop []
-        (let [extracted-min (heap-extract-min heapified)]
-          (when (number? extracted-min)
-            (do 
-              (.add sorted extracted-min)
-              (recur)))))
-  sorted
-)))
+  (def s (heap-sort-by-heapify nums)))
 s
 
+(let [xs (ArrayList.)]
+  (.addAll xs (java.util.Arrays/asList (to-array [1 2 3])))
+  xs)
 (type (java.util.Arrays/asList (to-array [1 2])))
 (type (reduce (fn [lst x] (.add lst x) lst) (ArrayList.) (to-array [1 2 3])))
+
+;; ANALYSING the running times.....
+(time
+  (def a (reduce (fn [acc x] (.add acc x) acc) (ArrayList.) (range 0 100000))))
+;; producing a new ArrayList with 100K items requires:: "Elapsed time: 142.279817 msecs"
+;; kind of a lot when the core "sort" requires only:: "Elapsed time: 50.9928 msecs"
+;; => therefore only building the array-list requires with a factor of 3 x times than
+;; to sort it.
+;; i've used ArrayList in my heap-insert/heap-extract implementations relying on
+;; dynamic shrinking the array-list while removing items from it, however behind
+;; the scenes, the entire array is copied with System.arraycopy...which is NOT
+;; wise at all...
+
+;; own thoughts...on how to improve the performance
+;; to optimize the heapify operation, i should discard ALL the ((2^height - 1) level) items
+;; bubbling-up, because those are leafs and shouldn't by heap-ordered!
+;; therefore:: based on the .length of the array, i should find the 
+;; correspondent:: 2^x factor. i'm interested in finding the "x" here...
+;; where the x stands for the height, if i know the height, i know which items
+;; should be discarded based on the total items
+;; applying Math here, i'm interested in finding the (log2 x) by applying the
+;; (log10 x) / (log10 2) -> gives the logarithm in base 2
+(/ (Math/log10 8) (Math/log10 2)) ;; => (log2 x) -> where x = 3
+(/ (Math/log10 11) (Math/log10 2)) ;; => (log2 x) -> where x = 3.4594316186372978
+;; -> so flooring the number and i got the height
+;; if the items in an array size is: 11 -> then we can apply the math formula,
+;; and get the height, then applying the power of 2 using that computed height
+;; i know the range of the items that SHOULD BE included in the heap operation.
+
+(defn heapify [xs]
+  "heapify takes a vector and transforms it into a heapified data-structure
+   the operations performs in O(nlogn) just like any sorting operation
+   Note:: there's no better sorting operation that performs faster than
+          worst case running time of O(nlogn) VIA value-comparison!!!"
+ (let [heapified-arr (into-array xs)
+       height (int (/ (Math/log10 (alength heapified-arr)) (Math/log10 2)))
+       rev-idxs (reverse (range 0 (Math/pow 2 height)))]
+
+   ;; optimized to heapify ONLY the nodes which have children:: bubble-up
+   (loop [[idx & first-idxs] rev-idxs]
+     (cond (nil? idx) heapified-arr
+       :else
+         (let [node-val (aget heapified-arr idx)
+               [left-idx left-val] (left-child-of heapified-arr idx)
+               [right-idx right-val] (right-child-of heapified-arr idx)]
+           ;; curr-node higher than both left & right children?
+           (if (and ((comp not nil?) left-val)
+                    ((comp not nil?) right-val)
+                    (> node-val left-val) (> node-val right-val))
+             ;; compare the children nodes
+             (if (> right-val left-val)
+               (do ;; swap left
+                 (aset heapified-arr idx left-val)
+                 (aset heapified-arr left-idx node-val)
+                 (recur (cons left-idx first-idxs))) ;; bubble-down(remember swaped indx)
+               (do ;; swap right
+                 (aset heapified-arr idx right-val)
+                 (aset heapified-arr right-idx node-val)
+                 (recur (cons right-idx first-idxs)))) ;; bubble-down(remember swaped indx)
+             ;; curr-node higher only than right-child
+             (if (and ((comp not nil?) right-val)
+                      (> node-val right-val)) ;; swap right
+               (do
+                 (aset heapified-arr idx right-val)
+                 (aset heapified-arr right-idx node-val)
+                 (recur (cons right-idx first-idxs))) ;; bubble-down(remember swaped indx)
+               ;; curr-node higher only than left-child
+               (if (and ((comp not nil?) left-val)
+                        (> node-val left-val))
+                 (do
+                   (aset heapified-arr idx left-val)
+                   (aset heapified-arr left-idx node-val)
+                   (recur (cons left-idx first-idxs))) ;; bubble-down(remember swaped indx)
+                 ;; no attention required
+                 (recur first-idxs)
+))))))))
+(heapify [3 4 1 2 6 9 5 7 8]) ;; [1, 2, 3, 4, 6, 9, 5, 7, 8] => OK
+(heapify [12 8 7 6 5 11 4 2 3 1 10]) ;; [1, 2, 4, 3, 5, 11, 7, 6, 12, 8, 10] => OK
