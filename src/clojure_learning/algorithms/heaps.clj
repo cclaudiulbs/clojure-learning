@@ -289,7 +289,7 @@ h ;; [1 2 5 4 3 11 8 12 6 7 10] => OK (although is bit different than the heapif
 ;; with this HEAP-SORT becomes a pie @implementation
 ;;;;;;;;
 (set! *warn-on-reflection* true)
-(def nums (shuffle (range 0 10000)))
+(def nums (shuffle (range 0 100000)))
 nums
 
 (time
@@ -309,7 +309,6 @@ nums
               (.add sorted min)
               (recur)))))
   sorted
-))) ;; for 10.000 nums:: "Elapsed time: 91,800.966877 msecs"
 
 ;; my merge-sort from previous implementation-studies computed
 ;; shuffled 100K nums in:: "Elapsed time: 1785.201451 msecs"
@@ -333,13 +332,9 @@ nums
   (def s (heap-sort-by-heapify nums)))
 s
 
-(let [xs (ArrayList.)]
-  (.addAll xs (java.util.Arrays/asList (to-array [1 2 3])))
-  xs)
-(type (java.util.Arrays/asList (to-array [1 2])))
-(type (reduce (fn [lst x] (.add lst x) lst) (ArrayList.) (to-array [1 2 3])))
-
-;; ANALYSING the running times.....
+;;;;;;;;;;;;;;;
+;; ANALYSING & IMPROVING the running times.....
+;;;;;;;;;;;;;;;
 (time
   (def a (reduce (fn [acc x] (.add acc x) acc) (ArrayList.) (range 0 100000))))
 ;; producing a new ArrayList with 100K items requires:: "Elapsed time: 142.279817 msecs"
@@ -349,25 +344,29 @@ s
 ;; i've used ArrayList in my heap-insert/heap-extract implementations relying on
 ;; dynamic shrinking the array-list while removing items from it, however behind
 ;; the scenes, the entire array is copied with System.arraycopy...which is NOT
-;; wise at all...
+;; performant-wise at all...
 
-;; own thoughts...on how to improve the performance
-;; to optimize the heapify operation, i should discard ALL the ((2^height - 1) level) items
-;; bubbling-up, because those are leafs and shouldn't by heap-ordered!
-;; therefore:: based on the .length of the array, i should find the 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; OWN ideas...on how to improve the running time ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; To optimize the heapify operation, i should discard ALL the ((2^height - 1) level) items
+;; bubbling-up, because those are leaves and shouldn't be heap-ordered!
+
+;; Therefore:: based on the (alength) of the array, i should find the 
 ;; correspondent:: 2^x factor. i'm interested in finding the "x" here...
-;; where the x stands for the height, if i know the height, i know which items
-;; should be discarded based on the total items
-;; applying Math here, i'm interested in finding the (log2 x) by applying the
-;; (log10 x) / (log10 2) -> gives the logarithm in base 2
-(/ (Math/log10 8) (Math/log10 2)) ;; => (log2 x) -> where x = 3
-(/ (Math/log10 11) (Math/log10 2)) ;; => (log2 x) -> where x = 3.4594316186372978
-;; -> so flooring the number and i got the height
-;; if the items in an array size is: 11 -> then we can apply the math formula,
+;; where the x stands for the height/level => if i know the height => 
+;; i know which items should be discarded based on the total items.
+
+;; Applying a rudimental math here, i'm interested in finding the (log2 x) 
+;; by applying the formula:: (log10 x) / (log10 2) => (log2 x) gives the log base 2
+(/ (Math/log10 8) (Math/log10 2)) ;; => (log2 x) -> where x = 3 => x = pow of 2:: 2^3
+(/ (Math/log10 11) (Math/log10 2)) ;; => (log2 x) -> where x = 3.4594316186372978 = pow of 2:: 2^3
+;; => so flooring the number and i got the height
+;; If the items in an array size is: 11 -> then i can apply the math formula,
 ;; and get the height, then applying the power of 2 using that computed height
 ;; i know the range of the items that SHOULD BE included in the heap operation.
 
-(defn heapify [xs]
+(defn heapify-opt [xs]
   "heapify takes a vector and transforms it into a heapified data-structure
    the operations performs in O(nlogn) just like any sorting operation
    Note:: there's no better sorting operation that performs faster than
@@ -414,5 +413,141 @@ s
                  ;; no attention required
                  (recur first-idxs)
 ))))))))
-(heapify [3 4 1 2 6 9 5 7 8]) ;; [1, 2, 3, 4, 6, 9, 5, 7, 8] => OK
-(heapify [12 8 7 6 5 11 4 2 3 1 10]) ;; [1, 2, 4, 3, 5, 11, 7, 6, 12, 8, 10] => OK
+(heapify-opt [3 4 1 2 6 9 5 7 8])        ;; [1, 2, 3, 4, 6, 9, 5, 7, 8] => OK
+(heapify-opt [12 8 7 6 5 11 4 2 3 1 10]) ;; [1, 2, 4, 3, 5, 11, 7, 6, 12, 8, 10] => OK
+
+;; with optimisation => discarding all the leaves::
+(time (def h (heapify-opt nums))) ;; => "Elapsed time: 2597.754177 msecs"
+;; without optimisation::
+(time (def h (heapify nums))) ;; => "Elapsed time: 2945.936282 msecs"
+;; => with optimisation i saved ~ 400 millis => which is quite good!
+(time (def h 
+        (let [a (ArrayList.)] (doseq [x nums] (heap-insert a x)) a )))
+;; => iterating through all the nums and BUILDING the HEAP WHILE iterating
+;; takes MUCH less time:: "Elapsed time: 918.576557 msecs"
+
+;; optimizing the heap-extract-min to work with primitive-arrays, and 
+;; avoiding the dumb copying that ArrayList does...
+(defn heap-extract-min-opt [heapified-arr last-idx]
+  "extract-min should perform in O(logn) time complexity
+   the steps required are::
+   1. assuming the root is the min -> heap sorted by min-nodes(root is always the min)
+      extract it, by removing it from the heap-structure
+   2. eventually the heap(logical binary searched tree will remain inconsistent without a root)
+      so pick the LAST leaf node from the heap structure and PROMOTE it as ROOT.
+      because being the last node(in a sorted heap) will 'FORCE' the mechanics to
+      downgrade it to a valid heap-level, this operation is called the:: bubble-down operation
+   3. as in the heapify operation:: compare new-promoted-root with both left-right logical children
+      and (because the root is the min) choose the smaller between those children.
+   4. perform the swap with new-promoted-root hence bubbling-down the promoted-root, and bubbling-up
+      the child node. Recursivelly bubble down until (here's the base-case) there's NO more children!"
+  (letfn [(promote-as-root! [h last-idx] 
+            "side effectful operation:: will return old min root and perform the promotion of last leaf-node to new root"
+            (cond
+              (< last-idx 0) nil
+              (zero? last-idx)
+                (let [single (aget h last-idx)]
+                  (aset h last-idx nil)
+                  single)
+              :else
+                (let [last-node (aget h last-idx)
+                      root-node-idx 0
+                      root-min-node (aget h root-node-idx)]
+                  (aset h last-idx nil)
+                  (aset h root-node-idx last-node)
+                  root-min-node)))
+          
+          (left-child-of [h curr-idx end-idx]
+            "primitive func that takes an array and an index and retrieves the logical
+             representation for the passed-index left-child"
+            (let [left-idx (dec (* 2 (inc curr-idx)))]
+              (if (> left-idx end-idx) 
+                [-1 nil]
+                [left-idx (aget h left-idx)]
+          )))
+
+          (right-child-of [h curr-idx end-idx]
+            "primitive func that takes an array and an index and retrieves the logical
+             representation for the passed-index right-child"
+            (let [right-idx (dec (inc (* 2 (inc curr-idx))))]
+              (if (> right-idx end-idx)
+                [-1 nil]
+                [right-idx (aget h right-idx)]
+          )))
+
+          (cas-bubble-down! [start-idx [lidx lval] [ridx rval] h]
+            (let [startval (aget h start-idx)]
+              (cond
+                (and (< 0 lidx) (< 0 ridx)
+                     (> startval lval) (> startval rval) 
+                     (> lval rval)) ;; take min children
+                  ;; swap with rval -> as it's the smallest
+                  (do
+                    (aset h start-idx rval)
+                    (aset h ridx startval)
+                    ridx) ;; new start-idx
+                (and (< 0 lidx) (< 0 ridx)
+                     (> startval lval) (> startval rval) (> rval lval))
+                  ;; swap with lval -> as it's the smallest
+                  (do
+                    (aset h start-idx lval)
+                    (aset h lidx startval)
+                    lidx)
+                (and (< 0 ridx) (> startval rval))
+                  ;; swap with rval -> as it's the smallest
+                  (do
+                    (aset h start-idx rval)
+                    (aset h ridx startval)
+                    ridx) ;; new start-idx
+
+                (and (< 0 lidx) (> startval lval))
+                  ;; swap with lval -> as it's the smallest
+                  (do
+                    (aset h start-idx lval)
+                    (aset h lidx startval)
+                    lidx)
+                
+                :else (inc start-idx)
+          )))
+          
+          (restructure-heap-recur! [h start-idx end-idx]
+            (when (< start-idx end-idx)
+              (let [[l-idx l :as lnode] (left-child-of h start-idx end-idx)
+                    [r-idx r :as rnode] (right-child-of h start-idx end-idx)]
+                (let [bubbled-down-idx (cas-bubble-down! start-idx lnode rnode h)]
+                  (recur h bubbled-down-idx end-idx)))))]
+    
+    ;; the control of passing the last-idx is externalized...
+    (let [min-node (promote-as-root! heapified-arr last-idx)
+          start-idx 0]
+      ;; after promotion -> the array is shrinked -> last-idx is less with one
+      (restructure-heap-recur! heapified-arr start-idx (dec last-idx))
+      min-node)) ;; return min-node
+)
+(def h (heapify-opt [12 8 7 6 5 11 4 2 3 1 10])) 
+;; [1, 2, 4, 3, 5, 11, 7, 6, 12, 8, 10] => OK
+
+;; second step ...extracting each min in the RIGHT reversed order...
+(for [rev-idx (reverse (range 0 (alength h)))] 
+  (heap-extract-min h rev-idx))
+;; => (1 2 3 4 5 6 7 8 10 11 12) => niceeeeee
+
+;;;;;;;;;;;;;;;
+;; optimized heap-sort:: wooohoooo :) what a nice and neat function...
+;;;;;;;;;;;;;;;
+(defn heap-sort-opt [xs]
+  (let [heapified-arr (heapify-opt xs)]
+    (for [rev-idx (reverse (range 0 (count xs)))] 
+      (heap-extract-min-opt heapified-arr rev-idx))
+))
+
+(def nums (shuffle (range 0 100000)))
+(time 
+  (def s (heap-sort-opt nums))) ;; "Elapsed time: 2427.288922 msecs"
+;; => MUCH BETTER than the NON-optimised solution...comparable with merge-sort func
+;; now compare this running time(not a pure running time, but...) with the 
+;; initial NON optimised versions where time to perform:: 92,053.150033 msecs
+;; ORDER OF MAGNITUDE ....well done!
+
+(time
+  (def core-sorted (sort nums))) ;; "Elapsed time: 40.887231 msecs"
